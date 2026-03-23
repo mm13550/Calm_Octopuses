@@ -1,1 +1,3 @@
 Whenever you make changes to the codebase, you must automatically create a commit summarizing the changes and push them to the current GitHub repository. Ensure that the commit message accurately describes what was changed.
+
+Additionally, ensure that you save summary logs of all conversations with the user to the `conversations.md` file in the root directory.
