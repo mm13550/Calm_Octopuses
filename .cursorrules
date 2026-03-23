@@ -1,0 +1,1 @@
+Whenever you make changes to the codebase, you must automatically create a commit summarizing the changes and push them to the current GitHub repository. Ensure that the commit message accurately describes what was changed.
