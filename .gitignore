@@ -1,0 +1,13 @@
+out/
+out_test/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+.venv/
+env/
+.idea/
+.vscode/
+*.lnk
+test_*.csv
