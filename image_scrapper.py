@@ -9,51 +9,65 @@ GOOGLE_MAPS_API_KEY = "AIzaSyBh4rL1nvaFmZXoZH7VtjE1mV7aH8H8Ymc"
 CSV_FILE = "nyc_michelin_names_cleaned.csv"
 OUTPUT_DIR = "images"
 
-# To ensure you're not charged beyond the free limit, 
-# you should set up Quota Limits in the Google Cloud Console. 
-# However, this script is designed to safely exit if the quota is exceeded 
-# and has a hardcoded MAX limit to prevent infinite loops or huge bills.
 MAX_PROCESSED = 400
 
-def get_place_photo_reference(restaurant_name, borough):
-    query = f"{restaurant_name} restaurant"
+def get_place_photo_references(restaurant_name, borough):
+    # Step 1: Text Search to get the specific Place ID
+    query = f"{restaurant_name} restaurant food dishes"
     if borough:
         query += f" {borough}"
-    query += " New York"
+    query += " New York City"
     
-    url = "https://maps.googleapis.com/maps/api/place/textsearch/json"
-    params = {
-        "query": query,
+    url_search = "https://maps.googleapis.com/maps/api/place/textsearch/json"
+    params_search = {"query": query, "key": GOOGLE_MAPS_API_KEY}
+    
+    resp_search = requests.get(url_search, params=params_search)
+    if resp_search.status_code != 200:
+        return []
+        
+    data_search = resp_search.json()
+    
+    if data_search.get("status") in ["OVER_QUERY_LIMIT", "REQUEST_DENIED"]:
+        print(f"\n[!] API Error during Text Search: {data_search.get('status')} - {data_search.get('error_message', '')}")
+        sys.exit(1)
+        
+    results = data_search.get("results", [])
+    if not results:
+        return []
+        
+    place_id = results[0].get("place_id")
+    if not place_id:
+        return []
+        
+    # Step 2: Place Details API to get the full array of up to 10 photos
+    url_details = "https://maps.googleapis.com/maps/api/place/details/json"
+    params_details = {
+        "place_id": place_id,
+        "fields": "photos",
         "key": GOOGLE_MAPS_API_KEY
     }
     
-    response = requests.get(url, params=params)
-    
-    if response.status_code != 200:
-        print(f"Error checking API for {restaurant_name}: {response.status_code}")
-        return None
+    resp_details = requests.get(url_details, params=params_details)
+    if resp_details.status_code != 200:
+        return []
         
-    data = response.json()
-    
-    status = data.get("status")
-    if status == "OVER_QUERY_LIMIT":
-        print("\n[!] OVER QUERY LIMIT. Your quota has been exceeded or billing is not enabled.")
-        print("[!] Stopping script to prevent any unexpected charges.")
-        sys.exit(1)
-    elif status == "REQUEST_DENIED":
-        print(f"\n[!] REQUEST DENIED: {data.get('error_message', 'Invalid API key or restricted access.')}")
+    data_details = resp_details.json()
+    if data_details.get("status") in ["OVER_QUERY_LIMIT", "REQUEST_DENIED"]:
+        print(f"\n[!] API Error during Place Details: {data_details.get('status')} - {data_details.get('error_message', '')}")
         sys.exit(1)
         
-    results = data.get("results", [])
-    if not results:
-        return None
-        
-    place = results[0]
-    photos = place.get("photos", [])
+    photos = data_details.get("result", {}).get("photos", [])
     if not photos:
-        return None
+        return []
         
-    return photos[0].get("photo_reference")
+    # Skip the first image (index 0, usually the building exterior cover photo)
+    # Collect the next 5 pictures (index 1 to 5)
+    if len(photos) == 1:
+        selected_photos = photos
+    else:
+        selected_photos = photos[1:6]
+        
+    return [p.get("photo_reference") for p in selected_photos]
 
 def download_photo(photo_reference, save_path):
     url = "https://maps.googleapis.com/maps/api/place/photo"
@@ -68,7 +82,7 @@ def download_photo(photo_reference, save_path):
             for chunk in response.iter_content(1024):
                 f.write(chunk)
         return True
-    elif response.status_code == 403: # Over quota for photos sometimes gives 403
+    elif response.status_code == 403:
         print("\n[!] 403 Forbidden when downloading photo. You may have exceeded your quota.")
         sys.exit(1)
     return False
@@ -101,26 +115,26 @@ def main():
             if not safe_name:
                 continue
                 
-            save_path = os.path.join(OUTPUT_DIR, f"{safe_name}.jpg")
+            print(f"\nProcessing {name}...")
             
-            if os.path.exists(save_path):
-                print(f"Skipping {name}, image already exists.")
-                continue
-                
-            print(f"Processing {name}...")
-            
-            photo_ref = get_place_photo_reference(name, borough)
-            if photo_ref:
-                success = download_photo(photo_ref, save_path)
-                if success:
-                    print(f" -> Successfully saved {save_path}")
-                else:
-                    print(f" -> Failed to download photo.")
+            photo_refs = get_place_photo_references(name, borough)
+            if photo_refs:
+                for idx, photo_ref in enumerate(photo_refs):
+                    save_path = os.path.join(OUTPUT_DIR, f"{safe_name}_{idx+1}.jpg")
+                    
+                    if os.path.exists(save_path):
+                        print(f" -> Skipping {save_path}, image already exists.")
+                        continue
+                        
+                    success = download_photo(photo_ref, save_path)
+                    if success:
+                        print(f" -> Successfully saved {save_path}")
+                    else:
+                        print(f" -> Failed to download photo {idx+1}.")
             else:
-                print(f" -> No photo found for {name}.")
+                print(f" -> No suitable photos found for {name}.")
             
             processed_count += 1
-            # Respect Google API rate limits slightly
             time.sleep(0.1)
 
     print("\nFinished scraping.")

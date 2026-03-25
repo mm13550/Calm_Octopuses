@@ -13,3 +13,8 @@
 - Generated `requirements.txt` containing dependencies (`requests`) and installed them into the venv.
 - Created `activate.bat` and `activate.ps1` scripts for easy activation on Windows.
 - Updated `.gitignore` to prevent tracking of the virtual environment.
+
+## March 25, 2026 - Enhancing Scraper for Food Photos
+- Modified `image_scrapper.py` to heavily prioritize food photos over building exteriors.
+- Adjusted query strings to include "food dishes" and implemented a two-step API flow (Text Search -> Place Details) to retrieve all available photos.
+- Configured the script to systematically skip the first photo (typically storefronts) and download up to 5 additional photos per restaurant.
