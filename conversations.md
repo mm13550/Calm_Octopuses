@@ -18,3 +18,7 @@
 - Modified `image_scrapper.py` to heavily prioritize food photos over building exteriors.
 - Adjusted query strings to include "food dishes" and implemented a two-step API flow (Text Search -> Place Details) to retrieve all available photos.
 - Configured the script to systematically skip the first photo (typically storefronts) and download up to 5 additional photos per restaurant.
+
+## March 25, 2026 - Background Execution
+- Launched the final `image_scrapper.py` script to continuously fetch all 1,750 photos in the background.
+- Added the `images/` directory to `.gitignore` to protect the GitHub repository from massive file uploads.

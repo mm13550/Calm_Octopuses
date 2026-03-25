@@ -12,3 +12,6 @@ venv/
 .vscode/
 *.lnk
 test_*.csv
+
+# Ignored image scraper output
+images/
