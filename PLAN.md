@@ -1,0 +1,1 @@
+I want to make a script to scrape images from the google maps api for the resurants listed in nyc_michelin_names_cleaned.csv
