@@ -7,3 +7,9 @@
 - Built-in safety limits to ensure free tier is respected.
 - Resolved CSV BOM encoding issue to correctly parse restaurant names.
 - Confirmed that the user's Google Maps API key works by successfully testing the script.
+
+## March 25, 2026 - Virtual Environment Setup
+- Created a project-specific Python virtual environment (`venv`).
+- Generated `requirements.txt` containing dependencies (`requests`) and installed them into the venv.
+- Created `activate.bat` and `activate.ps1` scripts for easy activation on Windows.
+- Updated `.gitignore` to prevent tracking of the virtual environment.
