@@ -76,3 +76,4 @@
 
 ## March 28, 2026 - Architectural Refactor
 - Extracted the visual similarity math comparison logic (`get_similar_images`) from `app.py` into a dedicated `algorithms/image_comparison.py` module to make the core logic cleanly presentable for proposals.
+- Added documentation blocks describing the new `algorithms/` standalone module explicitly in the `README.md`.
