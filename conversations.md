@@ -55,6 +55,10 @@
 - Deleted `requirements_menu_crawler.txt` to avoid project clutter.
 
 ## March 28, 2026 - SerpAPI Resolvers Merged
-- Migrated all rate-limit protection (`RateLimitError` handling), exponential backoffs, and `--resume` functionalities from `resolve_homepages_with_serpapi_resume.py` directly into the standard `resolve_homepages_with_serpapi.py`.
+- Migrated all rate-limit protection (`RateLimitError` handling), exponential backoffs, and `--resume` functionalities from `resolve_homepages_with_serpapi_resume.py` directly into the standard `resolve_homepages.py`.
 - Cleanly deleted the redundant `_resume.py` file to simplify the project's ecosystem.
 - Reflected these smart capabilities in the `README.md`.
+
+## March 28, 2026 - Script Renaming
+- Renamed `nyc_michelin_menu_crawler.py` to `menu_crawler.py` and `resolve_homepages_with_serpapi.py` to `resolve_homepages.py` for brevity.
+- Updated all internal string references across `README.md`, Python docstrings, and old conversation logs.

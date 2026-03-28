@@ -14,7 +14,7 @@ Recommended use:
 2) Crawl restaurant-owned sites only.
 
 Example:
-    python nyc_michelin_menu_crawler.py \
+    python menu_crawler.py \
         --input data/seeds.csv \
         --output-dir out \
         --per-domain-delay 2.0 \

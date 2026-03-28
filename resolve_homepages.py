@@ -24,7 +24,7 @@ Options:
 - Safely pauses on HTTP 429 quota exhaustion.
 
 Usage:
-  python resolve_homepages_with_serpapi.py \
+  python resolve_homepages.py \
     --input data/nyc_michelin_names_cleaned.csv \
     --output data/seeds_resolved.csv \
     --api-key YOUR_SERPAPI_KEY
