@@ -110,6 +110,15 @@ class SerpAPIClient:
         self.session.headers.update({"User-Agent": USER_AGENT})
 
     def search(self, query: str) -> dict:
+        """
+        Executes a Google search via SerpAPI and returns the parsed JSON response.
+        
+        Args:
+            query (str): The search query string.
+            
+        Returns:
+            dict: The JSON payload returned from SerpAPI.
+        """
         params = {
             "engine": "google",
             "q": query,
@@ -136,6 +145,16 @@ def parse_args() -> argparse.Namespace:
 
 
 def read_rows(path: str, max_rows: int = 0) -> list[Row]:
+    """
+    Reads the input CSV and converts it into a list of Row data objects.
+    
+    Args:
+        path (str): Filepath to the CSV.
+        max_rows (int): Maximum limit of rows to read. 0 means all rows.
+        
+    Returns:
+        list[Row]: The parsed restaurant rows.
+    """
     rows: list[Row] = []
     with open(path, "r", encoding="utf-8-sig", newline="") as f:
         reader = csv.DictReader(f)
@@ -157,6 +176,15 @@ def read_rows(path: str, max_rows: int = 0) -> list[Row]:
 
 
 def build_queries(row: Row) -> list[str]:
+    """
+    Constructs a list of search queries to robustly find the homepage.
+    
+    Args:
+        row (Row): A Restaurant Row item containing name and borough.
+        
+    Returns:
+        list[str]: Variations of search queries optimized for finding official websites.
+    """
     borough = f" {row.borough}" if row.borough else " NYC"
     base = row.name.strip()
     return [
@@ -187,6 +215,19 @@ def blocked(url: str) -> bool:
 
 
 def score_candidate(row: Row, link: str, title: str, snippet: str) -> int:
+    """
+    Evaluates how likely a given search result is the official restaurant homepage.
+    It penalizes platforms (e.g. Yelp, OpenTable) and rewards strict name matching.
+    
+    Args:
+        row (Row): The restaurant row data.
+        link (str): The search result URL.
+        title (str): The HTML title of the search result.
+        snippet (str): The search result description snippet.
+        
+    Returns:
+        int: A heuristic score; higher means a higher likelihood of it being the official site.
+    """
     score = 0
     link_l = link.lower()
     title_l = title.lower()
@@ -245,6 +286,17 @@ def iter_organic_results(payload: dict) -> Iterable[dict]:
 
 
 def find_best_candidate(client: SerpAPIClient, row: Row) -> tuple[Optional[Candidate], str, str]:
+    """
+    Executes search queries and scores the results, attempting to resolve the best homepage link.
+    
+    Args:
+        client (SerpAPIClient): The configured SerpAPI client.
+        row (Row): The restaurant to resolve.
+        
+    Returns:
+        tuple[Optional[Candidate], str, str]: 
+            The best Candidate found (or None), the resolution status string, and the query used.
+    """
     last_status = "not_found"
     for query in build_queries(row):
         try:

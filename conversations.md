@@ -22,3 +22,12 @@
 ## March 25, 2026 - Background Execution
 - Launched the final `image_scrapper.py` script to continuously fetch all 1,750 photos in the background.
 - Added the `images/` directory to `.gitignore` to protect the GitHub repository from massive file uploads.
+
+## March 28, 2026 - Fixing Embeddings Generation
+- Diagnosed an issue in `generate_embeddings.py` where `CLIPModel.get_image_features()` returned a `BaseModelOutputWithPooling` object instead of a tensor.
+- Modified the script to correctly extract `pooler_output` or the first tuple element, ensuring backward compatibility.
+- Successfully generated and saved embeddings for 468 images to `image_embeddings.parquet`.
+
+## March 28, 2026 - Updating Agent Rules
+- Updated `.cursorrules` to instruct the agent to always use the project's virtual environment (`venv`).
+- Added a rule to ensure code is well-documented with clear comments explaining logic across files and functions.

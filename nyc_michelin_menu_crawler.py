@@ -179,6 +179,16 @@ def clean_text(text: str) -> str:
 
 
 def html_to_text(html: str) -> Tuple[str, str]:
+    """
+    Parses an HTML string to extract its title and the main readable text.
+    It targets common semantic tags (like <main>, <article>) and class names indicating menus.
+    
+    Args:
+        html (str): The raw HTML content from the website.
+        
+    Returns:
+        Tuple[str, str]: A tuple containing the parsed document title and the extracted text.
+    """
     soup = BeautifulSoup(html, "html.parser")
     for tag in soup(["script", "style", "noscript", "svg", "canvas", "form"]):
         tag.decompose()
@@ -210,6 +220,15 @@ def html_to_text(html: str) -> Tuple[str, str]:
 
 
 def pdf_to_text(data: bytes) -> str:
+    """
+    Extracts readable text from a raw PDF byte stream using PyPDF.
+    
+    Args:
+        data (bytes): The raw bytes of the downloaded PDF file.
+        
+    Returns:
+        str: The extracted and cleaned text from all pages of the PDF.
+    """
     reader = PdfReader(io.BytesIO(data))
     pages = []
     for page in reader.pages:
@@ -221,6 +240,17 @@ def pdf_to_text(data: bytes) -> str:
 
 
 def discover_links(base_url: str, html: str) -> List[str]:
+    """
+    Extracts and filters links from an HTML page that are likely to point to a menu.
+    It resolves relative links and ensures the links belong to the same domain.
+    
+    Args:
+        base_url (str): The URL of the current page.
+        html (str): The HTML content of the page.
+        
+    Returns:
+        List[str]: A deduplicated list of candidate URLs to crawl.
+    """
     soup = BeautifulSoup(html, "html.parser")
     found = []
     for a in soup.find_all("a", href=True):
@@ -265,6 +295,18 @@ def crawl_site_for_menus(
     seed: Seed,
     max_pages_per_site: int = 25,
 ) -> List[MenuRecord]:
+    """
+    Crawls a restaurant's website to discover and extract its menus (HTML or PDF).
+    It initiates a BFS crawl starting from the seed's homepage and follows relevant links.
+    
+    Args:
+        session (PoliteSession): The requests session configured for politeness.
+        seed (Seed): The restaurant seed data.
+        max_pages_per_site (int): Stop crawling after checking this many pages.
+        
+    Returns:
+        List[MenuRecord]: A list of structured menu records found on the site.
+    """
     homepage = normalize_url(seed.homepage)
     results: List[MenuRecord] = []
     visited: Set[str] = set()
