@@ -73,3 +73,6 @@
 - Removed the hardcoded Google Maps API key from `image_scrapper.py` to prevent credential leaks.
 - Refactored the script to securely enforce the key via a `--api-key` argument or the `GOOGLE_MAPS_API_KEY` environment variable, aligning its behavior exactly with the SerpAPI scripts.
 - Documented the new necessary environment variable in `README.md`.
+
+## March 28, 2026 - Architectural Refactor
+- Extracted the visual similarity math comparison logic (`get_similar_images`) from `app.py` into a dedicated `algorithms/image_comparison.py` module to make the core logic cleanly presentable for proposals.

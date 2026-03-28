@@ -1,8 +1,9 @@
 import os
 import streamlit as st
 import pandas as pd
-import numpy as np
 from PIL import Image
+
+from algorithms.image_comparison import get_similar_images
 
 # Streamlit App Configuration
 st.set_page_config(page_title="Image Similarity Explorer", layout="wide")
@@ -28,20 +29,7 @@ if df is None or df.empty:
     st.stop()
 
 # --- Similarity Computation ---
-def get_similar_images(target_embedding, df, top_k=10):
-    # Retrieve all embeddings as a 2D numpy array
-    all_embeddings = np.stack(df['embedding'].values)
-    
-    # Calculate Cosine Similarities via Dot Product (since all vectors are L2-normalized)
-    similarities = np.dot(all_embeddings, target_embedding)
-    
-    # Add similarity scores to the dataframe
-    df_scores = df.copy()
-    df_scores['similarity'] = similarities
-    
-    # Sort backwards for highest similarity, skip the first match if it is the image itself (score ~1.0)
-    # However we'll just sort and then display the top_k. The target image will logically be first.
-    return df_scores.sort_values(by="similarity", ascending=False).head(top_k + 1)
+# Imported from algorithms.image_comparison
 
 # --- UI Layout ---
 # Setup the Sidebar
