@@ -6,19 +6,18 @@ This project is a comprehensive toolkit for collecting, analyzing, and exploring
 
 The project pipeline covers homepage resolution, menu crawling, image scraping from Google Maps, and visual similarity exploration.
 
-### 1. Data Collection & Scraping (`pipelines/`)
+### 1. Data Pipelines (`pipelines/`)
 - **`pipelines/resolve_homepages.py`**
   Automatically resolves official restaurant homepages from names using SerpAPI. Includes robust relevance scoring, rate-limit protections (HTTP 429), and a smooth `--resume` flag to safely pause and continue execution without losing data.
 - **`pipelines/menu_crawler.py`**
   Crawls restaurant websites to fetch HTML pages and PDF files, extracting and structuring menu content.
 - **`pipelines/image_scrapper.py`**
   Fetches and downloads restaurant photos using the Google Maps API, intelligently prioritizing food/dish photos while avoiding standard exterior shots. Note: Images are saved to the `data/images/` directory which is automatically `.gitignore`'d.
-
-### 2. Data Analytics
 - **`pipelines/generate_embeddings.py`**
   Utilizes the OpenAI CLIP (`clip-vit-base-patch32`) model to parse the downloaded images and generate normalized semantic feature vectors. Results are securely saved as `data/embeddings/image_embeddings.parquet`.
-- **`algorithms/`**
-  A dedicated package containing mathematical and analytical logic decoupled from the UI:
+
+### 2. Core Algorithms (`algorithms/`)
+A dedicated package containing mathematical and analytical logic decoupled from the UI:
   - `image_comparison.py`: Handles vector math like dot products for cosine similarity.
   - `text_comparison.py`: Structural stubs for semantic text similarity.
   - `dimensionality_reduction.py`: Structural stubs for mapping high-dimensional spaces (e.g., Autoencoder).
