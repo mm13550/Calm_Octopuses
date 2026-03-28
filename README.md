@@ -36,7 +36,6 @@ The project pipeline covers homepage resolution, menu crawling, image scraping f
 2. **Install Dependencies**:
    ```bash
    pip install -r requirements.txt
-   # (or requirements_menu_crawler.txt if only crawling menus)
    ```
 3. **Environment Keys**:
    Make sure you expose any necessary API keys (like Google Maps or SerpAPI).

@@ -49,3 +49,7 @@
 ## March 28, 2026 - Data Directory Reorganization
 - Reorganized the project structure by creating a `data/` directory and moved all CSV files into it.
 - Automatically updated internal file paths and documentation inside `image_scrapper.py`, the SerpAPI resolvers, the menu crawler, and the README to reference the new paths.
+
+## March 28, 2026 - Merged Dependencies
+- Merged the contents of `requirements_menu_crawler.txt` into the main `requirements.txt` file setup to unify backend dependencies.
+- Deleted `requirements_menu_crawler.txt` to avoid project clutter.
