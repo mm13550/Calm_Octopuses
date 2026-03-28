@@ -41,3 +41,7 @@
 - Designed and implemented `app.py`, a Streamlit-based interface to debug and visualize image similarities using the pre-computed CLIP embeddings.
 - Installed `streamlit` in the virtual environment.
 - Verified that the application correctly computes cosine similarities via dot products and renders the Top `N` visually similar images alongside their embeddings.
+
+## March 28, 2026 - Keeping the README Updated
+- Appended a strict rule to `.cursorrules` enforcing that the agent maintains an up-to-date `README.md` reflecting the live state of the codebase and project structure.
+- Completely rewrote the `README.md` to properly document the entire data pipeline (from homepage resolution in SerpAPI, into Google Maps image scraping, through CLIP embeddings generation, and finally rendering on the Streamlit App).

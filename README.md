@@ -1,71 +1,75 @@
-# Michelin NYC Menu Crawler
+# Calm Octopuses: Michelin NYC Data Project
 
-This project helps collect menu information for Michelin-listed restaurants in New York City.
+This project is a comprehensive toolkit for collecting, analyzing, and exploring data and images related to Michelin-listed restaurants in New York City.
 
-## Files
+## Core Features & Scripts
 
-- `nyc_michelin_menu_crawler.py`  
-  Crawls restaurant websites and extracts menu content from HTML pages and PDF menus.
+The project pipeline covers homepage resolution, menu crawling, image scraping from Google Maps, and AI-powered visual similarity exploration.
 
-- `resolve_homepages_with_serpapi.py`  
-  Resolves restaurant official homepages automatically from restaurant names using SerpAPI.
+### 1. Data Collection & Scraping
+- **`resolve_homepages_with_serpapi.py`**
+  Automatically resolves official restaurant homepages from names using SerpAPI. Includes robust relevance scoring.
+- **`resolve_homepages_with_serpapi_resume.py`**
+  A resume-supported version of the homepage resolver for handling rate limits and network interruptions.
+- **`nyc_michelin_menu_crawler.py`**
+  Crawls restaurant websites to fetch HTML pages and PDF files, extracting and structuring menu content.
+- **`image_scrapper.py`**
+  Fetches and downloads restaurant photos using the Google Maps API, intelligently prioritizing food/dish photos while avoiding standard exterior shots. Note: Images are saved to the `images/` directory which is automatically `.gitignore`'d.
 
-- `resolve_homepages_with_serpapi_resume.py`  
-  Resume-friendly version of the homepage resolver. Useful when API rate limits interrupt the run.
+### 2. AI & Data Analytics
+- **`generate_embeddings.py`**
+  Utilizes the OpenAI CLIP (`clip-vit-base-patch32`) model to parse the downloaded images and generate normalized semantic feature vectors. Results are securely saved as `embeddings/image_embeddings.parquet`.
 
-- `requirements_menu_crawler.txt`  
-  Python dependencies.
+### 3. Applications
+- **`app.py`**
+  A Streamlit-based graphical user interface (GUI) designed to explore image embeddings. Select any scraped image and visually discover the top `N` most similar images across your dataset using cosine similarities.
 
-- `nyc_michelin_names_cleaned.csv`  
-  Cleaned list of Michelin-listed NYC restaurants.
+## Installation & Setup
 
-- `seeds_resolved.csv`  
-  Restaurant list with resolved homepage URLs.
+1. **Virtual Environment**: 
+   Ensure you use a virtual environment (`venv`).
+   ```bash
+   python -m venv venv
+   # Windows Activation
+   venv\Scripts\activate
+   ```
+2. **Install Dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   # (or requirements_menu_crawler.txt if only crawling menus)
+   ```
+3. **Environment Keys**:
+   Make sure you expose any necessary API keys (like Google Maps or SerpAPI).
+   ```bash
+   set SERPAPI_API_KEY=your_key_here
+   ```
 
-## Workflow
+## Usage Examples
 
-### 1. Install dependencies
-
-```bash
-python -m pip install -r requirements_menu_crawler.txt
-```
-
-### 2. Set SerpAPI key
-
-Windows CMD:
-
-```bash
-set SERPAPI_API_KEY=your_key_here
-```
-
-### 3. Resolve restaurant homepages
-
+**Homepage Resolver:**
 ```bash
 python resolve_homepages_with_serpapi.py --input nyc_michelin_names_cleaned.csv --output seeds_resolved.csv --delay 1.0
 ```
 
-If rate limits interrupt the run:
-
+**Image Scraper:**
 ```bash
-python resolve_homepages_with_serpapi_resume.py --input nyc_michelin_names_cleaned.csv --output seeds_resolved.csv --delay 20 --resume
+python image_scrapper.py --limit 400
 ```
 
-### 4. Crawl menus
-
+**Generate Content Embeddings:**
 ```bash
-python nyc_michelin_menu_crawler.py --input seeds_resolved.csv --output-dir out --per-domain-delay 2.0 --max-pages-per-site 25
+python generate_embeddings.py
 ```
 
-## Notes
+**Launch the Similarity App:**
+```bash
+streamlit run app.py
+```
 
-- The crawler targets restaurant official websites, not Michelin Guide pages.
-- Some restaurants may not publish menus publicly.
-- Some menus are embedded in images or JavaScript-heavy pages and may not be extracted successfully.
-- API rate limits may require resume mode and slower delays.
-
-## Output
-
-Typical output files:
-
-- `out/menus.csv`
-- `out/menus.jsonl`
+## Workflows & Agent Guidelines
+The project enforces strict guidelines (see `.cursorrules`):
+- All code changes must be tracked in version control and pushed with descriptive summaries.
+- The virtual environment (`venv`) must always be respected.
+- All code must be logically documented with docstrings and internal comments.
+- Agent activities are logged within `conversations.md`.
+- **This `README.md` must be kept fully up to date with the structure of the project.**
