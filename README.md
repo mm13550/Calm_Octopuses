@@ -49,7 +49,7 @@ A dedicated package containing mathematical and analytical logic decoupled from 
    pip install -r requirements.txt
    ```
 3. **Environment Keys**:
-   Make sure you expose any necessary API keys (like Google Maps or SerpAPI).
+   Copy the included `.env.example` file to securely define your custom configuration variables, or expose the keys natively in your terminal:
    ```bash
    set SERPAPI_API_KEY=your_key_here
    set GOOGLE_MAPS_API_KEY=your_key_here
@@ -75,6 +75,11 @@ python pipelines/generate_embeddings.py
 **Launch the Similarity App:**
 ```bash
 streamlit run app.py
+```
+
+**Run Test Suites:**
+```bash
+pytest tests/
 ```
 
 ## Workflows & Agent Guidelines
