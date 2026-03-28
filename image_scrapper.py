@@ -5,14 +5,13 @@ import requests
 import sys
 import time
 
-GOOGLE_MAPS_API_KEY = "AIzaSyBh4rL1nvaFmZXoZH7VtjE1mV7aH8H8Ymc"
 CSV_FILE = "data/nyc_michelin_names_cleaned.csv"
 OUTPUT_DIR = "images"
 
 # Maximum number of restaurants to process by default
 MAX_PROCESSED = 400
 
-def get_place_photo_references(restaurant_name, borough):
+def get_place_photo_references(restaurant_name, borough, api_key):
     """
     Retrieves photo references for a specific restaurant using the Google Maps API.
     
@@ -23,6 +22,7 @@ def get_place_photo_references(restaurant_name, borough):
     Args:
         restaurant_name (str): The name of the restaurant.
         borough (str): The NYC borough where the restaurant is located.
+        api_key (str): The Google Maps API key.
         
     Returns:
         list: A list of photo reference strings that can be used to download the actual images.
@@ -35,7 +35,7 @@ def get_place_photo_references(restaurant_name, borough):
     query += " New York City"
     
     url_search = "https://maps.googleapis.com/maps/api/place/textsearch/json"
-    params_search = {"query": query, "key": GOOGLE_MAPS_API_KEY}
+    params_search = {"query": query, "key": api_key}
     
     resp_search = requests.get(url_search, params=params_search)
     if resp_search.status_code != 200:
@@ -62,7 +62,7 @@ def get_place_photo_references(restaurant_name, borough):
     params_details = {
         "place_id": place_id,
         "fields": "photos",
-        "key": GOOGLE_MAPS_API_KEY
+        "key": api_key
     }
     
     resp_details = requests.get(url_details, params=params_details)
@@ -87,13 +87,14 @@ def get_place_photo_references(restaurant_name, borough):
         
     return [p.get("photo_reference") for p in selected_photos]
 
-def download_photo(photo_reference, save_path):
+def download_photo(photo_reference, save_path, api_key):
     """
     Downloads the actual image from Google Maps using its photo reference.
     
     Args:
         photo_reference (str): The photo reference token from Google Maps API.
         save_path (str): The local file path where the image should be saved.
+        api_key (str): The Google Maps API key.
         
     Returns:
         bool: True if the image was downloaded successfully, False otherwise.
@@ -102,7 +103,7 @@ def download_photo(photo_reference, save_path):
     params = {
         "maxwidth": 800,  # Restrict max width to save bandwidth/storage while maintaining quality
         "photoreference": photo_reference,
-        "key": GOOGLE_MAPS_API_KEY
+        "key": api_key
     }
     response = requests.get(url, params=params, stream=True)
     if response.status_code == 200:
@@ -125,7 +126,12 @@ def main():
     """
     parser = argparse.ArgumentParser(description="Scrape restaurant images from Google Maps")
     parser.add_argument("--limit", type=int, help="Limit the number of restaurants to process for testing.")
+    parser.add_argument("--api-key", default=os.environ.get("GOOGLE_MAPS_API_KEY", ""), help="Google Maps API Key")
     args = parser.parse_args()
+
+    if not args.api_key:
+        print("Missing Google Maps API key. Pass --api-key or set GOOGLE_MAPS_API_KEY.", file=sys.stderr)
+        return 2
 
     # Create the output directory if it doesn't already exist
     if not os.path.exists(OUTPUT_DIR):
@@ -156,7 +162,7 @@ def main():
             print(f"\nProcessing {name}...")
             
             # Retrieve the list of photo reference tokens mapping to images
-            photo_refs = get_place_photo_references(name, borough)
+            photo_refs = get_place_photo_references(name, borough, args.api_key)
             if photo_refs:
                 for idx, photo_ref in enumerate(photo_refs):
                     save_path = os.path.join(OUTPUT_DIR, f"{safe_name}_{idx+1}.jpg")
@@ -166,7 +172,7 @@ def main():
                         print(f" -> Skipping {save_path}, image already exists.")
                         continue
                         
-                    success = download_photo(photo_ref, save_path)
+                    success = download_photo(photo_ref, save_path, args.api_key)
                     if success:
                         print(f" -> Successfully saved {save_path}")
                     else:

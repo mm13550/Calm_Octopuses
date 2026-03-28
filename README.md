@@ -39,6 +39,7 @@ The project pipeline covers homepage resolution, menu crawling, image scraping f
    Make sure you expose any necessary API keys (like Google Maps or SerpAPI).
    ```bash
    set SERPAPI_API_KEY=your_key_here
+   set GOOGLE_MAPS_API_KEY=your_key_here
    ```
 
 ## Usage Examples

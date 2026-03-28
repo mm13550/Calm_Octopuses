@@ -68,3 +68,8 @@
 
 ## March 28, 2026 - Gitignore Update
 - Appended `PLAN.md` to `.gitignore` and removed it from Git tracking to avoid cluttering the remote commit history with temporary plan objectives.
+
+## March 28, 2026 - API Key Security Refactor
+- Removed the hardcoded Google Maps API key from `image_scrapper.py` to prevent credential leaks.
+- Refactored the script to securely enforce the key via a `--api-key` argument or the `GOOGLE_MAPS_API_KEY` environment variable, aligning its behavior exactly with the SerpAPI scripts.
+- Documented the new necessary environment variable in `README.md`.
