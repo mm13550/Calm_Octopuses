@@ -8,3 +8,5 @@ pyarrow
 streamlit
 beautifulsoup4>=4.12.0
 pypdf>=4.2.0
+scikit-learn
+statsmodels

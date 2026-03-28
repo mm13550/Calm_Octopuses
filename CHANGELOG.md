@@ -103,3 +103,4 @@
 - Stamped all remaining active execution folders with `.__init__.py` markers formally bridging them into reliable Python modules.
 - Hacked the native `activate` Windows script handlers out of GitHub tracking via native resets and updated root ignores.
 - Output the pristine file hierarchy mapped visually to `repo_structure.txt`.
+- Flushed the `requirements.txt` dependencies with `scikit-learn` and `statsmodels` to validate the algorithm stubs cleanly.
