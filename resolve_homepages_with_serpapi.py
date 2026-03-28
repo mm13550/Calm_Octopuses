@@ -21,8 +21,8 @@ Output CSV columns:
 
 Usage:
   python resolve_homepages_with_serpapi.py \
-    --input nyc_michelin_names_cleaned.csv \
-    --output seeds_resolved.csv \
+    --input data/nyc_michelin_names_cleaned.csv \
+    --output data/seeds_resolved.csv \
     --api-key YOUR_SERPAPI_KEY
 
 Or set environment variable SERPAPI_API_KEY and omit --api-key.

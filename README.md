@@ -48,7 +48,7 @@ The project pipeline covers homepage resolution, menu crawling, image scraping f
 
 **Homepage Resolver:**
 ```bash
-python resolve_homepages_with_serpapi.py --input nyc_michelin_names_cleaned.csv --output seeds_resolved.csv --delay 1.0
+python resolve_homepages_with_serpapi.py --input data/nyc_michelin_names_cleaned.csv --output data/seeds_resolved.csv --delay 1.0
 ```
 
 **Image Scraper:**

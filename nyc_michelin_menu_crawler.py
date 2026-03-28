@@ -10,12 +10,12 @@ What it does:
 - Saves structured output as JSONL and CSV
 
 Recommended use:
-1) Build seeds.csv from a lawful/public source or a manually exported Michelin list.
+1) Build data/seeds.csv from a lawful/public source or a manually exported Michelin list.
 2) Crawl restaurant-owned sites only.
 
 Example:
     python nyc_michelin_menu_crawler.py \
-        --input seeds.csv \
+        --input data/seeds.csv \
         --output-dir out \
         --per-domain-delay 2.0 \
         --max-pages-per-site 25

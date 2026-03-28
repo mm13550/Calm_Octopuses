@@ -45,3 +45,7 @@
 ## March 28, 2026 - Keeping the README Updated
 - Appended a strict rule to `.cursorrules` enforcing that the agent maintains an up-to-date `README.md` reflecting the live state of the codebase and project structure.
 - Completely rewrote the `README.md` to properly document the entire data pipeline (from homepage resolution in SerpAPI, into Google Maps image scraping, through CLIP embeddings generation, and finally rendering on the Streamlit App).
+
+## March 28, 2026 - Data Directory Reorganization
+- Reorganized the project structure by creating a `data/` directory and moved all CSV files into it.
+- Automatically updated internal file paths and documentation inside `image_scrapper.py`, the SerpAPI resolvers, the menu crawler, and the README to reference the new paths.

@@ -6,7 +6,7 @@ import sys
 import time
 
 GOOGLE_MAPS_API_KEY = "AIzaSyBh4rL1nvaFmZXoZH7VtjE1mV7aH8H8Ymc"
-CSV_FILE = "nyc_michelin_names_cleaned.csv"
+CSV_FILE = "data/nyc_michelin_names_cleaned.csv"
 OUTPUT_DIR = "images"
 
 # Maximum number of restaurants to process by default
