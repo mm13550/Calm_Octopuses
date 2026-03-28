@@ -56,7 +56,7 @@ if selected_path:
     # Safely load and display the target image
     if os.path.exists(selected_path):
         target_img = Image.open(selected_path)
-        st.sidebar.image(target_img, caption="Target Image", use_column_width=True)
+        st.sidebar.image(target_img, caption="Target Image", use_container_width=True)
     else:
         st.sidebar.error(f"Image not found at path: {selected_path}")
     
@@ -90,7 +90,7 @@ if selected_path:
                     try:
                         img = Image.open(img_path)
                         # We use a constrained column display
-                        st.image(img, use_column_width=True)
+                        st.image(img, use_container_width=True)
                     except Exception as e:
                         st.error("Failed to render image.")
                 else:
