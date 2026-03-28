@@ -77,3 +77,7 @@
 ## March 28, 2026 - Architectural Refactor
 - Extracted the visual similarity math comparison logic (`get_similar_images`) from `app.py` into a dedicated `algorithms/image_comparison.py` module to make the core logic cleanly presentable for proposals.
 - Added documentation blocks describing the new `algorithms/` standalone module explicitly in the `README.md`.
+
+## March 28, 2026 - Proposal Architecture Stubs
+- Scaffolded out python files within the `algorithms/` folder (`text_comparison.py`, `dimensionality_reduction.py`, `clustering.py`, and `quantile_regression.py`) containing documented, empty function stubs to flesh out the system architecture for an upcoming proposal.
+- Expanded the `README.md` to properly document the full structure of the `algorithms/` package.

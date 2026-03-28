@@ -17,8 +17,13 @@ The project pipeline covers homepage resolution, menu crawling, image scraping f
 ### 2. Data Analytics
 - **`generate_embeddings.py`**
   Utilizes the OpenAI CLIP (`clip-vit-base-patch32`) model to parse the downloaded images and generate normalized semantic feature vectors. Results are securely saved as `embeddings/image_embeddings.parquet`.
-- **`algorithms/image_comparison.py`**
-  Handles the core mathematical comparisons (like dot products for cosine similarity) entirely independent of the UI application, enhancing reusability and keeping the frontend codebase clean.
+- **`algorithms/`**
+  A dedicated package containing mathematical and analytical logic decoupled from the UI:
+  - `image_comparison.py`: Handles vector math like dot products for cosine similarity.
+  - `text_comparison.py`: Structural stubs for semantic text similarity.
+  - `dimensionality_reduction.py`: Structural stubs for mapping high-dimensional spaces (e.g., PCA, t-SNE).
+  - `clustering.py`: Structural stubs for unsupervised grouping (e.g., K-Means, DBSCAN).
+  - `quantile_regression.py`: Structural stubs for analyzing conditional subsets and variance.
 
 ### 3. Applications
 - **`app.py`**
