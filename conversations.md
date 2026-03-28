@@ -84,3 +84,7 @@
 
 ## March 28, 2026 - Algorithm Scope Refinement
 - Removed general stubs (PCA, t-SNE, K-Means, DBSCAN) and specifically scoped `clustering.py` to Gaussian Mixture Models, and `dimensionality_reduction.py` to Autoencoders based on explicit proposal requirements.
+
+## March 28, 2026 - Repository Tree
+- Generated a clean structural text layout of the project's tracked folders and scripts, explicitly omitting virtual environments and caches, and saved it to `repo_structure.txt`.
+- Set `repo_structure.txt` to be ignored in `.gitignore` to keep remote commits clean.
