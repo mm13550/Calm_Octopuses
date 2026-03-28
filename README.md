@@ -24,9 +24,16 @@ A dedicated package containing mathematical and analytical logic decoupled from 
   - `clustering.py`: Structural stubs for unsupervised grouping (e.g., Gaussian Mixture Models).
   - `quantile_regression.py`: Structural stubs for analyzing conditional subsets and variance.
 
-### 3. Applications
+### 3. Applications & UI (`ui_components/`)
 - **`app.py`**
-  A Streamlit-based graphical user interface (GUI) designed to explore image embeddings. Select any scraped image and visually discover the top `N` most similar images across your dataset using cosine similarities.
+  The central Streamlit-based graphical user interface (GUI) designed to explore image embeddings. Select any scraped image and visually discover the top `N` most similar images across your dataset using cosine similarities.
+- **`ui_components/`**
+  A dedicated module for rendering standalone layout abstractions (e.g., `image_grid.py`). This cleanly decouples complex view-rendering logic from the primary `app.py` controller.
+
+### 4. Testing Structure (`tests/`)
+- A modular scaffolding directory containing foundational test suites:
+  - `test_algorithms.py`: Initial test hooks validating the native mathematical abstractions.
+  - `test_api.py`: Initial test hooks validating external Google Maps and SerpAPI data pipelines.
 
 ## Installation & Setup
 
