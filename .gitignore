@@ -7,6 +7,15 @@ __pycache__/
 .env
 .venv/
 env/
+out/
+out_test/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+.venv/
+env/
 venv/
 .idea/
 .vscode/
@@ -15,3 +24,4 @@ test_*.csv
 
 # Ignored image scraper output
 images/
+embeddings/

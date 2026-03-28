@@ -31,3 +31,8 @@
 ## March 28, 2026 - Updating Agent Rules
 - Updated `.cursorrules` to instruct the agent to always use the project's virtual environment (`venv`).
 - Added a rule to ensure code is well-documented with clear comments explaining logic across files and functions.
+
+## March 28, 2026 - Embeddings Directory Refactor
+- Created an `embeddings` folder to store all future embeddings (images, text, etc.), making the structure scalable.
+- Moved `image_embeddings.parquet` into `embeddings/` and updated `generate_embeddings.py` to save to this new location.
+- Appended `embeddings/` to `.gitignore` to prevent committing massive ML output files to GitHub.

@@ -14,7 +14,11 @@ def main():
     and saves them to a Parquet file for downstream use (e.g., similarity search).
     """
     image_dir = "images"
-    output_file = "image_embeddings.parquet"
+    output_dir = "embeddings"
+    output_file = os.path.join(output_dir, "image_embeddings.parquet")
+    
+    # Ensure the outputs directory exists
+    os.makedirs(output_dir, exist_ok=True)
     
     # Verify that the target image directory exists before proceeding
     if not os.path.exists(image_dir):
