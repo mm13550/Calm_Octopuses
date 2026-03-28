@@ -36,3 +36,8 @@
 - Created an `embeddings` folder to store all future embeddings (images, text, etc.), making the structure scalable.
 - Moved `image_embeddings.parquet` into `embeddings/` and updated `generate_embeddings.py` to save to this new location.
 - Appended `embeddings/` to `.gitignore` to prevent committing massive ML output files to GitHub.
+
+## March 28, 2026 - Streamlit Debug App
+- Designed and implemented `app.py`, a Streamlit-based interface to debug and visualize image similarities using the pre-computed CLIP embeddings.
+- Installed `streamlit` in the virtual environment.
+- Verified that the application correctly computes cosine similarities via dot products and renders the Top `N` visually similar images alongside their embeddings.

@@ -1,1 +1,1 @@
-I want to make a script to scrape images from the google maps api for the resurants listed in nyc_michelin_names_cleaned.csv
+Create a streamlit app to show similar images to a selected image. This app is primarily for debugging and demonstrating the image similarity search functionality. The app should allow the user to select an image and then display the most similar images to the selected image. The app should also display the similarity scores for each image.

@@ -1,1 +1,8 @@
 requests
+torch
+transformers
+Pillow
+tqdm
+pandas
+pyarrow
+streamlit
