@@ -62,3 +62,6 @@
 ## March 28, 2026 - Script Renaming
 - Renamed `nyc_michelin_menu_crawler.py` to `menu_crawler.py` and `resolve_homepages_with_serpapi.py` to `resolve_homepages.py` for brevity.
 - Updated all internal string references across `README.md`, Python docstrings, and old conversation logs.
+
+## March 28, 2026 - Documentation Updates
+- Removed all "AI" buzzword terminology from `README.md`, replacing it with standard descriptive phrasing for similarity metrics.

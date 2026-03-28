@@ -4,7 +4,7 @@ This project is a comprehensive toolkit for collecting, analyzing, and exploring
 
 ## Core Features & Scripts
 
-The project pipeline covers homepage resolution, menu crawling, image scraping from Google Maps, and AI-powered visual similarity exploration.
+The project pipeline covers homepage resolution, menu crawling, image scraping from Google Maps, and visual similarity exploration.
 
 ### 1. Data Collection & Scraping
 - **`resolve_homepages.py`**
@@ -14,7 +14,7 @@ The project pipeline covers homepage resolution, menu crawling, image scraping f
 - **`image_scrapper.py`**
   Fetches and downloads restaurant photos using the Google Maps API, intelligently prioritizing food/dish photos while avoiding standard exterior shots. Note: Images are saved to the `images/` directory which is automatically `.gitignore`'d.
 
-### 2. AI & Data Analytics
+### 2. Data Analytics
 - **`generate_embeddings.py`**
   Utilizes the OpenAI CLIP (`clip-vit-base-patch32`) model to parse the downloaded images and generate normalized semantic feature vectors. Results are securely saved as `embeddings/image_embeddings.parquet`.
 
