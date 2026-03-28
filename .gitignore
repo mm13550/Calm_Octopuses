@@ -25,3 +25,6 @@ test_*.csv
 # Ignored image scraper output
 images/
 embeddings/
+
+# Ignored planning files
+PLAN.md

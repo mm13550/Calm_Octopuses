@@ -65,3 +65,6 @@
 
 ## March 28, 2026 - Documentation Updates
 - Removed all "AI" buzzword terminology from `README.md`, replacing it with standard descriptive phrasing for similarity metrics.
+
+## March 28, 2026 - Gitignore Update
+- Appended `PLAN.md` to `.gitignore` and removed it from Git tracking to avoid cluttering the remote commit history with temporary plan objectives.

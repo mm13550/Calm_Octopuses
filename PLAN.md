@@ -1,1 +1,0 @@
-Create a streamlit app to show similar images to a selected image. This app is primarily for debugging and demonstrating the image similarity search functionality. The app should allow the user to select an image and then display the most similar images to the selected image. The app should also display the similarity scores for each image.
