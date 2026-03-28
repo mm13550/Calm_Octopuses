@@ -53,3 +53,8 @@
 ## March 28, 2026 - Merged Dependencies
 - Merged the contents of `requirements_menu_crawler.txt` into the main `requirements.txt` file setup to unify backend dependencies.
 - Deleted `requirements_menu_crawler.txt` to avoid project clutter.
+
+## March 28, 2026 - SerpAPI Resolvers Merged
+- Migrated all rate-limit protection (`RateLimitError` handling), exponential backoffs, and `--resume` functionalities from `resolve_homepages_with_serpapi_resume.py` directly into the standard `resolve_homepages_with_serpapi.py`.
+- Cleanly deleted the redundant `_resume.py` file to simplify the project's ecosystem.
+- Reflected these smart capabilities in the `README.md`.

@@ -8,9 +8,7 @@ The project pipeline covers homepage resolution, menu crawling, image scraping f
 
 ### 1. Data Collection & Scraping
 - **`resolve_homepages_with_serpapi.py`**
-  Automatically resolves official restaurant homepages from names using SerpAPI. Includes robust relevance scoring.
-- **`resolve_homepages_with_serpapi_resume.py`**
-  A resume-supported version of the homepage resolver for handling rate limits and network interruptions.
+  Automatically resolves official restaurant homepages from names using SerpAPI. Includes robust relevance scoring, rate-limit protections (HTTP 429), and a smooth `--resume` flag to safely pause and continue execution without losing data.
 - **`nyc_michelin_menu_crawler.py`**
   Crawls restaurant websites to fetch HTML pages and PDF files, extracting and structuring menu content.
 - **`image_scrapper.py`**
