@@ -81,3 +81,6 @@
 ## March 28, 2026 - Proposal Architecture Stubs
 - Scaffolded out python files within the `algorithms/` folder (`text_comparison.py`, `dimensionality_reduction.py`, `clustering.py`, and `quantile_regression.py`) containing documented, empty function stubs to flesh out the system architecture for an upcoming proposal.
 - Expanded the `README.md` to properly document the full structure of the `algorithms/` package.
+
+## March 28, 2026 - Algorithm Scope Refinement
+- Removed general stubs (PCA, t-SNE, K-Means, DBSCAN) and specifically scoped `clustering.py` to Gaussian Mixture Models, and `dimensionality_reduction.py` to Autoencoders based on explicit proposal requirements.
