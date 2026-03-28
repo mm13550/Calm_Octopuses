@@ -24,8 +24,12 @@ test_*.csv
 
 # Ignored image scraper output
 data/images/
-embeddings/
+data/embeddings/
 
 # Ignored planning files
 PLAN.md
 repo_structure.txt
+
+# Ignored local environment scripts
+activate.bat
+activate.ps1

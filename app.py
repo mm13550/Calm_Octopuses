@@ -14,7 +14,7 @@ st.markdown("Use this tool to select an image from your dataset and instantly se
 # --- Data Loading ---
 @st.cache_data
 def load_data():
-    parquet_path = os.path.join("embeddings", "image_embeddings.parquet")
+    parquet_path = os.path.join("data", "embeddings", "image_embeddings.parquet")
     if not os.path.exists(parquet_path):
         return None
     

@@ -96,3 +96,10 @@
 - Scaffolded an empty `tests/` directory with `test_algorithms.py` and `test_api.py` stubs.
 - Cleaned up the root directory footprint by abstracting environment configuration templates into `.env.example`.
 - Decoupled the Streamlit UI matrix grid looping logic out of `app.py` directly into a specialized `ui_components/image_grid.py` interface component.
+
+## March 28, 2026 - Final Presentation Polish
+- Discarded the `embeddings/` output directory natively into `data/embeddings/` linking generation and retrieval directly via `app.py`.
+- Formally renamed the internal tracking document into `CHANGELOG.md`.
+- Stamped all remaining active execution folders with `.__init__.py` markers formally bridging them into reliable Python modules.
+- Hacked the native `activate` Windows script handlers out of GitHub tracking via native resets and updated root ignores.
+- Output the pristine file hierarchy mapped visually to `repo_structure.txt`.

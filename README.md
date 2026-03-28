@@ -16,7 +16,7 @@ The project pipeline covers homepage resolution, menu crawling, image scraping f
 
 ### 2. Data Analytics
 - **`pipelines/generate_embeddings.py`**
-  Utilizes the OpenAI CLIP (`clip-vit-base-patch32`) model to parse the downloaded images and generate normalized semantic feature vectors. Results are securely saved as `embeddings/image_embeddings.parquet`.
+  Utilizes the OpenAI CLIP (`clip-vit-base-patch32`) model to parse the downloaded images and generate normalized semantic feature vectors. Results are securely saved as `data/embeddings/image_embeddings.parquet`.
 - **`algorithms/`**
   A dedicated package containing mathematical and analytical logic decoupled from the UI:
   - `image_comparison.py`: Handles vector math like dot products for cosine similarity.
@@ -76,5 +76,5 @@ The project enforces strict guidelines (see `.cursorrules`):
 - All code changes must be tracked in version control and pushed with descriptive summaries.
 - The virtual environment (`venv`) must always be respected.
 - All code must be logically documented with docstrings and internal comments.
-- Agent activities are logged within `conversations.md`.
+- Agent activities and architectural revisions are logged historically within `CHANGELOG.md`.
 - **This `README.md` must be kept fully up to date with the structure of the project.**
