@@ -88,3 +88,11 @@
 ## March 28, 2026 - Repository Tree
 - Generated a clean structural text layout of the project's tracked folders and scripts, explicitly omitting virtual environments and caches, and saved it to `repo_structure.txt`.
 - Set `repo_structure.txt` to be ignored in `.gitignore` to keep remote commits clean.
+
+## March 28, 2026 - Professional Architecture Overhaul
+- Nested the `images/` directory cleanly inside `data/images/`.
+- Consolidated all standalone execution scripts (`generate_embeddings.py`, `image_scrapper.py`, `menu_crawler.py`, `resolve_homepages.py`) deeply inside a dedicated `pipelines/` module.
+- Rewired internal paths across scripts and the `.gitignore` to reflect the new nested pipeline architecture.
+- Scaffolded an empty `tests/` directory with `test_algorithms.py` and `test_api.py` stubs.
+- Cleaned up the root directory footprint by abstracting environment configuration templates into `.env.example`.
+- Decoupled the Streamlit UI matrix grid looping logic out of `app.py` directly into a specialized `ui_components/image_grid.py` interface component.

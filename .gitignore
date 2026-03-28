@@ -23,7 +23,7 @@ venv/
 test_*.csv
 
 # Ignored image scraper output
-images/
+data/images/
 embeddings/
 
 # Ignored planning files

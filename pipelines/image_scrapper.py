@@ -6,7 +6,7 @@ import sys
 import time
 
 CSV_FILE = "data/nyc_michelin_names_cleaned.csv"
-OUTPUT_DIR = "images"
+OUTPUT_DIR = "data/images"
 
 # Maximum number of restaurants to process by default
 MAX_PROCESSED = 400

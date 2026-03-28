@@ -13,7 +13,7 @@ def main():
     OpenAI CLIP-ViT-Base-Patch32 model, normalizes the resulting feature vectors, 
     and saves them to a Parquet file for downstream use (e.g., similarity search).
     """
-    image_dir = "images"
+    image_dir = "data/images"
     output_dir = "embeddings"
     output_file = os.path.join(output_dir, "image_embeddings.parquet")
     
