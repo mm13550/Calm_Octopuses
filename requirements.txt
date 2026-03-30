@@ -11,3 +11,8 @@ pypdf>=4.2.0
 scikit-learn
 statsmodels
 pytest
+praw
+yelpapi
+openai
+umap-learn
+lancedb

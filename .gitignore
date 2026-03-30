@@ -27,7 +27,6 @@ data/images/
 data/embeddings/
 
 # Ignored planning files
-PLAN.md
 repo_structure.txt
 
 # Ignored local environment scripts

@@ -2,33 +2,37 @@
 
 This project is a comprehensive toolkit for collecting, analyzing, and exploring data and images related to Michelin-listed restaurants in New York City.
 
-## Core Features & Scripts
+## Core Features & Scripts (v2.0 Architecture)
 
-The project pipeline covers homepage resolution, menu crawling, image scraping from Google Maps, and visual similarity exploration.
+The project pipeline focuses on building a multimodal recommendation web application for Michelin-listed restaurants using official menus and low-friction User-Generated Content (UGC).
 
 ### 1. Data Pipelines (`pipelines/`)
 - **`pipelines/resolve_homepages.py`**
-  Automatically resolves official restaurant homepages from names using SerpAPI. Includes robust relevance scoring, rate-limit protections (HTTP 429), and a smooth `--resume` flag to safely pause and continue execution without losing data.
+  Automatically resolves official restaurant homepages from names using SerpAPI. Includes robust relevance scoring and `--resume` flags.
 - **`pipelines/menu_crawler.py`**
-  Crawls restaurant websites to fetch HTML pages and PDF files, extracting and structuring menu content.
+  Crawls websites for HTML/PDF menus, leveraging OCR and LLM-assisted (VLM) extraction to handle complex menu formatting.
 - **`pipelines/image_scrapper.py`**
-  Fetches and downloads restaurant photos using the Google Maps API, intelligently prioritizing food/dish photos while avoiding standard exterior shots. Note: Images are saved to the `data/images/` directory which is automatically `.gitignore`'d.
+  Fetches photos via Google Maps APIs, prioritizing food/dish shots. (Saves to `.gitignore`'d `data/images/`).
+- **`pipelines/social_scraper.py`** [NEW v2.0]
+  Lightweight crawler wrapping Reddit PRAW & Yelp APIs to fetch UGC images and reviews with strict timestamp limits.
+- **`pipelines/text_cleaning.py`** [NEW v2.0]
+  Utilizes LLMs to translate, run Aspect-Based Sentiment Analysis (ABSA) on UGC (food/service/ambiance), and clean unstructured reviews.
 - **`pipelines/generate_embeddings.py`**
-  Utilizes the OpenAI CLIP (`clip-vit-base-patch32`) model to parse the downloaded images and generate normalized semantic feature vectors. Results are securely saved as `data/embeddings/image_embeddings.parquet`.
+  Maps images and text into a shared Euclidean vector space using OpenAI CLIP (or SigLIP). Saves vectors into Parquet files or LanceDB.
 
 ### 2. Core Algorithms (`algorithms/`)
-A dedicated package containing mathematical and analytical logic decoupled from the UI:
-  - `image_comparison.py`: Handles vector math like dot products for cosine similarity.
-  - `text_comparison.py`: Structural stubs for semantic text similarity.
-  - `dimensionality_reduction.py`: Structural stubs for mapping high-dimensional spaces (e.g., Autoencoder).
-  - `clustering.py`: Structural stubs for unsupervised grouping (e.g., Gaussian Mixture Models).
-  - `quantile_regression.py`: Structural stubs for analyzing conditional subsets and variance.
+Decoupled mathematical logic utilizing Multimodal Style Feature Fusion:
+  - `image_comparison.py`: Multi-modal vector math combining Cosine Similarity with a Time-Decay weight ($1 + \lambda e^{-\alpha \Delta t}$) to boost trending dishes.
+  - `text_comparison.py`: Semantic text similarity logic natively mapping descriptions.
+  - `dimensionality_reduction.py`: UMAP integration to preserve local topological structures of fused text+image vectors.
+  - `clustering.py`: Applies Gaussian Mixture Models (GMM) on UMAP-reduced vectors to discover latent restaurant styles.
+  - `quantile_regression.py`: Predicts "Risk/Confidence Intervals" for ratings by incorporating ABSA sentiment inputs (Service vs Food).
 
 ### 3. Applications & UI (`ui_components/`)
 - **`app.py`**
-  The central Streamlit-based graphical user interface (GUI) designed to explore image embeddings. Select any scraped image and visually discover the top `N` most similar images across your dataset using cosine similarities.
-- **`ui_components/`**
-  A dedicated module for rendering standalone layout abstractions (e.g., `image_grid.py`). This cleanly decouples complex view-rendering logic from the primary `app.py` controller.
+  Streamlit GUI supporting multimodal cross-domain search (Text-to-Image / Image-to-Image) and latent style visualization.
+- **`ui_components/image_grid.py`**
+  Renders matrix maps with visual badges (e.g., "Trending") based on recent metadata and time-decay scores.
 
 ### 4. Testing Structure (`tests/`)
 - A modular scaffolding directory containing foundational test suites:
