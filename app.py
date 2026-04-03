@@ -20,6 +20,13 @@ def load_data():
     
     df = pd.read_parquet(parquet_path)
     # The 'embedding' column contains normalized numpy arrays representing the CLIP features
+    
+    # Fix legacy paths left in the dataframe after restructuring
+    if not df.empty and 'image_path' in df.columns:
+        df['image_path'] = df['image_path'].apply(
+            lambda p: os.path.join('data', p) if p.replace('\\', '/').startswith('images/') else p
+        )
+        
     return df
 
 df = load_data()
