@@ -1,473 +1,262 @@
-#!/usr/bin/env python3
-"""
-NYC Michelin restaurant menu crawler (restaurant-site crawler, not Michelin-site crawler).
-
-What it does:
-- Reads a CSV of restaurant seeds: name, homepage, borough, michelin_category, notes
-- Respects robots.txt on each restaurant domain
-- Crawls each restaurant site for likely menu pages and menu PDFs
-- Extracts menu text from HTML and PDF files
-- Saves structured output as JSONL and CSV
-
-Recommended use:
-1) Build data/seeds.csv from a lawful/public source or a manually exported Michelin list.
-2) Crawl restaurant-owned sites only.
-
-Example:
-    python menu_crawler.py \
-        --input data/seeds.csv \
-        --output-dir out \
-        --per-domain-delay 2.0 \
-        --max-pages-per-site 25
-
-CSV columns expected:
-    name,homepage,borough,michelin_category,notes
-"""
-
-from __future__ import annotations
-
-import argparse
-import csv
-import io
-import json
-import os
-import random
 import re
-import sys
-import time
-from collections import defaultdict, deque
-from dataclasses import dataclass, asdict
-from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Set, Tuple
-from urllib.parse import urljoin, urlparse, urlunparse
-from urllib.robotparser import RobotFileParser
-
+import os
+import json
+import io
+import urllib.parse
+import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 from pypdf import PdfReader
+from dotenv import load_dotenv
+from openai import OpenAI
 
-USER_AGENT = (
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-    "AppleWebKit/537.36 (KHTML, like Gecko) "
-    "Chrome/124.0.0.0 Safari/537.36"
-)
+# Load environment variables (particularly OPENAI_API_KEY)
+load_dotenv()
 
-MENU_KEYWORDS = [
-    "menu", "menus", "dining", "eat", "food", "drink", "wine", "cocktail",
-    "tasting", "prix fixe", "a la carte", "bar menu", "dessert", "lunch",
-    "dinner", "brunch", "omakase", "beverage", "sake", "cellar", "pdf",
-]
+# Initialize OpenAI Client
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-NEGATIVE_KEYWORDS = [
-    "reservation", "reserve", "book", "gift card", "private dining", "careers",
-    "press", "gallery", "instagram", "facebook", "twitter", "privacy", "terms",
-    "contact", "about", "hotel", "events", "news", "shop",
-]
-
-TEXT_HINTS = [
-    "appetizer", "appetizers", "starter", "starters", "entree", "entrées", "main course",
-    "dessert", "tasting menu", "prix fixe", "chef's tasting", "vegetarian", "wine pairing",
-    "$", "usd", "course", "courses",
-]
-
-TIMEOUT = 25
-
-
-@dataclass
-class Seed:
-    name: str
-    homepage: str
-    borough: str = ""
-    michelin_category: str = ""
-    notes: str = ""
-
-
-@dataclass
-class MenuRecord:
-    restaurant_name: str
-    homepage: str
-    borough: str
-    michelin_category: str
-    source_url: str
-    source_type: str  # html_menu | pdf_menu | discovered_pdf | discovered_html
-    title: str
-    extracted_text: str
-    http_status: int
-    content_type: str
-
-
-class PoliteSession:
-    def __init__(self, per_domain_delay: float = 2.0):
-        self.session = requests.Session()
-        self.session.headers.update({"User-Agent": USER_AGENT})
-        self.per_domain_delay = per_domain_delay
-        self.last_hit: Dict[str, float] = defaultdict(float)
-        self.robots: Dict[str, RobotFileParser] = {}
-
-    def _base(self, url: str) -> str:
-        p = urlparse(url)
-        return f"{p.scheme}://{p.netloc}"
-
-    def _sleep_if_needed(self, url: str) -> None:
-        host = urlparse(url).netloc
-        elapsed = time.time() - self.last_hit[host]
-        wait = self.per_domain_delay - elapsed
-        if wait > 0:
-            time.sleep(wait + random.uniform(0, 0.4))
-        self.last_hit[host] = time.time()
-
-    def _load_robots(self, url: str) -> RobotFileParser:
-        base = self._base(url)
-        if base in self.robots:
-            return self.robots[base]
-        rp = RobotFileParser()
-        rp.set_url(urljoin(base, "/robots.txt"))
-        try:
-            self._sleep_if_needed(rp.url)
-            rp.read()
-        except Exception:
-            pass
-        self.robots[base] = rp
-        return rp
-
-    def allowed(self, url: str, ua: str = USER_AGENT) -> bool:
-        rp = self._load_robots(url)
-        try:
-            return rp.can_fetch(ua, url)
-        except Exception:
-            return True
-
-    def get(self, url: str, **kwargs) -> requests.Response:
-        self._sleep_if_needed(url)
-        return self.session.get(url, timeout=TIMEOUT, allow_redirects=True, **kwargs)
-
-
-# ---------- helpers ----------
-
-def normalize_url(url: str) -> str:
-    p = urlparse(url.strip())
-    scheme = p.scheme or "https"
-    netloc = p.netloc
-    path = p.path or "/"
-    clean = p._replace(scheme=scheme, netloc=netloc, path=path, params="", query="", fragment="")
-    return urlunparse(clean)
-
-
-def same_domain(a: str, b: str) -> bool:
-    return urlparse(a).netloc == urlparse(b).netloc
-
-
-def looks_like_pdf(url: str, content_type: str = "") -> bool:
-    return url.lower().endswith(".pdf") or "pdf" in content_type.lower()
-
-
-def menu_score(text: str, url: str) -> int:
-    blob = f"{text} {url}".lower()
-    score = 0
-    for k in MENU_KEYWORDS:
-        if k in blob:
-            score += 2
-    for k in NEGATIVE_KEYWORDS:
-        if k in blob:
-            score -= 2
-    return score
-
-
-def clean_text(text: str) -> str:
-    text = re.sub(r"\s+", " ", text or "").strip()
-    return text
-
-
-def html_to_text(html: str) -> Tuple[str, str]:
+def scrape_menu_text(url):
     """
-    Parses an HTML string to extract its title and the main readable text.
-    It targets common semantic tags (like <main>, <article>) and class names indicating menus.
+    An upgraded robust scraper using a BFS queue to hunt for PDF menus, 
+    and falling back to an HTML crawler. It tracks PDFs and HTML separately,
+    prioritizing parsed PDF text over HTML noise.
+    """
+    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
     
-    Args:
-        html (str): The raw HTML content from the website.
+    keywords = ['menu', 'food', 'dinner', 'lunch', 'tasting', 'carte', 'sweets', 'dessert']
+    skip_keywords = ['drink', 'beverage', 'bev', 'wine', 'cocktail', 'beer', 'liquor', 'catering', 'event']
         
-    Returns:
-        Tuple[str, str]: A tuple containing the parsed document title and the extracted text.
-    """
-    soup = BeautifulSoup(html, "html.parser")
-    for tag in soup(["script", "style", "noscript", "svg", "canvas", "form"]):
-        tag.decompose()
-
-    title = clean_text(soup.title.get_text(" ")) if soup.title else ""
-
-    texts = []
-    selectors = [
-        "main", "article", ".menu", "#menu", "[class*='menu']", "[id*='menu']",
-        ".content", "section",
-    ]
-    seen_nodes = set()
-    for sel in selectors:
-        for node in soup.select(sel):
-            node_id = id(node)
-            if node_id in seen_nodes:
+    queue = [url]
+    visited = set()
+    
+    pdf_texts = []
+    html_texts = []
+    raw_html_cache = {}  # cache raw HTML for regex scanning later
+    
+    while queue and len(visited) < 10:  # Allow up to 10 page visits to find all menus
+        current_target = queue.pop(0)
+        if current_target in visited:
+            continue
+        visited.add(current_target)
+        
+        try:
+            sub_response = requests.get(current_target, headers=headers, timeout=10)
+            if sub_response.status_code != 200:
                 continue
-            seen_nodes.add(node_id)
-            txt = clean_text(node.get_text(" ", strip=True))
-            if len(txt) >= 120:
-                texts.append(txt)
+                
+            content_type = sub_response.headers.get('Content-Type', '').lower()
+            
+            # --- HANDLE PDF ---
+            if 'application/pdf' in content_type or current_target.split('?')[0].lower().endswith('.pdf'):
+                print(f"  -> Parsing PDF: {current_target}")
+                pdf_file = io.BytesIO(sub_response.content)
+                try:
+                    reader = PdfReader(pdf_file)
+                    extracted_pdf = ""
+                    for page in reader.pages:
+                        extracted = page.extract_text()
+                        if extracted:
+                            extracted_pdf += extracted + "\n"
+                    if extracted_pdf.strip():
+                        pdf_texts.append(f"--- [PDF: {current_target}] ---\n{extracted_pdf}")
+                except Exception as e:
+                    print(f"  -> PDF parse error for {current_target}: {e}")
+                continue # Do not parse HTML links inside a PDF
+                
+            # --- HANDLE HTML ---
+            target_soup = BeautifulSoup(sub_response.text, 'html.parser')
+            raw_html_cache[current_target] = sub_response.text  # cache for later regex scan
+            
+            # Find deeper links FIRST, before we destroy nav/header tags for text extraction
+            for link in target_soup.find_all('a', href=True):
+                if not link.has_attr('href'):
+                    continue
+                href = link['href']
+                text = link.get_text().lower()
+                
+                path_and_text = (urllib.parse.urlparse(href).path + " " + text).lower()
+                if any(k in path_and_text for k in skip_keywords):
+                    continue
 
-    if not texts:
-        body = soup.body.get_text(" ", strip=True) if soup.body else soup.get_text(" ", strip=True)
-        texts = [clean_text(body)]
-
-    merged = "\n\n".join(t for t in texts if t)
-    return title, merged
-
-
-def pdf_to_text(data: bytes) -> str:
-    """
-    Extracts readable text from a raw PDF byte stream using PyPDF.
-    
-    Args:
-        data (bytes): The raw bytes of the downloaded PDF file.
-        
-    Returns:
-        str: The extracted and cleaned text from all pages of the PDF.
-    """
-    reader = PdfReader(io.BytesIO(data))
-    pages = []
-    for page in reader.pages:
-        try:
-            pages.append(page.extract_text() or "")
-        except Exception:
-            pages.append("")
-    return clean_text("\n\n".join(pages))
-
-
-def discover_links(base_url: str, html: str) -> List[str]:
-    """
-    Extracts and filters links from an HTML page that are likely to point to a menu.
-    It resolves relative links and ensures the links belong to the same domain.
-    
-    Args:
-        base_url (str): The URL of the current page.
-        html (str): The HTML content of the page.
-        
-    Returns:
-        List[str]: A deduplicated list of candidate URLs to crawl.
-    """
-    soup = BeautifulSoup(html, "html.parser")
-    found = []
-    for a in soup.find_all("a", href=True):
-        href = a.get("href", "").strip()
-        text = clean_text(a.get_text(" "))
-        if not href:
-            continue
-        abs_url = urljoin(base_url, href)
-        if not same_domain(base_url, abs_url):
-            continue
-        score = menu_score(text, abs_url)
-        if score > 0:
-            found.append(abs_url)
-    # keep order, dedupe
-    out = []
-    seen = set()
-    for u in found:
-        nu = normalize_url(u)
-        if nu not in seen:
-            seen.add(nu)
-            out.append(nu)
-    return out
-
-
-def has_menu_like_content(text: str) -> bool:
-    blob = text.lower()
-    hits = sum(1 for h in TEXT_HINTS if h in blob)
-    return hits >= 3 or ("$" in blob and hits >= 1)
-
-
-# ---------- crawler ----------
-
-def fetch_html(session: PoliteSession, url: str) -> Tuple[int, str, str]:
-    resp = session.get(url)
-    content_type = resp.headers.get("Content-Type", "")
-    body = resp.text if "text/html" in content_type or "application/xhtml+xml" in content_type else ""
-    return resp.status_code, content_type, body
-
-
-def crawl_site_for_menus(
-    session: PoliteSession,
-    seed: Seed,
-    max_pages_per_site: int = 25,
-) -> List[MenuRecord]:
-    """
-    Crawls a restaurant's website to discover and extract its menus (HTML or PDF).
-    It initiates a BFS crawl starting from the seed's homepage and follows relevant links.
-    
-    Args:
-        session (PoliteSession): The requests session configured for politeness.
-        seed (Seed): The restaurant seed data.
-        max_pages_per_site (int): Stop crawling after checking this many pages.
-        
-    Returns:
-        List[MenuRecord]: A list of structured menu records found on the site.
-    """
-    homepage = normalize_url(seed.homepage)
-    results: List[MenuRecord] = []
-    visited: Set[str] = set()
-    queue = deque([homepage])
-
-    while queue and len(visited) < max_pages_per_site:
-        url = queue.popleft()
-        if url in visited:
-            continue
-        visited.add(url)
-
-        if not session.allowed(url):
-            continue
-
-        try:
-            resp = session.get(url, stream=True)
+                if any(k in text or k in href.lower() for k in keywords) or '.pdf' in href.lower():
+                    nested_link = urllib.parse.urljoin(current_target, href)
+                    if urllib.parse.urlparse(nested_link).netloc == urllib.parse.urlparse(url).netloc:
+                        if nested_link not in visited and nested_link not in queue:
+                            # Prioritize PDFs
+                            if '.pdf' in nested_link.lower() or 'pdf' in text:
+                                queue.insert(0, nested_link)
+                            else:
+                                queue.append(nested_link)
+            
+            # Extract text to use as fallback (now it's safe to destroy elements)
+            for script in target_soup(["script", "style", "nav", "footer", "header", "meta"]):
+                script.extract()
+            page_text = target_soup.get_text(separator=' ', strip=True)
+            if page_text:
+                html_texts.append(f"--- [HTML: {current_target}] ---\n{page_text}")
+                                
         except Exception as e:
-            print(f"[WARN] GET failed: {url} :: {e}", file=sys.stderr)
-            continue
-
-        status = resp.status_code
-        content_type = resp.headers.get("Content-Type", "")
-        raw = resp.content
-
-        if looks_like_pdf(url, content_type):
+            print(f"  -> Failed to chase subpage {current_target}: {e}")
+            
+    # Priority: If we successfully extracted PDF text, throw away HTML to save tokens and reduce noise!
+    final_pdf_text = "\n".join(pdf_texts).strip()
+    if len(final_pdf_text) > 50:
+        print(f"  -> Extracted {len(final_pdf_text)} characters from {len(pdf_texts)} PDF(s). Discarding HTML noise.")
+        return final_pdf_text[:15000]
+    
+    # --- ENGINE 3: RAW HTML REGEX PDF SCANNER ---
+    # Handles JS-heavy sites (Squarespace, Wix, Webflow) where PDFs are embedded
+    # in <script> tags or data attributes, invisible to BeautifulSoup's <a> tag search.
+    print(f"  -> No PDFs found via links. Scanning raw HTML source for embedded PDF URLs...")
+    pdf_url_pattern = re.compile(r'https?://[^\s"\'>]+\.pdf(?:[^\s"\'>]*)?', re.IGNORECASE)
+    seen_pdf_urls = set()
+    
+    for page_url, raw_html in raw_html_cache.items():
+        found_urls = pdf_url_pattern.findall(raw_html)
+        for raw_pdf_url in found_urls:
+            # Decode any JSON unicode escapes (e.g. \u002F -> /)
             try:
-                text = pdf_to_text(raw)
-            except Exception as e:
-                print(f"[WARN] PDF parse failed: {url} :: {e}", file=sys.stderr)
-                text = ""
-            if text and len(text) > 80:
-                results.append(MenuRecord(
-                    restaurant_name=seed.name,
-                    homepage=homepage,
-                    borough=seed.borough,
-                    michelin_category=seed.michelin_category,
-                    source_url=url,
-                    source_type="pdf_menu",
-                    title=os.path.basename(urlparse(url).path) or "menu.pdf",
-                    extracted_text=text,
-                    http_status=status,
-                    content_type=content_type,
-                ))
-            continue
-
-        if "html" not in content_type.lower():
-            continue
-
-        html = raw.decode(resp.encoding or "utf-8", errors="ignore")
-        title, text = html_to_text(html)
-
-        # Strong signal: current page itself is a menu page.
-        if menu_score(title, url) > 1 or "/menu" in url.lower() or "menus" in url.lower():
-            if text and has_menu_like_content(text):
-                results.append(MenuRecord(
-                    restaurant_name=seed.name,
-                    homepage=homepage,
-                    borough=seed.borough,
-                    michelin_category=seed.michelin_category,
-                    source_url=url,
-                    source_type="html_menu",
-                    title=title,
-                    extracted_text=text,
-                    http_status=status,
-                    content_type=content_type,
-                ))
-
-        # Discover more candidate menu URLs.
-        for child in discover_links(url, html):
-            if child not in visited and child not in queue:
-                queue.append(child)
-
-    # De-duplicate by URL and text prefix
-    deduped: List[MenuRecord] = []
-    seen_keys = set()
-    for r in results:
-        key = (r.source_url, r.extracted_text[:300])
-        if key not in seen_keys:
-            seen_keys.add(key)
-            deduped.append(r)
-    return deduped
-
-
-# ---------- io ----------
-
-def load_seeds(csv_path: str) -> List[Seed]:
-    seeds: List[Seed] = []
-    with open(csv_path, "r", encoding="utf-8-sig", newline="") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            homepage = (row.get("homepage") or "").strip()
-            name = (row.get("name") or "").strip()
-            if not homepage or not name:
+                raw_pdf_url = raw_pdf_url.encode('utf-8').decode('unicode_escape')
+            except Exception:
+                pass
+            raw_pdf_url = raw_pdf_url.rstrip('"\' ')
+            
+            if raw_pdf_url in seen_pdf_urls:
                 continue
-            seeds.append(Seed(
-                name=name,
-                homepage=homepage,
-                borough=(row.get("borough") or "").strip(),
-                michelin_category=(row.get("michelin_category") or "").strip(),
-                notes=(row.get("notes") or "").strip(),
-            ))
-    return seeds
+            seen_pdf_urls.add(raw_pdf_url)
+            
+            # Filter out drink menus at URL level
+            url_lower = raw_pdf_url.lower()
+            if any(k in url_lower for k in skip_keywords):
+                print(f"  -> Skipping drink PDF: {raw_pdf_url}")
+                continue
+            
+            print(f"  -> [Regex] Found embedded PDF: {raw_pdf_url}")
+            try:
+                pdf_resp = requests.get(raw_pdf_url, headers=headers, timeout=10)
+                if pdf_resp.status_code == 200 and 'pdf' in pdf_resp.headers.get('Content-Type','').lower():
+                    reader = PdfReader(io.BytesIO(pdf_resp.content))
+                    extracted_pdf = ""
+                    for page in reader.pages:
+                        t = page.extract_text()
+                        if t:
+                            extracted_pdf += t + "\n"
+                    if extracted_pdf.strip():
+                        pdf_texts.append(f"--- [PDF via Regex: {raw_pdf_url}] ---\n{extracted_pdf}")
+            except Exception as e:
+                print(f"  -> [Regex] Failed to fetch/parse {raw_pdf_url}: {e}")
+    
+    final_pdf_text = "\n".join(pdf_texts).strip()
+    if len(final_pdf_text) > 50:
+        print(f"  -> [Regex] Extracted {len(final_pdf_text)} chars from {len(pdf_texts)} hidden PDF(s).")
+        return final_pdf_text[:15000]
+        
+    final_html_text = "\n".join(html_texts).strip()
+    return final_html_text[:15000]
 
+def parse_text_to_json_with_llm(restaurant_name, raw_text):
+    """
+    Uses OpenAI's gpt-4o-mini to convert the unstructured raw text into structured JSON.
+    """
+    if not raw_text.strip():
+        return []
 
-def save_results(records: List[MenuRecord], output_dir: str) -> None:
-    out = Path(output_dir)
-    out.mkdir(parents=True, exist_ok=True)
+    # Extremely rigid system prompt to enforce strict JSON array output
+    system_prompt = (
+        "You are an expert culinary data extractor. Your task is to process raw, "
+        "unstructured menu text from a restaurant and extract the menu items into a highly "
+        "structured JSON array.\n\n"
+        "IMPORTANT RULES:\n"
+        "1. Do NOT include any markdown formatting, backticks, or code blocks (e.g., ```json) in your output.\n"
+        "2. Your output must strictly be a valid JSON array of objects.\n"
+        "3. Each object must exactly contain the following keys: "
+        "'restaurant_name', 'dish_name', 'ingredients', and 'price'.\n"
+        f"4. For the 'restaurant_name' field, unconditionally use this value: '{restaurant_name}'.\n"
+        "5. If a specific field like ingredients or price cannot be found for a dish, assign it an empty string \"\".\n"
+        "6. CRITICAL: EXCLUDE ALL DRINKS. Do not extract wines, cocktails, beers, sodas, or beverages of any kind. Only extract food items.\n"
+        "7. Output absolutely nothing else besides the raw JSON array string."
+    )
 
-    jsonl_path = out / "menus.jsonl"
-    csv_path = out / "menus.csv"
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": f"Parse the following menu text to JSON:\n\n{raw_text}"}
+            ],
+            temperature=0.0
+        )
+        
+        result_text = response.choices[0].message.content.strip()
+        
+        # Guard against LLM accidentally retaining markdown anyway
+        if result_text.startswith("```json"):
+            result_text = result_text.replace("```json", "", 1)
+        if result_text.endswith("```"):
+            result_text = result_text[::-1].replace("```", "", 1)[::-1]
+            
+        parsed_json = json.loads(result_text.strip())
+        return parsed_json
 
-    with open(jsonl_path, "w", encoding="utf-8") as jf:
-        for r in records:
-            jf.write(json.dumps(asdict(r), ensure_ascii=False) + "\n")
+    except json.JSONDecodeError as e:
+        print(f"  -> Failed to decode JSON from LLM response for {restaurant_name}: {e}")
+        # Print a snippet of the failed output for debugging
+        print(f"  -> Debug Output Snippet: {result_text[:100]}...")
+        return []
+    except Exception as e:
+        print(f"  -> LLM Processing failed for {restaurant_name}: {e}")
+        return []
 
-    fieldnames = [
-        "restaurant_name", "homepage", "borough", "michelin_category", "source_url",
-        "source_type", "title", "http_status", "content_type", "extracted_text",
-    ]
-    with open(csv_path, "w", encoding="utf-8-sig", newline="") as cf:
-        writer = csv.DictWriter(cf, fieldnames=fieldnames)
-        writer.writeheader()
-        for r in records:
-            writer.writerow(asdict(r))
+def main():
+    # Setup Paths
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.dirname(current_dir)
+    data_dir = os.path.join(project_root, 'data')
+    
+    # Automatically create necessary pipeline directories
+    images_dir = os.path.join(data_dir, 'images')
+    extracted_menus_dir = os.path.join(data_dir, 'extracted_menus')
+    os.makedirs(images_dir, exist_ok=True)
+    os.makedirs(extracted_menus_dir, exist_ok=True)
 
+    csv_path = os.path.join(data_dir, 'seeds_resolved.csv')
+    output_path = os.path.join(extracted_menus_dir, 'parsed_menus.json')
 
-def main() -> int:
-    parser = argparse.ArgumentParser(description="Restaurant menu crawler for NYC Michelin restaurant sites.")
-    parser.add_argument("--input", required=True, help="Path to seeds CSV.")
-    parser.add_argument("--output-dir", default="out", help="Directory for outputs.")
-    parser.add_argument("--per-domain-delay", type=float, default=2.0, help="Delay between requests to same domain.")
-    parser.add_argument("--max-pages-per-site", type=int, default=25, help="Max pages to crawl per restaurant site.")
-    args = parser.parse_args()
+    print(f"Reading restaurants from: {csv_path}")
+    df = pd.read_csv(csv_path)
+    
+    # Target 1: Apply df.head(3) for testing
+    test_df = df.head(10)
+    
+    all_extracted_menus = []
 
-    seeds = load_seeds(args.input)
-    if not seeds:
-        print("No valid seeds found.", file=sys.stderr)
-        return 1
+    for index, row in test_df.iterrows():
+        restaurant_name = row.get('name', 'Unknown')
+        url = row.get('homepage')
+        
+        print(f"\nProcessing [{index + 1}/{len(test_df)}]: {restaurant_name}")
+        
+        if pd.isna(url) or not str(url).startswith('http'):
+            print(f"  -> Invalid URL, skipping.")
+            continue
+            
+        raw_text = scrape_menu_text(url)
+        
+        if raw_text:
+            print(f"  -> Extracted {len(raw_text)} characters. Sending to GPT-4o-mini to standardize JSON...")
+            structured_dishes = parse_text_to_json_with_llm(restaurant_name, raw_text)
+            print(f"  -> Successfully structured {len(structured_dishes)} dishes.")
+            all_extracted_menus.extend(structured_dishes)
+        else:
+            print(f"  -> No usable text found.")
 
-    session = PoliteSession(per_domain_delay=args.per_domain_delay)
-    all_records: List[MenuRecord] = []
-
-    for idx, seed in enumerate(seeds, 1):
-        print(f"[{idx}/{len(seeds)}] Crawling {seed.name} -> {seed.homepage}")
-        try:
-            recs = crawl_site_for_menus(
-                session=session,
-                seed=seed,
-                max_pages_per_site=args.max_pages_per_site,
-            )
-            all_records.extend(recs)
-            print(f"    Found {len(recs)} menu documents/pages")
-        except KeyboardInterrupt:
-            raise
-        except Exception as e:
-            print(f"[ERROR] {seed.name}: {e}", file=sys.stderr)
-
-    save_results(all_records, args.output_dir)
-    print(f"Saved {len(all_records)} menu records to {args.output_dir}")
-    return 0
-
+    # Save output rigidly as JSON
+    with open(output_path, 'w', encoding='utf-8') as f:
+        json.dump(all_extracted_menus, f, indent=4, ensure_ascii=False)
+        
+    print(f"\n✅ Pipeline Complete. Extracted {len(all_extracted_menus)} total dish records.")
+    print(f"✅ Data exported successfully to: {output_path}")
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    main()
