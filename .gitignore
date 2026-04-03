@@ -27,8 +27,13 @@ data/images/
 data/embeddings/
 
 # Ignored planning files
+plan.md
 repo_structure.txt
 
 # Ignored local environment scripts
 activate.bat
 activate.ps1
+
+# Ignore virtual environment
+.venv/
+
