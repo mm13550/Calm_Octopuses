@@ -1,95 +1,100 @@
-# Calm Octopuses: Michelin NYC Data Project
+# Calm Octopuses: Michelin NYC Dining Recommender (v3.0)
 
-This project is a comprehensive toolkit for collecting, analyzing, and exploring data and images related to Michelin-listed restaurants in New York City.
+This project is a comprehensive, multimodal recommendation web application for Michelin-listed restaurants in New York City. Moving beyond traditional coarse-grained tags (e.g., cuisine, price), our engine enables precise dish-level searches using **images or natural language**. It also dynamically clusters latent restaurant styles and predicts personalized rating expectations, including risk intervals.
 
-## Core Features & Scripts (v2.0 Architecture)
+## 👥 Team & Division of Labor
 
-The project pipeline focuses on building a multimodal recommendation web application for Michelin-listed restaurants using official menus and low-friction User-Generated Content (UGC).
+- **Neil (Module A):** Data Ops & Scraping (Google Places API & Reddit PRAW pipelines, raw image downloading).
+- **Leo (Module B):** Vector Extraction, Retrieval & DB (CLIP embeddings, LanceDB management, Time-Decay logic).
+- **Craig (Module C):** Advanced ML Algorithms (UMAP & GMM for style clustering, Quantile Regression for risk/volatility).
+- **Merry (Module D):** Frontend Developer (Streamlit GUI, multimodal search inputs, dynamic UI badges).
+- **Grace (Module E):** NLP & System Integration (ABSA pipeline for review sentiment, data schema synchronization).
+
+## 🏗️ Core Architecture & Directory Structure
+
+The project pipeline is built on a highly decoupled architecture utilizing Vision-Language Models (CLIP/SigLIP), Vector Databases (LanceDB), and advanced unsupervised/supervised ML algorithms.
 
 ### 1. Data Pipelines (`pipelines/`)
-- **`pipelines/resolve_homepages.py`**
-  Automatically resolves official restaurant homepages from names using SerpAPI. Includes robust relevance scoring and `--resume` flags.
-- **`pipelines/menu_crawler.py`**
-  Crawls websites for HTML/PDF menus, leveraging OCR and LLM-assisted (VLM) extraction to handle complex menu formatting.
-- **`pipelines/image_scrapper.py`**
-  Fetches photos via Google Maps APIs, prioritizing food/dish shots. (Saves to `.gitignore`'d `data/images/`).
-- **`pipelines/social_scraper.py`** [NEW v2.0]
-  Lightweight crawler wrapping Reddit PRAW & Yelp APIs to fetch UGC images and reviews with strict timestamp limits.
-- **`pipelines/text_cleaning.py`** [NEW v2.0]
-  Utilizes LLMs to translate, run Aspect-Based Sentiment Analysis (ABSA) on UGC (food/service/ambiance), and clean unstructured reviews.
-- **`pipelines/generate_embeddings.py`**
-  Maps images and text into a shared Euclidean vector space using OpenAI CLIP (or SigLIP). Saves vectors into Parquet files or LanceDB.
+
+- **`social_scraper.py`** *(Neil)*: Lightweight hybrid crawler utilizing **Google Places API** and **Reddit PRAW**. Configured with strict Field Masking and `sortPreference=NEWEST` to fetch timestamped UGC images and reviews optimized for time-decay analysis.
+- **`menu_crawler.py`** *(Neil)*: Crawls websites and PDFs, leveraging lightweight LLMs (e.g., GPT-4o-mini) to extract and structure complex fine-dining menus into clean JSON.
+- **`absa_processor.py`** *(Grace)*: Runs Aspect-Based Sentiment Analysis (ABSA) on UGC text to extract specific sentiment scores for Food, Service, and Ambiance.
 
 ### 2. Core Algorithms (`algorithms/`)
-Decoupled mathematical logic utilizing Multimodal Style Feature Fusion:
-  - `image_comparison.py`: Multi-modal vector math combining Cosine Similarity with a Time-Decay weight ($1 + \lambda e^{-\alpha \Delta t}$) to boost trending dishes.
-  - `text_comparison.py`: Semantic text similarity logic natively mapping descriptions.
-  - `dimensionality_reduction.py`: UMAP integration to preserve local topological structures of fused text+image vectors.
-  - `clustering.py`: Applies Gaussian Mixture Models (GMM) on UMAP-reduced vectors to discover latent restaurant styles.
-  - `quantile_regression.py`: Predicts "Risk/Confidence Intervals" for ratings by incorporating ABSA sentiment inputs (Service vs Food).
 
-### 3. Applications & UI (`ui_components/`)
-- **`app.py`**
-  Streamlit GUI supporting multimodal cross-domain search (Text-to-Image / Image-to-Image) and latent style visualization.
-- **`ui_components/image_grid.py`**
-  Renders matrix maps with visual badges (e.g., "Trending") based on recent metadata and time-decay scores.
+- **`generate_embeddings.py`** *(Leo)*: Maps local images and text into a shared Euclidean vector space using OpenAI CLIP (or SigLIP).
+- **`retrieval_engine.py`** *(Leo)*: Vector DB querying logic natively applying an exponential **Time-Decay weight** ($1 + \lambda e^{-\alpha \Delta t}$) to boost trending dishes.
+- **`dimensionality_reduction.py` & `clustering.py`** *(Craig)*: Integrates UMAP to preserve local topological structures of fused text+image vectors, feeding into Gaussian Mixture Models (GMM) to discover latent restaurant styles.
+- **`quantile_regression.py`** *(Craig)*: Predicts "Risk/Confidence Intervals" for ratings by incorporating Grace's ABSA sentiment inputs (Service vs. Food).
 
-### 4. Testing Structure (`tests/`)
-- A modular scaffolding directory containing foundational test suites:
-  - `test_algorithms.py`: Initial test hooks validating the native mathematical abstractions.
-  - `test_api.py`: Initial test hooks validating external Google Maps and SerpAPI data pipelines.
+### 3. Vector Storage (`vector_db/`)
 
-## Installation & Setup
+- A localized, lightweight Vector Database (e.g., **LanceDB** or **ChromaDB**) replacing static `.parquet` files to efficiently manage multimodal queries, incremental delta updates, and timestamp metadata filtering. *(Managed by Leo)*
 
-1. **Virtual Environment**: 
-   Ensure you use a virtual environment (`venv`).
-   ```bash
-   python -m venv venv
-   # Windows Activation
-   venv\Scripts\activate
-   ```
+### 4. Applications & UI (`ui_components/`)
+
+- **`app.py`** *(Merry)*: Native Streamlit GUI supporting multimodal cross-domain search (Text-to-Image / Image-to-Image) and latent style visualization.
+- **`ui_components/image_grid.py`** *(Merry)*: Renders matrix maps with visual badges (e.g., "🔥 Trending") based on recent metadata and Leo's time-decay scores.
+
+### 5. Testing Structure (`tests/`)
+
+- Modular scaffolding containing foundational test suites (`test_algorithms.py`, `test_api.py`) validating mathematical abstractions and data flows.
+
+## ⚙️ Installation & Setup
+
+1. **Virtual Environment**:
+Ensure you use a virtual environment (`.venv`) managed via `uv`.
+    
+    ```bash
+    uv venv
+    # Mac/Linux Activation
+    source ./.venv/bin/activate
+    # Windows Activation
+    .venv\Scripts\activate
+    ```
+    
 2. **Install Dependencies**:
-   ```bash
-   pip install -r requirements.txt
-   ```
+    
+    ```
+    pip install -r requirements.txt
+    ```
+    
 3. **Environment Keys**:
-   Copy the included `.env.example` file to securely define your custom configuration variables, or expose the keys natively in your terminal:
-   ```bash
-   set SERPAPI_API_KEY=your_key_here
-   set GOOGLE_MAPS_API_KEY=your_key_here
-   ```
+Copy the included `.env.example` file to `.env` to securely define your custom configuration variables (DO NOT commit `.env` to Git):
+    
+    ```
+    GOOGLE_PLACES_API_KEY=your_google_key_here
+    REDDIT_CLIENT_ID=your_reddit_id_here
+    REDDIT_CLIENT_SECRET=your_reddit_secret_here
+    OPENAI_API_KEY=your_openai_key_here
+    ```
+    
 
-## Usage Examples
+## 🚀 Usage Examples
 
-**Homepage Resolver:**
-```bash
-python pipelines/resolve_homepages.py --input data/nyc_michelin_names_cleaned.csv --output data/seeds_resolved.csv --delay 1.0
+**Run the UGC Scraper (Google Places/Reddit):**
+
+```
+python pipelines/social_scraper.py
 ```
 
-**Image Scraper:**
-```bash
-python pipelines/image_scrapper.py --limit 400
+**Generate Embeddings & Populate Vector DB:**
+
+```
+python algorithms/generate_embeddings.py
 ```
 
-**Generate Content Embeddings:**
-```bash
-python pipelines/generate_embeddings.py
-```
+**Launch the Streamlit Recommendation App:**
 
-**Launch the Similarity App:**
-```bash
+```
 streamlit run app.py
 ```
 
-**Run Test Suites:**
-```bash
-pytest tests/
-```
+## 📜 Workflows & Agent Guidelines
 
-## Workflows & Agent Guidelines
 The project enforces strict guidelines (see `.cursorrules`):
+
 - All code changes must be tracked in version control and pushed with descriptive summaries.
 - The virtual environment (`venv`) must always be respected.
 - All code must be logically documented with docstrings and internal comments.
 - Agent activities and architectural revisions are logged historically within `CHANGELOG.md`.
-- **This `README.md` must be kept fully up to date with the structure of the project.**
