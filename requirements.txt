@@ -82,3 +82,5 @@ typing-extensions==4.15.0
 typing-inspection==0.4.2
 tzdata==2025.3
 urllib3==2.6.3
+lancedb>=0.30
+numpy>=1.24

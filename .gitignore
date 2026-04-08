@@ -4,22 +4,16 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
-.env
-.venv/
-env/
-out/
-out_test/
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
+
 .env
 .venv/
 env/
 venv/
+
 .idea/
 .vscode/
 *.lnk
+
 test_*.csv
 
 # Ignored image scraper output
@@ -34,6 +28,6 @@ repo_structure.txt
 activate.bat
 activate.ps1
 
-# Ignore virtual environment
-.venv/
-
+# Vector DB local artifacts
+vector_db/*
+!vector_db/.gitkeep
