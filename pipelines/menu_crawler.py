@@ -99,61 +99,71 @@ def scrape_menu_text(url):
         except Exception as e:
             print(f"  -> Failed to chase subpage {current_target}: {e}")
             
-    # Priority: If we successfully extracted PDF text, throw away HTML to save tokens and reduce noise!
     final_pdf_text = "\n".join(pdf_texts).strip()
     if len(final_pdf_text) > 50:
-        print(f"  -> Extracted {len(final_pdf_text)} characters from {len(pdf_texts)} PDF(s). Discarding HTML noise.")
-        return final_pdf_text[:15000]
-    
-    # --- ENGINE 3: RAW HTML REGEX PDF SCANNER ---
-    # Handles JS-heavy sites (Squarespace, Wix, Webflow) where PDFs are embedded
-    # in <script> tags or data attributes, invisible to BeautifulSoup's <a> tag search.
-    print(f"  -> No PDFs found via links. Scanning raw HTML source for embedded PDF URLs...")
-    pdf_url_pattern = re.compile(r'https?://[^\s"\'>]+\.pdf(?:[^\s"\'>]*)?', re.IGNORECASE)
-    seen_pdf_urls = set()
-    
-    for page_url, raw_html in raw_html_cache.items():
-        found_urls = pdf_url_pattern.findall(raw_html)
-        for raw_pdf_url in found_urls:
-            # Decode any JSON unicode escapes (e.g. \u002F -> /)
-            try:
-                raw_pdf_url = raw_pdf_url.encode('utf-8').decode('unicode_escape')
-            except Exception:
-                pass
-            raw_pdf_url = raw_pdf_url.rstrip('"\' ')
-            
-            if raw_pdf_url in seen_pdf_urls:
-                continue
-            seen_pdf_urls.add(raw_pdf_url)
-            
-            # Filter out drink menus at URL level
-            url_lower = raw_pdf_url.lower()
-            if any(k in url_lower for k in skip_keywords):
-                print(f"  -> Skipping drink PDF: {raw_pdf_url}")
-                continue
-            
-            print(f"  -> [Regex] Found embedded PDF: {raw_pdf_url}")
-            try:
-                pdf_resp = requests.get(raw_pdf_url, headers=headers, timeout=10)
-                if pdf_resp.status_code == 200 and 'pdf' in pdf_resp.headers.get('Content-Type','').lower():
-                    reader = PdfReader(io.BytesIO(pdf_resp.content))
-                    extracted_pdf = ""
-                    for page in reader.pages:
-                        t = page.extract_text()
-                        if t:
-                            extracted_pdf += t + "\n"
-                    if extracted_pdf.strip():
-                        pdf_texts.append(f"--- [PDF via Regex: {raw_pdf_url}] ---\n{extracted_pdf}")
-            except Exception as e:
-                print(f"  -> [Regex] Failed to fetch/parse {raw_pdf_url}: {e}")
-    
-    final_pdf_text = "\n".join(pdf_texts).strip()
-    if len(final_pdf_text) > 50:
-        print(f"  -> [Regex] Extracted {len(final_pdf_text)} chars from {len(pdf_texts)} hidden PDF(s).")
-        return final_pdf_text[:15000]
+        print(f"  -> Extracted {len(final_pdf_text)} characters from {len(pdf_texts)} PDF(s).")
+    else:
+        # --- ENGINE 3: RAW HTML REGEX PDF SCANNER ---
+        # Handles JS-heavy sites (Squarespace, Wix, Webflow) where PDFs are embedded
+        # in <script> tags or data attributes, invisible to BeautifulSoup's <a> tag search.
+        print(f"  -> No PDFs found via links. Scanning raw HTML source for embedded PDF URLs...")
+        pdf_url_pattern = re.compile(r'https?://[^\s"\'>]+\.pdf(?:[^\s"\'>]*)?', re.IGNORECASE)
+        seen_pdf_urls = set()
         
+        for page_url, raw_html in raw_html_cache.items():
+            found_urls = pdf_url_pattern.findall(raw_html)
+            for raw_pdf_url in found_urls:
+                # Decode any JSON unicode escapes (e.g. \u002F -> /)
+                try:
+                    raw_pdf_url = raw_pdf_url.encode('utf-8').decode('unicode_escape')
+                except Exception:
+                    pass
+                raw_pdf_url = raw_pdf_url.rstrip('"\' ')
+                
+                if raw_pdf_url in seen_pdf_urls:
+                    continue
+                seen_pdf_urls.add(raw_pdf_url)
+                
+                # Filter out drink menus at URL level
+                url_lower = raw_pdf_url.lower()
+                if any(k in url_lower for k in skip_keywords):
+                    print(f"  -> Skipping drink PDF: {raw_pdf_url}")
+                    continue
+                
+                print(f"  -> [Regex] Found embedded PDF: {raw_pdf_url}")
+                try:
+                    pdf_resp = requests.get(raw_pdf_url, headers=headers, timeout=10)
+                    if pdf_resp.status_code == 200 and 'pdf' in pdf_resp.headers.get('Content-Type','').lower():
+                        reader = PdfReader(io.BytesIO(pdf_resp.content))
+                        extracted_pdf = ""
+                        for page in reader.pages:
+                            t = page.extract_text()
+                            if t:
+                                extracted_pdf += t + "\n"
+                        if extracted_pdf.strip():
+                            pdf_texts.append(f"--- [PDF via Regex: {raw_pdf_url}] ---\n{extracted_pdf}")
+                except Exception as e:
+                    print(f"  -> [Regex] Failed to fetch/parse {raw_pdf_url}: {e}")
+        
+        final_pdf_text = "\n".join(pdf_texts).strip()
+        if len(final_pdf_text) > 50:
+            print(f"  -> [Regex] Extracted {len(final_pdf_text)} chars from {len(pdf_texts)} hidden PDF(s).")
+            
     final_html_text = "\n".join(html_texts).strip()
-    return final_html_text[:15000]
+    
+    combined_text = ""
+    if len(final_pdf_text) > 50:
+        combined_text += final_pdf_text
+    
+    # Always include HTML text now
+    if len(final_html_text) > 50:
+        print(f"  -> Extracted {len(final_html_text)} characters from HTML.")
+        if combined_text:
+            combined_text += "\n\n" + final_html_text
+        else:
+            combined_text = final_html_text
+            
+    return combined_text[:15000]
 
 def parse_text_to_json_with_llm(restaurant_name, raw_text):
     """

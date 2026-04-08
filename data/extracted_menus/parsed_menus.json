@@ -1,0 +1,1274 @@
+[
+    {
+        "restaurant_name": "Lei",
+        "dish_name": "Pickled pearl onion, radish, and celery",
+        "ingredients": "Pickled pearl onion, radish, celery",
+        "price": "14"
+    },
+    {
+        "restaurant_name": "Lei",
+        "dish_name": "Chilled celtuce with kombu jelly, shallots and red vinegar",
+        "ingredients": "Celtuce, kombu jelly, shallots, red vinegar",
+        "price": "15"
+    },
+    {
+        "restaurant_name": "Lei",
+        "dish_name": "Crudo of Montauk scallop with lily buds, ginger, and lime",
+        "ingredients": "Montauk scallop, lily buds, ginger, lime",
+        "price": "20"
+    },
+    {
+        "restaurant_name": "Lei",
+        "dish_name": "Chinese omelette with aged white jade radish and scallion oil",
+        "ingredients": "Chinese omelette, aged white jade radish, scallion oil",
+        "price": "13"
+    },
+    {
+        "restaurant_name": "Lei",
+        "dish_name": "Lady Edison Jin Hua ham with seasonal fruit",
+        "ingredients": "Jin Hua ham, seasonal fruit",
+        "price": "22"
+    },
+    {
+        "restaurant_name": "Lei",
+        "dish_name": "Sesame shao bing",
+        "ingredients": "Sesame shao bing",
+        "price": "9"
+    },
+    {
+        "restaurant_name": "Lei",
+        "dish_name": "Berkshire black sausage // 豬血糕 with firewood soy, chili, and peanuts",
+        "ingredients": "Berkshire black sausage, firewood soy, chili, peanuts",
+        "price": "19"
+    },
+    {
+        "restaurant_name": "Lei",
+        "dish_name": "Cabbage with yuba and morels in shallot broth",
+        "ingredients": "Cabbage, yuba, morels, shallot broth",
+        "price": "26"
+    },
+    {
+        "restaurant_name": "Lei",
+        "dish_name": "Fritto of delicata, kobucha, and honeynut pumpkin with salted duck egg yolk, sage and mint",
+        "ingredients": "Delicata, kobucha, honeynut pumpkin, salted duck egg yolk, sage, mint",
+        "price": "22"
+    },
+    {
+        "restaurant_name": "Lei",
+        "dish_name": "Bobo chicken poached in black sesame and angelica broth // 麻油雞湯",
+        "ingredients": "Bobo chicken, black sesame, angelica broth",
+        "price": "32"
+    },
+    {
+        "restaurant_name": "Lei",
+        "dish_name": "Hand-rolled cat’s ear noodle with lamb braised in cumin and tomato",
+        "ingredients": "Cat’s ear noodle, lamb, cumin, tomato",
+        "price": "27"
+    },
+    {
+        "restaurant_name": "Lei",
+        "dish_name": "Sweet and sour beef short rib 糖醋排骨",
+        "ingredients": "Beef short rib",
+        "price": "35"
+    },
+    {
+        "restaurant_name": "Lei",
+        "dish_name": "Steamed rice with taro",
+        "ingredients": "Steamed rice, taro",
+        "price": "4"
+    },
+    {
+        "restaurant_name": "Lei",
+        "dish_name": "Citrus shaved ice",
+        "ingredients": "Citrus",
+        "price": "17"
+    },
+    {
+        "restaurant_name": "Lei",
+        "dish_name": "Eight treasure rice pudding with sticky toffee 八寶飯",
+        "ingredients": "Eight treasure rice pudding, sticky toffee",
+        "price": "16"
+    },
+    {
+        "restaurant_name": "Comal",
+        "dish_name": "Chicharos, Smoked Salmon & Asparagus",
+        "ingredients": "",
+        "price": ""
+    },
+    {
+        "restaurant_name": "Comal",
+        "dish_name": "Artichoke Heart Tostada, Cotija & Salsa Macha",
+        "ingredients": "",
+        "price": ""
+    },
+    {
+        "restaurant_name": "Comal",
+        "dish_name": "Bluefin Aguachile, Chiltepin, Lime Oil",
+        "ingredients": "",
+        "price": ""
+    },
+    {
+        "restaurant_name": "Comal",
+        "dish_name": "Grilled Spring Greens, Marigold, Salsa Seco",
+        "ingredients": "",
+        "price": ""
+    },
+    {
+        "restaurant_name": "Comal",
+        "dish_name": "Celery, Guava, Manchego & Bitter Leaves",
+        "ingredients": "",
+        "price": ""
+    },
+    {
+        "restaurant_name": "Comal",
+        "dish_name": "Prime Rib Cecina, Leek, Avocado",
+        "ingredients": "",
+        "price": ""
+    },
+    {
+        "restaurant_name": "Comal",
+        "dish_name": "Lobster Salad, Mil Hojas Potato, Uni Foam",
+        "ingredients": "",
+        "price": ""
+    },
+    {
+        "restaurant_name": "Comal",
+        "dish_name": "Lamb ‘Al Pastor’ Burger, House Pickles",
+        "ingredients": "",
+        "price": ""
+    },
+    {
+        "restaurant_name": "Comal",
+        "dish_name": "Spanish Mackerel and Squid Guiso",
+        "ingredients": "",
+        "price": ""
+    },
+    {
+        "restaurant_name": "Comal",
+        "dish_name": "Berkshire Pork Chop, Horseradish, Fennel",
+        "ingredients": "",
+        "price": ""
+    },
+    {
+        "restaurant_name": "Comal",
+        "dish_name": "Smoked Half Chicken, Stuffed Wing, Adobo",
+        "ingredients": "",
+        "price": ""
+    },
+    {
+        "restaurant_name": "Comal",
+        "dish_name": "Grilled Pulpo, Shrimp, Butter Beans, Shishito",
+        "ingredients": "",
+        "price": ""
+    },
+    {
+        "restaurant_name": "Comal",
+        "dish_name": "Comal Rice",
+        "ingredients": "",
+        "price": ""
+    },
+    {
+        "restaurant_name": "Comal",
+        "dish_name": "Tortillas",
+        "ingredients": "",
+        "price": ""
+    },
+    {
+        "restaurant_name": "Comal",
+        "dish_name": "House Salsa Flight",
+        "ingredients": "",
+        "price": ""
+    },
+    {
+        "restaurant_name": "Smithereens",
+        "dish_name": "apple cider donut",
+        "ingredients": "",
+        "price": "8"
+    },
+    {
+        "restaurant_name": "Smithereens",
+        "dish_name": "vanilla ice cream scoop",
+        "ingredients": "",
+        "price": "8"
+    },
+    {
+        "restaurant_name": "Smithereens",
+        "dish_name": "boston cream pie",
+        "ingredients": "",
+        "price": "18"
+    },
+    {
+        "restaurant_name": "Smithereens",
+        "dish_name": "celery ice cream float",
+        "ingredients": "",
+        "price": "12"
+    },
+    {
+        "restaurant_name": "Smithereens",
+        "dish_name": "candied seaweed with licorice & citron",
+        "ingredients": "",
+        "price": "14"
+    },
+    {
+        "restaurant_name": "Smithereens",
+        "dish_name": "anadama bread with seaweed butter",
+        "ingredients": "",
+        "price": "9"
+    },
+    {
+        "restaurant_name": "Smithereens",
+        "dish_name": "buckwheat pancake with smoked bluefish",
+        "ingredients": "",
+        "price": "24"
+    },
+    {
+        "restaurant_name": "Smithereens",
+        "dish_name": "threadfin bream with beets & yuzu",
+        "ingredients": "",
+        "price": "26"
+    },
+    {
+        "restaurant_name": "Smithereens",
+        "dish_name": "shima aji with nettles and toasted kale oil",
+        "ingredients": "",
+        "price": "32"
+    },
+    {
+        "restaurant_name": "Smithereens",
+        "dish_name": "bluefin tuna with rhubarb, olive, & kombu",
+        "ingredients": "",
+        "price": "28"
+    },
+    {
+        "restaurant_name": "Smithereens",
+        "dish_name": "chicory with anchovy, date & meyer lemon",
+        "ingredients": "",
+        "price": "23"
+    },
+    {
+        "restaurant_name": "Smithereens",
+        "dish_name": "fried whiting with tartar sauce & lemon",
+        "ingredients": "",
+        "price": "19"
+    },
+    {
+        "restaurant_name": "Smithereens",
+        "dish_name": "abalone skewers with shiitake & egg yolk",
+        "ingredients": "",
+        "price": "32"
+    },
+    {
+        "restaurant_name": "Smithereens",
+        "dish_name": "jonah crab with peas, almond & chartreuse",
+        "ingredients": "",
+        "price": "34"
+    },
+    {
+        "restaurant_name": "Smithereens",
+        "dish_name": "lobster roll",
+        "ingredients": "",
+        "price": "42"
+    },
+    {
+        "restaurant_name": "Smithereens",
+        "dish_name": "rice with quahog clams & chowder",
+        "ingredients": "",
+        "price": "26"
+    },
+    {
+        "restaurant_name": "Smithereens",
+        "dish_name": "amberjack with red shrimp & turnips",
+        "ingredients": "",
+        "price": "44"
+    },
+    {
+        "restaurant_name": "Smithereens",
+        "dish_name": "black cod with maitake mushrooms & chili",
+        "ingredients": "",
+        "price": "47"
+    },
+    {
+        "restaurant_name": "Smithereens",
+        "dish_name": "whole bbq mackerel",
+        "ingredients": "",
+        "price": "58"
+    },
+    {
+        "restaurant_name": "La Dong",
+        "dish_name": "Mock Mock Gee",
+        "ingredients": "",
+        "price": "13"
+    },
+    {
+        "restaurant_name": "La Dong",
+        "dish_name": "Dry Pho Beef",
+        "ingredients": "rice noodle, brisket, chuck eye, beef balls, peanut, shallot, scallion, cilantro & house sweet soy",
+        "price": "21"
+    },
+    {
+        "restaurant_name": "La Dong",
+        "dish_name": "Pho Hà Nội",
+        "ingredients": "rice noodle, slow cooked brisket, raw chuck eye, shallot, scallion, cilantro, side of pickle garlic & bird eye chili",
+        "price": "21"
+    },
+    {
+        "restaurant_name": "La Dong",
+        "dish_name": "Pho Gà",
+        "ingredients": "rice noodle, chicken breast, quail eggs, shallot, scallion, cilantro & Vietnamese coriander",
+        "price": "21"
+    },
+    {
+        "restaurant_name": "La Dong",
+        "dish_name": "Pho Vegetable",
+        "ingredients": "rice noodle, King oyster mushroom, shimeji mushroom, Yu Choy, bamboo shoot, shallot, scallion & cilantro",
+        "price": "21"
+    },
+    {
+        "restaurant_name": "La Dong",
+        "dish_name": "Dry Pho Gà",
+        "ingredients": "rice noodle, chicken breast, quail eggs, shallot, scallion, cilantro, Vietnamese coriander & house tamarind soy",
+        "price": "21"
+    },
+    {
+        "restaurant_name": "La Dong",
+        "dish_name": "Dry Noodle Duck",
+        "ingredients": "egg noodle, crispy quarter duck, Yu Choy, shallot, scallion, cilantro, pickle ginger & duck essence gravy",
+        "price": "29"
+    },
+    {
+        "restaurant_name": "La Dong",
+        "dish_name": "Crab Fried Rice",
+        "ingredients": "white lump crab meat, scallion, egg, jasmine rice",
+        "price": "26"
+    },
+    {
+        "restaurant_name": "La Dong",
+        "dish_name": "Sauteed Chili Garlic Noodle",
+        "ingredients": "pho noodle, egg, garlic, scallion, sweet radish & housemade chili oil",
+        "price": "18"
+    },
+    {
+        "restaurant_name": "La Dong",
+        "dish_name": "Pomelo Salad",
+        "ingredients": "Chandler pomelo, grilled shrimp, Cara Cara, lemongrass, Kaffir lime, green moscato grape, mint, shallot & toasted coconut tossed in spicy tamarind dressing",
+        "price": "18"
+    },
+    {
+        "restaurant_name": "La Dong",
+        "dish_name": "Nem Nướng",
+        "ingredients": "grilled meatball, lettuce wrap, Cara Cara orange, ginger, cucumber, toasted coconut, shallot & peanut sauce",
+        "price": "16"
+    },
+    {
+        "restaurant_name": "La Dong",
+        "dish_name": "Bún Chả Hà Nội",
+        "ingredients": "Hà Nội style grilled pork patties, crab & shrimp spring roll, vermicelli, fresh herbs, pickle & traditional fish sauce dip",
+        "price": "32"
+    },
+    {
+        "restaurant_name": "La Dong",
+        "dish_name": "Chả Cá",
+        "ingredients": "Hanoi style grilled whole Branzino marinated in traditional turmeric paste, scallion & dill",
+        "price": "43"
+    },
+    {
+        "restaurant_name": "La Dong",
+        "dish_name": "Pork Chop Rice Platter",
+        "ingredients": "cơm tấm style grilled pork chop over rice, Vietnamese egg meatloaf, fried egg, pickle, fresh herbs & vegetables",
+        "price": "26"
+    },
+    {
+        "restaurant_name": "La Dong",
+        "dish_name": "Shaking Beef",
+        "ingredients": "wok tossed American Wagyu tenderloin, onion, yellow pepper in garlic soy (served medium-rare) & watercress-cilantro salad",
+        "price": "34"
+    },
+    {
+        "restaurant_name": "La Dong",
+        "dish_name": "Cà Ri Sườn Bò",
+        "ingredients": "tender braised short ribs in Vietnamese yellow curry, pho brisket, baby potato, carrot & coconut milk served toasted baguette",
+        "price": "36"
+    },
+    {
+        "restaurant_name": "La Dong",
+        "dish_name": "Cá Hấp Xì Dầu",
+        "ingredients": "10 oz fillet steamed in traditional ginger-soy, Shaoxing wine, sesame oil, King mushroom, Yu Choy & julienned aromatics",
+        "price": "39"
+    },
+    {
+        "restaurant_name": "La Dong",
+        "dish_name": "Cá Chiên Nước Mắm",
+        "ingredients": "fried whole Branzino (de-boned) tossed in sweet fish sauce glaze, fresh greens & herbs",
+        "price": "42"
+    },
+    {
+        "restaurant_name": "La Dong",
+        "dish_name": "Wagyu Pho",
+        "ingredients": "Miyazaki A5 Wagyu, American Wagyu, chef’s signature pho broth & aromatics",
+        "price": "36"
+    },
+    {
+        "restaurant_name": "La Dong",
+        "dish_name": "Duck Tamarind",
+        "ingredients": "crispy roasted half duck, tamarind-duck bone reduction, shallot & steamed Yu Choy",
+        "price": "36"
+    },
+    {
+        "restaurant_name": "La Dong",
+        "dish_name": "Sugarcane Shrimp",
+        "ingredients": "shrimp paste loaf on sugarcane skewer, lettuce, fresh herbs & plum sauce",
+        "price": "16"
+    },
+    {
+        "restaurant_name": "La Dong",
+        "dish_name": "Pâté & Bone",
+        "ingredients": "chicken liver mousse, pickle, bone marrow & toasted baguette",
+        "price": "17"
+    },
+    {
+        "restaurant_name": "La Dong",
+        "dish_name": "Bánh Xèo",
+        "ingredients": "Vietnamese turmeric crêpe, shrimp, Vietnamese pork sausage, bean sprout, scallion, sweet radish, nước chấm & fresh herbs",
+        "price": "17"
+    },
+    {
+        "restaurant_name": "La Dong",
+        "dish_name": "Vietnamese Beef Carpaccio",
+        "ingredients": "*rare* American wagyu slices, fresh lime, shrimp paste, watercress, Vietnamese coriander, peanut, crispy shallots & bird’s eye chili",
+        "price": "18"
+    },
+    {
+        "restaurant_name": "La Dong",
+        "dish_name": "Bún Bò Huế",
+        "ingredients": "rice vermicelli, slow cooked brisket, pork sausage, pork hock, blood cake, shrimp paste, shallot, scallion & cilantro in spicy lemongrass broth",
+        "price": "26"
+    },
+    {
+        "restaurant_name": "La Dong",
+        "dish_name": "Crispy Spring Roll",
+        "ingredients": "pork, crab, shrimp, wood ear mushroom, carrot stuffed in Vietnamese net wrapper",
+        "price": "15"
+    },
+    {
+        "restaurant_name": "La Dong",
+        "dish_name": "Tofu Scallion",
+        "ingredients": "crispy fried velvety tofu dressed in savory fish sauce",
+        "price": "14"
+    },
+    {
+        "restaurant_name": "La Dong",
+        "dish_name": "Gỏi đu đủ",
+        "ingredients": "fresh papaya salad with watercress, peanut, cabbage & fried shallot in chili lime dressing served with sesame cracker",
+        "price": "15"
+    },
+    {
+        "restaurant_name": "La Dong",
+        "dish_name": "Green Salad",
+        "ingredients": "mix greens, shredded red cabbage, crispy shallot, Cara Cara orange & citrus-soy vinaigrette",
+        "price": "13"
+    },
+    {
+        "restaurant_name": "La Dong",
+        "dish_name": "Sesame Rice Cracker",
+        "ingredients": "gigantic snack with sweet chili pork floss-peanut dip",
+        "price": "12"
+    },
+    {
+        "restaurant_name": "Sushi Sho",
+        "dish_name": "OMAKASE",
+        "ingredients": "Chef's choice of assorted nigiri-based sushi.",
+        "price": "190"
+    },
+    {
+        "restaurant_name": "Sushi Sho",
+        "dish_name": "Tsukemori",
+        "ingredients": "Assorted Japanese pickles",
+        "price": "15"
+    },
+    {
+        "restaurant_name": "Sushi Sho",
+        "dish_name": "Chawan-Mushi",
+        "ingredients": "Steamed seafood custard soup",
+        "price": "15"
+    },
+    {
+        "restaurant_name": "Sushi Sho",
+        "dish_name": "Ankimo",
+        "ingredients": "Monk fish liver steamed with sake and served with PONZU sauce (house special blended SOUR soy sauce)",
+        "price": "Market"
+    },
+    {
+        "restaurant_name": "Sushi Sho",
+        "dish_name": "SUNOMONO SALAD",
+        "ingredients": "Served with our house special sesame seed dressing.",
+        "price": ""
+    },
+    {
+        "restaurant_name": "Sushi Sho",
+        "dish_name": "Kyurimomi",
+        "ingredients": "Cucumber",
+        "price": "5"
+    },
+    {
+        "restaurant_name": "Sushi Sho",
+        "dish_name": "Wakame",
+        "ingredients": "Seaweed and cucumber",
+        "price": "6"
+    },
+    {
+        "restaurant_name": "Sushi Sho",
+        "dish_name": "Pressed Sushi (Box Sushi)",
+        "ingredients": "Salt-cured and vinegar-cured fish pressed together with sushi rice in a box (mold) with a special sweet and sour seaweed on top. Sliced into 6 pieces.",
+        "price": ""
+    },
+    {
+        "restaurant_name": "Sushi Sho",
+        "dish_name": "Saba Bateira",
+        "ingredients": "Mackerel salt-cured and vinegar-cured",
+        "price": "25"
+    },
+    {
+        "restaurant_name": "Sushi Sho",
+        "dish_name": "Sake Bateira",
+        "ingredients": "Salmon salt-cured and vinegar-cured with Oboro (shrimp powder)",
+        "price": "25"
+    },
+    {
+        "restaurant_name": "Sushi Sho",
+        "dish_name": "Miso Soup with Tofu",
+        "ingredients": "Soft tofu",
+        "price": "4"
+    },
+    {
+        "restaurant_name": "Sushi Sho",
+        "dish_name": "Miso Soup with Wakame",
+        "ingredients": "Seaweed and tofu",
+        "price": "5"
+    },
+    {
+        "restaurant_name": "Sushi Sho",
+        "dish_name": "Miso Soup with Enoki",
+        "ingredients": "Long slim mushroom and tofu",
+        "price": "6"
+    },
+    {
+        "restaurant_name": "Sushi Sho",
+        "dish_name": "Miso Soup with Nameko",
+        "ingredients": "Short fat mushroom and tofu",
+        "price": "8"
+    },
+    {
+        "restaurant_name": "Sushi Sho",
+        "dish_name": "Akadashi",
+        "ingredients": "Special aged miso with small pieces of yellowtail and mitsuba (tri-foil leaf)",
+        "price": "12"
+    },
+    {
+        "restaurant_name": "Sushi Sho",
+        "dish_name": "Dessert",
+        "ingredients": "Green Tea, Red Bean Ice Cream or Mango Sorbet 1 scoop an order",
+        "price": "5"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "wild blueberry, hemp, chia, date, omega seed butter, raw almond milk",
+        "ingredients": "",
+        "price": "18"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Yogurt, Berry & Pollen Defense",
+        "ingredients": "yogurt, strawberry, raspberry, blueberry, local bee pollen, honey",
+        "price": "14"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Green Juice",
+        "ingredients": "ginger, spinach, granny smith apple, cucumber, lemon, curly kale",
+        "price": "15"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Ruby Red",
+        "ingredients": "carrot, beet, lemon, ginger, orange",
+        "price": "14"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Turmeric Tonic",
+        "ingredients": "lime, lemon, honey",
+        "price": "12"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Grapefruit",
+        "ingredients": "",
+        "price": "12"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Orange",
+        "ingredients": "",
+        "price": "12"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Toast",
+        "ingredients": "sourdough, rye, 7 grain, white, english muffin",
+        "price": "6"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Croissants",
+        "ingredients": "plain, pain au chocolat or baklava",
+        "price": "8"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Muffins & Danishes",
+        "ingredients": "vegan matcha and blueberry muffin or strawberry rhubarb",
+        "price": "8"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Bagels",
+        "ingredients": "plain, sesame, everything",
+        "price": "8"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Buttermilk Pancakes",
+        "ingredients": "mixed berries, banana, maple syrup",
+        "price": "24"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Gluten Free Almond Pancakes",
+        "ingredients": "housemade almond butter, whipped banana",
+        "price": "24"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "French Toast",
+        "ingredients": "macarated strawberries",
+        "price": "28"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Housemade Granola",
+        "ingredients": "greek or coconut yogurt, banana, berries",
+        "price": "20"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Exotic Fruit Salad",
+        "ingredients": "pineapple, kiwi, passion fruit, papaya, mango, dragon fruit",
+        "price": "25"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Vanilla Coconut Chia Bowl",
+        "ingredients": "date, cacao, brazil nut, hemp seed, seasonal fruit",
+        "price": "24"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Steelcut Irish Oatmeal",
+        "ingredients": "stewed prunes",
+        "price": "22"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Dosa",
+        "ingredients": "greek or coconut yogurt, avocado, sprouts",
+        "price": "22"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Avocado & Sicilian Pistachio Toast",
+        "ingredients": "preserved & fresh meyer lemon, basil, serrano chili",
+        "price": "22"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Smoked Salmon Plate",
+        "ingredients": "russ & daughters smoked salmon, cream cheese, caper, tomato",
+        "price": "38"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Organic Cage Free Eggs",
+        "ingredients": "Golden Osetra Caviar, smoked egg yolk, crispy potato cake",
+        "price": "138"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Two Eggs Any Style",
+        "ingredients": "roasted tomato, crispy potatoes",
+        "price": "22"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Dosa",
+        "ingredients": "sambal, cheddar cheese, egg, mint",
+        "price": "24"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Egg Sandwich",
+        "ingredients": "brioche bun, crispy bacon, cheddar cheese",
+        "price": "24"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Whole Egg or Egg White Omelet",
+        "ingredients": "spinach, goat cheese",
+        "price": "26"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Softly Scrambled Eggs",
+        "ingredients": "broccoli, cheddar cheese, dill",
+        "price": "22"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Eggs Benedict",
+        "ingredients": "bentons ham, smoked salmon or spinach",
+        "price": "28"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Poached Eggs with Roasted Mushrooms",
+        "ingredients": "parmesan cheese and herbs",
+        "price": "27"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Japanese Breakfast",
+        "ingredients": "miso glazed hake, japanese omelet, pickled vegetables, tofu miso soup, porridge",
+        "price": "40"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Bacon",
+        "ingredients": "",
+        "price": "10"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Half Avocado",
+        "ingredients": "",
+        "price": "10"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Chicken Sausage",
+        "ingredients": "",
+        "price": "10"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Pork Sausage",
+        "ingredients": "",
+        "price": "10"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Smoked Salmon",
+        "ingredients": "",
+        "price": "30"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Crispy Potatoes",
+        "ingredients": "",
+        "price": "10"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Berry Bowl",
+        "ingredients": "",
+        "price": "14"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Red Juice",
+        "ingredients": "carrot, beet, lemon, ginger, orange",
+        "price": "14"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Petrossian Caviar JG Select",
+        "ingredients": "smoked egg yolk, crispy potato cake",
+        "price": "138"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Fluke",
+        "ingredients": "tahini citrus dressing, chili oil, shiso",
+        "price": "28"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Yellowfin Tuna",
+        "ingredients": "yuzu-ginger green apple dressing, arugula, wasabi oil",
+        "price": "30"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Kampachi",
+        "ingredients": "aji amarillo, lime, cilantro, crushed corn nut",
+        "price": "26"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Wagyu Beef Tartare",
+        "ingredients": "kimchee, avocado, sesame, scallion",
+        "price": "35"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Pea Soup",
+        "ingredients": "goat cheese dumpling, mint oil",
+        "price": "20"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Baby Beets",
+        "ingredients": "silken coconut, lime, asian pear",
+        "price": "25"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Market Lettuces",
+        "ingredients": "crispy artichokes, radishes, parmesan cheese, macadamia nut, strawberry scented vinaigrette",
+        "price": "26"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Octopus & Squid a La Plancha",
+        "ingredients": "kohlrabi slaw, cashew, romesco",
+        "price": "34"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Russ & Daughters Smoked Salmon",
+        "ingredients": "crispy hash browns, horseradish cream",
+        "price": "44"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Foie Gras & Duck Pâté Terrine",
+        "ingredients": "blood orange confit, cranberry-pecan sourdough bread",
+        "price": "44"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Sweet Pea Tortellini",
+        "ingredients": "herb chili butter, onion soffrito",
+        "price": "32"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Tagliatelle",
+        "ingredients": "jonah crab, fava bean, meyer lemon",
+        "price": "38"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Lumache",
+        "ingredients": "basil, shrimp, fennel infused spicy tomato sauce",
+        "price": "35"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Ravioli Bigusto",
+        "ingredients": "braised lamb, sunchoke, olive, capers, lemon",
+        "price": "36"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Celeriac Marsala",
+        "ingredients": "roasted mushrooms, sage",
+        "price": "36"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Gruyère Cheeseburger au Jus",
+        "ingredients": "crispy onions, green chili mustard, french fries",
+        "price": "34"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Steamed Black Bass",
+        "ingredients": "wild mushrooms, spiced broth, lime, sesame, rosemary",
+        "price": "52"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Herb Crusted Faroe Island Salmon",
+        "ingredients": "rhubarb-ginger beurre blanc, charred spring onion, fava beans",
+        "price": "48"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Butter Poached Lobster",
+        "ingredients": "sweet and spicy black peppercorn condiment, lemon braised fennel",
+        "price": "MP"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Roasted Organic Chicken",
+        "ingredients": "three peppercorns, lemon confit mashed potatoes, aromatic chicken jus",
+        "price": "46"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Seared Wagyu Beef Tenderloin",
+        "ingredients": "broccoli roasted with pistachio crumb, aromatic beef jus, aged balsamic vinegar",
+        "price": "84"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Faroe Island Salmon",
+        "ingredients": "served with shishito pepper, lemon, and sriracha emulsion",
+        "price": "38"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Black Sea Bass",
+        "ingredients": "served with shishito pepper, lemon, and sriracha emulsion",
+        "price": "40"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Organic Half Chicken",
+        "ingredients": "served with shishito pepper, lemon, and sriracha emulsion",
+        "price": "39"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Snake River Farms Wagyu Tenderloin",
+        "ingredients": "served with shishito pepper, lemon, and sriracha emulsion",
+        "price": "75"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Snake River Farms Wagyu Sirloin",
+        "ingredients": "served with shishito pepper, lemon, and sriracha emulsion",
+        "price": "112"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Pistachio Crusted Broccoli",
+        "ingredients": "lemon vinaigrette, basil oil",
+        "price": "17"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "POMMES PONT NEUF",
+        "ingredients": "fried russet potatoes",
+        "price": "14"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "POMME PURÉE",
+        "ingredients": "russet potatoes, butter, cream",
+        "price": "15"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Sautéed Brassicas",
+        "ingredients": "espelette pepper, garlic oil",
+        "price": "16"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "French Fries",
+        "ingredients": "",
+        "price": "16"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Apple Confit",
+        "ingredients": "speculoos cookie butter, gavotte tuile, apple butter, cinnamon calvados ice cream",
+        "price": "19"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Pear and Black Walnut",
+        "ingredients": "frangipane, chai and roasted barley diplomat cream, mulled red wine and pear sorbet",
+        "price": "19"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Chocolate Almond",
+        "ingredients": "moelleux, black cardamom cremeux, tonka whipped ganache, buckwheat caramel, marzipan ice cream",
+        "price": "20"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Citrus Vacherin",
+        "ingredients": "pandan panna cotta, buddha's hand confit, mandarin sorbet",
+        "price": "20"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Caramel Custard",
+        "ingredients": "banana chantilly, brown butter caramel, crème fraîche ice cream",
+        "price": "17"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Cookie Flight",
+        "ingredients": "peanut butter miso, carrot cake oatmeal, caramel chocolate chip, cranberry-quince linzer",
+        "price": "16"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "ARTISANAL CHEESE SELECTION",
+        "ingredients": "after glow, alp blossom, cave aged barnstorm blue, fennel seed almonds, quince jam, cheddar crackers",
+        "price": "34"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Egg Toast",
+        "ingredients": "caviar and herbs",
+        "price": "68"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Spiced Chicken Samosas",
+        "ingredients": "cilantro yogurt",
+        "price": "12"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Crispy Sea Trout Sushi",
+        "ingredients": "chipotle emulsion, soy glaze",
+        "price": "16"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Shrimp Satay",
+        "ingredients": "sweet and sour sauce",
+        "price": "15"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Rice Cracker Crusted Tuna",
+        "ingredients": "citrus-sriracha emulsion",
+        "price": "34"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Tuna Tartare",
+        "ingredients": "avocado, radish, ginger dressing",
+        "price": "16"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Shrimp Burger",
+        "ingredients": "sriracha aioli, cucumber, shiso",
+        "price": "26"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Cheeseburger",
+        "ingredients": "crispy onions, cherry pepper remoulade",
+        "price": "22"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "Artisanal Cheese",
+        "ingredients": "after glow, alp blossom, cave aged barnstorm blue",
+        "price": "34"
+    },
+    {
+        "restaurant_name": "Four Twenty Five",
+        "dish_name": "French Fries",
+        "ingredients": "potato or sweet potato",
+        "price": "8"
+    },
+    {
+        "restaurant_name": "One White Street",
+        "dish_name": "rigor hill sourdough",
+        "ingredients": "house cultured butter",
+        "price": "16"
+    },
+    {
+        "restaurant_name": "One White Street",
+        "dish_name": "rye focaccia",
+        "ingredients": "roasted honey nut squash dip, pepitas, fiore sardo",
+        "price": "20"
+    },
+    {
+        "restaurant_name": "One White Street",
+        "dish_name": "roasted marinated beets",
+        "ingredients": "caramelized sunchoke purée, beet reduction, sunchoke chips, sorrel",
+        "price": "24"
+    },
+    {
+        "restaurant_name": "One White Street",
+        "dish_name": "rigor hill farm salad",
+        "ingredients": "radicchio, blood orange vin, shaved fennel, honey goat gouda",
+        "price": "24"
+    },
+    {
+        "restaurant_name": "One White Street",
+        "dish_name": "escarole alla romana",
+        "ingredients": "anchovy, shaved pecorino",
+        "price": "24"
+    },
+    {
+        "restaurant_name": "One White Street",
+        "dish_name": "fennel salad",
+        "ingredients": "shaved fennel, blue cheese, white anchovy, pistachio",
+        "price": "24"
+    },
+    {
+        "restaurant_name": "One White Street",
+        "dish_name": "montauk fluke crudo",
+        "ingredients": "buttermilk, horseradish, green tomatoes, dill oil",
+        "price": "33"
+    },
+    {
+        "restaurant_name": "One White Street",
+        "dish_name": "chilled foie gras",
+        "ingredients": "marcona almonds, medjool dates, warm pain de mie",
+        "price": "38"
+    },
+    {
+        "restaurant_name": "One White Street",
+        "dish_name": "ravioli",
+        "ingredients": "sunchoke, sunflower crumble",
+        "price": "34"
+    },
+    {
+        "restaurant_name": "One White Street",
+        "dish_name": "black bass",
+        "ingredients": "mussel sauce, bok choy, guajillo",
+        "price": "42"
+    },
+    {
+        "restaurant_name": "One White Street",
+        "dish_name": "hudson valley duck breast",
+        "ingredients": "celeriac, gai lan",
+        "price": "53"
+    },
+    {
+        "restaurant_name": "One White Street",
+        "dish_name": "smoked lamb neck",
+        "ingredients": "rhf greens, charred cabbage, mint yogurt",
+        "price": "95"
+    },
+    {
+        "restaurant_name": "One White Street",
+        "dish_name": "red wine braised short rib",
+        "ingredients": "onions, carrots, guanciale, red wine jus",
+        "price": "51"
+    },
+    {
+        "restaurant_name": "One White Street",
+        "dish_name": "1WS cheeseburger",
+        "ingredients": "american wagyu, white cheddar, onion, sesame bun, pickles",
+        "price": "32"
+    },
+    {
+        "restaurant_name": "One White Street",
+        "dish_name": "gai lan",
+        "ingredients": "citrus yogurt, chili crisp",
+        "price": "19"
+    },
+    {
+        "restaurant_name": "One White Street",
+        "dish_name": "flint corn polenta",
+        "ingredients": "fiore sardo, creme fraîche",
+        "price": "19"
+    },
+    {
+        "restaurant_name": "One White Street",
+        "dish_name": "celery root and leek gratin",
+        "ingredients": "herb butter, reading cheese, chives",
+        "price": "19"
+    },
+    {
+        "restaurant_name": "One White Street",
+        "dish_name": "crispy potatoes",
+        "ingredients": "one white street sriracha, pickled garlic scapes",
+        "price": "19"
+    },
+    {
+        "restaurant_name": "Le Pavillon",
+        "dish_name": "AVOCAT & PANISSE",
+        "ingredients": "grilled avocado, einkorn berries, yogurt green goddess",
+        "price": ""
+    },
+    {
+        "restaurant_name": "Le Pavillon",
+        "dish_name": "OIGNON | ÉPOISSES",
+        "ingredients": "vidalia onion tart, dandelion, thyme, époisses emulsion",
+        "price": ""
+    },
+    {
+        "restaurant_name": "Le Pavillon",
+        "dish_name": "CAROTTE | FALAFEL",
+        "ingredients": "charred carrot, falafel, lamb’s quarter, magnolia blosson chimichurri",
+        "price": ""
+    },
+    {
+        "restaurant_name": "Le Pavillon",
+        "dish_name": "FETTUCCINE | CHAMPIGNON",
+        "ingredients": "fettuccine, mushroom sauvage, comté emulsion, black truffle",
+        "price": ""
+    },
+    {
+        "restaurant_name": "Le Pavillon",
+        "dish_name": "RACINE DE CÉLERI | RAISIN",
+        "ingredients": "roasted celery root farci, couscous, sesame seed, candy snap grape, sauce véronique",
+        "price": ""
+    },
+    {
+        "restaurant_name": "Le Pavillon",
+        "dish_name": "VACHERIN | AGRUMES",
+        "ingredients": "buddha’s hand confit, yuzu ice cream, makrut meringue, whipped yogurt",
+        "price": ""
+    },
+    {
+        "restaurant_name": "Le Pavillon",
+        "dish_name": "AVOCAT & HUÎTRE",
+        "ingredients": "grilled avocado, einkorn berries, yogurt green goddess, john’s river oyster gratinée, hazelnut, parsley-seaweed crust",
+        "price": ""
+    },
+    {
+        "restaurant_name": "Le Pavillon",
+        "dish_name": "PACCHERI | PALOURDE",
+        "ingredients": "pasta puttanesca, atlantic razor clams, littleneck clams, taggiasca olive, bottarga",
+        "price": ""
+    },
+    {
+        "restaurant_name": "Le Pavillon",
+        "dish_name": "FLÉTAN | VADOUVAN",
+        "ingredients": "poached atlantic halibut, celtuce, carolina gold rice, seaweed normande",
+        "price": ""
+    },
+    {
+        "restaurant_name": "Le Pavillon",
+        "dish_name": "SOLE | POIREAU",
+        "ingredients": "roasted wild dover sole, braised leek, celery root, crosne, beurre rouge",
+        "price": ""
+    },
+    {
+        "restaurant_name": "Le Pavillon",
+        "dish_name": "BOEUF | CAROTTE",
+        "ingredients": "roasted double r ranch striploin, short rib croquette, thumbelina carrot, king trumpet mushroom, sauce rôtissoire",
+        "price": ""
+    },
+    {
+        "restaurant_name": "Le Pavillon",
+        "dish_name": "NOISETTE | CHOCOLAT",
+        "ingredients": "milk chocolate mousse, praline croustillant, hazelnut nougatine",
+        "price": ""
+    }
+]
