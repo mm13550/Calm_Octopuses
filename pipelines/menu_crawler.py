@@ -3,6 +3,7 @@ import os
 import json
 import io
 import urllib.parse
+import base64
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup
@@ -33,6 +34,8 @@ def scrape_menu_text(url):
     pdf_texts = []
     html_texts = []
     raw_html_cache = {}  # cache raw HTML for regex scanning later
+    image_urls_list = []
+    image_keywords = ['menu', 'a la carte', 'a-la-carte', 'alacarte', 'dinner', 'lunch', 'dessert']
     
     while queue and len(visited) < 10:  # Allow up to 10 page visits to find all menus
         current_target = queue.pop(0)
@@ -81,6 +84,13 @@ def scrape_menu_text(url):
 
                 if any(k in text or k in href.lower() for k in keywords) or '.pdf' in href.lower():
                     nested_link = urllib.parse.urljoin(current_target, href)
+                    
+                    if any(nested_link.lower().endswith(ext) for ext in ['.jpg', '.jpeg', '.png']) or 'format=jpg' in nested_link.lower():
+                        if any(k in nested_link.lower() or k in text for k in image_keywords):
+                            if nested_link not in image_urls_list and len(image_urls_list) < 5:
+                                image_urls_list.append(nested_link)
+                        continue
+
                     if urllib.parse.urlparse(nested_link).netloc == urllib.parse.urlparse(url).netloc:
                         if nested_link not in visited and nested_link not in queue:
                             # Prioritize PDFs
@@ -89,6 +99,16 @@ def scrape_menu_text(url):
                             else:
                                 queue.append(nested_link)
             
+            # look for images directly in img tags
+            for img in target_soup.find_all('img'):
+                src = img.get('src') or img.get('data-src') or ''
+                alt = img.get('alt') or ''
+                if any(k in src.lower() or k in alt.lower() for k in image_keywords):
+                    if any(src.lower().endswith(ext) for ext in ['.jpg', '.jpeg', '.png']) or 'format=jpg' in src.lower():
+                        img_link = urllib.parse.urljoin(current_target, src)
+                        if img_link not in image_urls_list and len(image_urls_list) < 5:
+                            image_urls_list.append(img_link)
+
             # Extract text to use as fallback (now it's safe to destroy elements)
             for script in target_soup(["script", "style", "nav", "footer", "header", "meta"]):
                 script.extract()
@@ -163,13 +183,24 @@ def scrape_menu_text(url):
         else:
             combined_text = final_html_text
             
-    return combined_text[:15000]
+    return combined_text[:50000], image_urls_list
 
-def parse_text_to_json_with_llm(restaurant_name, raw_text):
+def encode_image_to_base64(image_url):
+    try:
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        response = requests.get(image_url, headers=headers, timeout=10)
+        response.raise_for_status()
+        encoded = base64.b64encode(response.content).decode('utf-8')
+        return encoded
+    except Exception as e:
+        print(f"  -> Failed to download/encode image {image_url}: {e}")
+        return None
+
+def parse_text_to_json_with_llm(restaurant_name, raw_text, image_urls):
     """
     Uses OpenAI's gpt-4o-mini to convert the unstructured raw text into structured JSON.
     """
-    if not raw_text.strip():
+    if not raw_text.strip() and not image_urls:
         return []
 
     # Extremely rigid system prompt to enforce strict JSON array output
@@ -185,15 +216,29 @@ def parse_text_to_json_with_llm(restaurant_name, raw_text):
         f"4. For the 'restaurant_name' field, unconditionally use this value: '{restaurant_name}'.\n"
         "5. If a specific field like ingredients or price cannot be found for a dish, assign it an empty string \"\".\n"
         "6. CRITICAL: EXCLUDE ALL DRINKS. Do not extract wines, cocktails, beers, sodas, or beverages of any kind. Only extract food items.\n"
-        "7. Output absolutely nothing else besides the raw JSON array string."
+        "7. CRITICAL: The input text contains MULTIPLE sources (e.g., PDF menus, HTML lunch/dinner menus). You MUST extract the dishes from ALL sources. Do not stop until all food items from all menus are extracted!\n"
+        "8. Output absolutely nothing else besides the raw JSON array string."
     )
 
     try:
+        user_content = [{"type": "text", "text": f"Parse the following menu text/images to JSON:\n\n{raw_text}"}]
+        
+        for img_url in image_urls:
+            base64_img = encode_image_to_base64(img_url)
+            if base64_img:
+                user_content.append({
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:image/jpeg;base64,{base64_img}",
+                        "detail": "high"
+                    }
+                })
+
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": f"Parse the following menu text to JSON:\n\n{raw_text}"}
+                {"role": "user", "content": user_content}
             ],
             temperature=0.0
         )
@@ -237,7 +282,7 @@ def main():
     df = pd.read_csv(csv_path)
     
     # Target 1: Apply df.head(3) for testing
-    test_df = df.head(10)
+    test_df = df[11:12]
     
     all_extracted_menus = []
 
@@ -251,15 +296,15 @@ def main():
             print(f"  -> Invalid URL, skipping.")
             continue
             
-        raw_text = scrape_menu_text(url)
+        raw_text, image_urls = scrape_menu_text(url)
         
-        if raw_text:
-            print(f"  -> Extracted {len(raw_text)} characters. Sending to GPT-4o-mini to standardize JSON...")
-            structured_dishes = parse_text_to_json_with_llm(restaurant_name, raw_text)
+        if raw_text or image_urls:
+            print(f"  -> Extracted {len(raw_text)} characters and {len(image_urls)} menu images. Sending to GPT-4o-mini...")
+            structured_dishes = parse_text_to_json_with_llm(restaurant_name, raw_text, image_urls)
             print(f"  -> Successfully structured {len(structured_dishes)} dishes.")
             all_extracted_menus.extend(structured_dishes)
         else:
-            print(f"  -> No usable text found.")
+            print(f"  -> No usable text or images found.")
 
     # Save output rigidly as JSON
     with open(output_path, 'w', encoding='utf-8') as f:
