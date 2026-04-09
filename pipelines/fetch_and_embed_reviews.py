@@ -1,3 +1,16 @@
+"""
+Google Places Review Fetcher & Embedder Pipeline
+
+This script serves as the primary data ingestion pipeline for Phase 1 of the 
+Michelin NYC Dining Recommender. It connects to the Google Places (v1) API
+to grab the top reviews for a curated list of Michelin restaurants, and then
+processes those text reviews through a local DistilBERT Transformer to generate
+768-dimensional L2-normalized vector embeddings.
+
+These embeddings are consolidated and saved as a Parquet file for downstream 
+clustering and dimensionality reduction algorithms.
+"""
+
 import os
 import time
 import requests
@@ -25,7 +38,20 @@ model = AutoModel.from_pretrained(MODEL_NAME).to(device)
 model.eval()
 
 def embed_text(text):
-    """Generate a vector embedding for a given string of text."""
+    """
+    Generate a 768-dimensional vector embedding for a given string of text.
+    
+    This function tokenizes the input text, processes it through the loaded
+    DistilBERT model without tracking gradients, calculates the mean pooling 
+    over the hidden states, and L2-normalizes the final vector.
+    
+    Args:
+        text (str): The raw review text.
+        
+    Returns:
+        numpy.ndarray: Flattened 1D numpy array representing the normalized embedding.
+                       Returns None if the input text is empty or blank.
+    """
     if not text.strip():
         return None
     with torch.no_grad():
@@ -38,7 +64,15 @@ def embed_text(text):
         return embeddings.cpu().numpy().flatten()
 
 def get_place_id(restaurant_name):
-    """Retrieve the Google Place ID using a text search."""
+    """
+    Retrieve the Google Place ID using a text search against the Places API.
+    
+    Args:
+        restaurant_name (str): The name of the restaurant to search for.
+        
+    Returns:
+        str: The Google Place ID if found, otherwise None.
+    """
     url = "https://places.googleapis.com/v1/places:searchText"
     headers = {
         "Content-Type": "application/json",
@@ -57,7 +91,19 @@ def get_place_id(restaurant_name):
     return None
 
 def get_reviews(place_id, max_reviews=10):
-    """Retrieve up to 'max_reviews' reviews for a given Google Place ID."""
+    """
+    Retrieve the newest reviews for a given Google Place ID.
+    
+    This hits the Place Details endpoint utilizing a specific field mask 
+    ('reviews') to only gather the necessary review data, conserving bandwidth.
+    
+    Args:
+        place_id (str): The unique Google Place ID of the restaurant.
+        max_reviews (int): The maximum number of reviews to extract (default is 10).
+        
+    Returns:
+        list: A list of dictionary objects containing review text, rating, and metadata.
+    """
     url = f"https://places.googleapis.com/v1/places/{place_id}"
     headers = {
         "X-Goog-Api-Key": API_KEY,
@@ -75,6 +121,18 @@ def get_reviews(place_id, max_reviews=10):
     return []
 
 def main():
+    """
+    Main orchestration loop for the fetching and embedding pipeline.
+    
+    Workflow:
+    1. Reads the curated list of Michelin restaurants from CSV.
+    2. Iteratively searches for their Place ID via Google Places API.
+    3. Fetches up to 10 latest text reviews per restaurant.
+    4. Serializes the raw text into local DistilBERT embeddings.
+    5. Consolidates all metadata and vectors into a robust Parquet structure.
+    
+    Rate limits are naturally enforced via forced time.sleep calls.
+    """
     if not API_KEY:
         print("Error: API Key is missing. Ensure GOOGLE_MAPS_API_KEY or GOOGLE_PLACES_API_KEY is in .env")
         return

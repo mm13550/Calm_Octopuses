@@ -20,7 +20,19 @@ IMAGES_DIR = os.path.join(DATA_DIR, 'images')
 os.makedirs(IMAGES_DIR, exist_ok=True)
 
 def fetch_google_places_data(restaurant_name):
-    """Fetch place details and photos using Google Places API (New)"""
+    """
+    Fetch place details, recent reviews, and photos using Google Places API (New).
+    
+    This performs a two-step process: First querying `places:searchText` to resolve 
+    the restaurant name into a place_id, and then querying Place Details using 
+    strict Field Masking to fetch only the reviews and photos lists.
+    
+    Args:
+        restaurant_name (str): The name of the target restaurant.
+        
+    Returns:
+        list: A list of dicts formatted to the standard social tracking schema.
+    """
     results = []
     
     if not GOOGLE_PLACES_API_KEY:
@@ -86,7 +98,16 @@ def fetch_google_places_data(restaurant_name):
     return results
 
 def download_google_photo(photo_reference, filename_prefix):
-    """Download actual image file from Google Places Photo API"""
+    """
+    Download actual image file from Google Places Photo API.
+    
+    Args:
+        photo_reference (str): The Google specific image reference string.
+        filename_prefix (str): Prefix used to save the file locally.
+        
+    Returns:
+        str: The local file path to the saved image, or None if the request fails.
+    """
     photo_url = f"https://places.googleapis.com/v1/{photo_reference}/media?maxHeightPx=800&maxWidthPx=800&key={GOOGLE_PLACES_API_KEY}"
     response = requests.get(photo_url)
     if response.status_code == 200:
@@ -97,7 +118,16 @@ def download_google_photo(photo_reference, filename_prefix):
     return None
 
 def fetch_reddit_data(restaurant_name, rest_id):
-    """Fetch Reddit data or gracefully inject mock data if PRAW is pending."""
+    """
+    Fetch Reddit data or gracefully inject mock data if PRAW is pending.
+    
+    Args:
+        restaurant_name (str): Target restaurant to search for in subreddits.
+        rest_id (str): The internal/Google ID mapped to the restaurant.
+        
+    Returns:
+        list: A list of dicts formatted to the standard schema with Reddit source.
+    """
     if REDDIT_CLIENT_ID and REDDIT_CLIENT_SECRET:
         try:
             import praw
