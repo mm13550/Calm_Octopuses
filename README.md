@@ -17,6 +17,7 @@ The project pipeline is built on a highly decoupled architecture utilizing Visio
 ### 1. Data Pipelines (`pipelines/`)
 
 - **`social_scraper.py`** *(Neil)*: Lightweight hybrid crawler utilizing **Google Places API** and **Reddit PRAW**. Configured with strict Field Masking and `sortPreference=NEWEST` to fetch timestamped UGC images and reviews optimized for time-decay analysis.
+- **`fetch_and_embed_reviews.py`** *(Neil)*: Scalable script to scrape Google Places text reviews and directly embed them using the local `distilbert-base-uncased` language model into standard Parquet format for downstream algorithms.
 - **`menu_crawler.py`** *(Neil)*: Crawls websites and PDFs, leveraging lightweight LLMs (e.g., GPT-4o-mini) to extract and structure complex fine-dining menus into clean JSON.
 - **`absa_processor.py`** *(Grace)*: Runs Aspect-Based Sentiment Analysis (ABSA) on UGC text to extract specific sentiment scores for Food, Service, and Ambiance.
 

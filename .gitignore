@@ -31,3 +31,9 @@ activate.ps1
 # Vector DB local artifacts
 vector_db/*
 !vector_db/.gitkeep
+
+# Ignore virtual environment
+.venv/
+
+# Ignored summary files
+recent_changes_summary.md
