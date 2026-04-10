@@ -4,6 +4,7 @@ import requests
 import pandas as pd
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
+from apify_client import ApifyClient
 
 # Load environment variables
 load_dotenv()
@@ -13,6 +14,7 @@ GOOGLE_CSE_ID = os.getenv("GOOGLE_CSE_ID")
 REDDIT_CLIENT_ID = os.getenv("REDDIT_CLIENT_ID")
 REDDIT_CLIENT_SECRET = os.getenv("REDDIT_CLIENT_SECRET")
 REDDIT_USER_AGENT = os.getenv("REDDIT_USER_AGENT", "DataOpsBot/1.0")
+APIFY_API_TOKEN = os.getenv("APIFY_API_TOKEN")
 
 # Directories
 DATA_DIR = os.path.join(os.path.dirname(__file__), '..', 'data')
@@ -116,65 +118,103 @@ def fetch_google_places_data(restaurant_name):
         
     return review_results, image_results, place_id_val
 
-def fetch_custom_search_images(restaurant_name, rest_id):
-    """Fetch images from UGC sites using Custom Search API with date restrict"""
-    images = []
-    if not GOOGLE_CSE_ID or not GOOGLE_PLACES_API_KEY:
-        print("Missing CSE ID. Skipping Custom Search.")
-        return images
+def fetch_yelp_data_apify(restaurant_name, rest_id):
+    """Fetch reviews and images from Yelp using Apify scraper"""
+    reviews_out = []
+    images_out = []
     
-    def execute_search(date_restrict, start_index=1):
-        url = "https://customsearch.googleapis.com/customsearch/v1"
-        query_str = f"{restaurant_name} restaurant NYC food OR menu"
-        params = {
-            "key": GOOGLE_PLACES_API_KEY, 
-            "cx": GOOGLE_CSE_ID,
-            "q": query_str,
-            "searchType": "image",
-            "dateRestrict": date_restrict,
-            "num": 10,
-            "start": start_index
-        }
-        res = requests.get(url, params=params)
-        if res.status_code == 200:
-            return res.json().get("items", [])
-        return []
-            
-    items = []
-    # Fetch up to 30 images (3 pages) from the last year
-    for start_idx in [1, 11, 21]:
-        page_items = execute_search("y1", start_idx)
-        if not page_items:
-            break
-        items.extend(page_items)
-        time.sleep(1) # rate limiting
-        
-    current_timestamp = datetime.now().timestamp()
+    if not APIFY_API_TOKEN:
+        print("Missing APIFY_API_TOKEN. Skipping Yelp Apify Scrape.")
+        return reviews_out, images_out
+
+    client = ApifyClient(APIFY_API_TOKEN)
     
-    for i, item in enumerate(items):
-        image_url = item.get("link")
-        if not image_url: continue
+    run_input = {
+        "searchTerms": [restaurant_name],
+        "locations": ["New York"],
+        "searchLimit": 1,
+        "scrapeReviewLimit": 30
+    }
+
+    try:
+        print(f"  > Contacting Apify Yelp Scraper for {restaurant_name}...")
+        run = client.actor("tri_angle/yelp-scraper").call(run_input=run_input)
         
-        try:
-            # Download image and verify content type
-            img_res = requests.get(image_url, timeout=5)
-            content_type = img_res.headers.get('content-type', '')
-            if img_res.status_code == 200 and 'image' in content_type:
-                filename = f"{rest_id}_cse_{i}.jpg"
-                file_path = os.path.join(IMAGES_DIR, filename)
-                with open(file_path, 'wb') as f:
-                    f.write(img_res.content)
-                images.append({
-                    "image_uid": f"img_cse_{rest_id}_{i}",
+        # Time filtering: 1 year (365 days) ago
+        one_year_ago = datetime.now() - timedelta(days=365)
+        current_timestamp = datetime.now().timestamp()
+        
+        for item in client.dataset(run["defaultDatasetId"]).iterate_items():
+            print("  [DEBUG] Received Yelp Business Item:", item.get("name"))
+            # 1. Process Reviews
+            reviews = item.get("reviews", [])
+            print(f"  [DEBUG] Found {len(reviews)} reviews inside 'reviews' key.")
+            for i, rev in enumerate(reviews):
+                timestamp_str = rev.get("date") # e.g. "2024-11-01T10:23:00.000Z"
+                if timestamp_str:
+                    try:
+                        publish_time = pd.to_datetime(timestamp_str).replace(tzinfo=None)
+                        if publish_time < one_year_ago:
+                            continue # older than 1 year
+                        ts = publish_time.timestamp()
+                    except Exception:
+                        ts = current_timestamp
+                else:
+                    ts = current_timestamp
+                
+                content = rev.get("text") or rev.get("body") or ""
+                
+                reviews_out.append({
+                    "uid": f"y_{rest_id}_{i}",
                     "rest_id": rest_id,
-                    "source": "google_custom_search",
-                    "image_path": file_path,
-                    "timestamp": current_timestamp
+                    "source": "yelp",
+                    "text": content,
+                    "timestamp": ts,
+                    "rating": rev.get("rating", None)
                 })
-        except Exception:
-            pass # ignore broken links or timeouts
             
-    return images
+            # 2. Process Photos
+            # photos might be under 'photos', 'images', 'imageUrls'
+            photos = item.get("photos") or item.get("images") or item.get("imageUrls") or []
+            print(f"  [DEBUG] Found {len(photos)} photos keys.")
+            
+            for i, photo in enumerate(photos):
+                image_url = photo if isinstance(photo, str) else (photo.get("url") or photo.get("link"))
+                if not image_url: 
+                    print(f"  [DEBUG] Skipping photo {i}: No URL found. {photo}")
+                    continue
+                
+                if image_url.startswith("//"):
+                    image_url = "https:" + image_url
+                
+                try:
+                    img_res = requests.get(image_url, timeout=5)
+                    content_type = img_res.headers.get('content-type', '')
+                    if img_res.status_code == 200 and 'image' in content_type:
+                        filename = f"{rest_id}_yelp_{i}.jpg"
+                        file_path = os.path.join(IMAGES_DIR, filename)
+                        with open(file_path, 'wb') as f:
+                            f.write(img_res.content)
+                        images_out.append({
+                            "image_uid": f"img_y_{rest_id}_{i}",
+                            "rest_id": rest_id,
+                            "source": "yelp",
+                            "image_path": file_path,
+                            "timestamp": current_timestamp
+                        })
+                    else:
+                        print(f"  [DEBUG] Skipping photo {i}: Bad status or content-type ({img_res.status_code}, {content_type})")
+                except Exception as e:
+                    print(f"  [DEBUG] Skipping photo {i}: Exception: {e}")
+                    pass # ignore broken links or timeouts
+                    
+            # We only expect 1 business result
+            break
+            
+    except Exception as e:
+        print(f"  > Error running Apify: {e}")
+            
+    return reviews_out, images_out
 
 def main():
     # === BATCH CONFIGURATION ===
@@ -183,7 +223,7 @@ def main():
     # Day 2: start_row=33, end_row=66
     # Day 3: start_row=66, end_row=99
     start_row = 0
-    end_row = 33
+    end_row = 3
     # ===========================
     
     input_file = os.path.join(DATA_DIR, 'nyc_michelin_names_cleaned.csv')
@@ -211,9 +251,10 @@ def main():
         
         rest_id = place_id if place_id else f"dummy_{index}"
         
-        # 2. Google Custom Search Images
-        cse_images = fetch_custom_search_images(rest_name, rest_id)
-        all_images.extend(cse_images)
+        # 2. Yelp Apify Data (Reviews & Images)
+        y_reviews, y_images = fetch_yelp_data_apify(rest_name, rest_id)
+        all_reviews.extend(y_reviews)
+        all_images.extend(y_images)
 
         
         time.sleep(1) # Safety delay

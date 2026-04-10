@@ -16,7 +16,7 @@ The project pipeline is built on a highly decoupled architecture utilizing Visio
 
 ### 1. Data Pipelines (`pipelines/`)
 
-- **`social_scraper.py`** *(Neil)*: Lightweight hybrid crawler utilizing **Google Places API** and **Reddit PRAW**. Configured with strict Field Masking and `sortPreference=NEWEST` to fetch timestamped UGC images and reviews optimized for time-decay analysis.
+- **`social_scraper.py`** *(Neil)*: Lightweight hybrid crawler utilizing **Google Places API** and **Apify Yelp Scraper**. Automatically circumvents API barriers by proxying queries to Yelp for unlimited high-quality images and full timestamped reviews.
 - **`fetch_and_embed_reviews.py`** *(Neil)*: Scalable script to scrape Google Places text reviews and directly embed them using the local `distilbert-base-uncased` language model into standard Parquet format for downstream algorithms.
 - **`menu_crawler.py`** *(Neil)*: Crawls websites and PDFs, leveraging lightweight LLMs (e.g., GPT-4o-mini) to extract and structure complex fine-dining menus into clean JSON.
 - **`absa_processor.py`** *(Grace)*: Runs Aspect-Based Sentiment Analysis (ABSA) on UGC text to extract specific sentiment scores for Food, Service, and Ambiance.
@@ -68,12 +68,13 @@ Copy the included `.env.example` file to `.env` to securely define your custom c
     REDDIT_CLIENT_ID=your_reddit_id_here
     REDDIT_CLIENT_SECRET=your_reddit_secret_here
     OPENAI_API_KEY=your_openai_key_here
+    APIFY_API_TOKEN=your_apify_token_here
     ```
     
 
 ## 🚀 Usage Examples
 
-**Run the UGC Scraper (Google Places/Reddit):**
+**Run the UGC Scraper (Google Places/Apify):**
 
 ```
 python pipelines/social_scraper.py
