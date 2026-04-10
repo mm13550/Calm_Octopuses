@@ -12,7 +12,7 @@ This v3.0 project builds a **multimodal recommendation web application** focused
     - Embeds restaurant menus (text) and images into a shared vector space via OpenAI CLIP (or SigLIP) for text-to-image and image-to-image similarity retrieval.
     - **Enhancement:** Introduces a lightweight **Vector Database** (e.g., LanceDB or ChromaDB) to efficiently manage query retrieval and incremental delta updates.
 2. **Dynamic UGC Integration & Time-Decay Matching:**
-    - Uses **Google Places API** and **Reddit API** to fetch image-bound reviews accompanied by strict timestamps (specifically querying for the `NEWEST` reviews to ensure data relevance).
+    - Uses **Google Places API** (for baseline restaurant details and recent text reviews) and **Apify Yelp Scraper** (to bypass anti-bot shields and extract massive amounts of high-quality food images). Extracts strict timestamps to ensure data relevance.
     - Applies an exponential time-decay factor to Cosine Similarity ($Score = \text{Cosine}(Q, V) \times (1 + \lambda \cdot e^{-\alpha \cdot \Delta t})$), organically boosting trending dishes and diminishing discontinued ones.
 3. **LLM-Assisted Menu Parsing:**
     - **Enhancement:** Leverages Vision-Language Models (e.g., GPT-4o-mini / Claude 3) to extract structured JSON (Dish, Description, Price) from unstructured PDF and HTML menus, drastically improving text processing over brittle regular expressions.
@@ -27,8 +27,8 @@ This v3.0 project builds a **multimodal recommendation web application** focused
 
 ### Phase 1: Infrastructure & Data Foundation
 
-- Register Developer APIs for Reddit (PRAW) and Google Cloud (Places API).
-- Build the `social_scraper.py` pipeline pulling recent (3-6 months) structured JSON. Implement strict Field Masking for Google to optimize billing.
+- Register Developer APIs for Apify and Google Cloud (Places API).
+- Build the `social_scraper.py` pipeline: Use Google to resolve unique Place IDs (`rest_id`) and extract the 5 most recent Google maps reviews. Proxy search terms to Apify Yelp Scraper to autonomously fetch 30+ URLs of user-generated food imagery per location.
 - Enhance `menu_crawler.py` utilizing LLMs to standardize PDF extractions.
 - Ensure data lands in standard schemas (e.g., `[uid, rest_id, source, image_path, text, timestamp]`).
 
@@ -53,7 +53,7 @@ This v3.0 project builds a **multimodal recommendation web application** focused
 
 The implementation of v3.0 requires immediate cascading updates to the following logic files:
 
-1. **`requirements.txt`**: Needs addition of vector DB, API clients, and ML libs (`lancedb`, `praw`, `requests`, `openai`, `umap-learn`). *Removed `yelpapi`.*
+1. **`requirements.txt`**: Needs addition of vector DB, API clients, and ML libs (`lancedb`, `apify-client`, `requests`, `openai`, `umap-learn`).
 2. **`pipelines/menu_crawler.py`**: Update to call LLM prompts instead of relying solely on sequential text parsing.
 3. **`algorithms/retrieval_engine.py`**: Inject the $1 + \lambda e^{-\alpha \Delta t}$ time decay modifier into the vector query scoring function.
 4. **`algorithms/clustering.py`**: Refactor internal logic blocks to map concatenated Text+Image embeddings through UMAP into GMM.

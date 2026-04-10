@@ -133,7 +133,9 @@ def fetch_yelp_data_apify(restaurant_name, rest_id):
         "searchTerms": [restaurant_name],
         "locations": ["New York"],
         "searchLimit": 1,
-        "scrapeReviewLimit": 30
+        "reviewsCount": 40,           # Set parameter to 40 images/reviews
+        "scrapeReview": True,
+        "scrapeImages": True
     }
 
     try:

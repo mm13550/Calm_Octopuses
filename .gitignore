@@ -18,6 +18,9 @@ test_*.csv
 
 # Ignored image scraper output
 data/images/
+data/social_images.csv
+data/social_reviews.csv
+data/raw_social_recent.csv
 data/embeddings/
 
 # Ignored planning files
