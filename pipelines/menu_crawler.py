@@ -82,11 +82,13 @@ def scrape_menu_text(url):
                 if any(k in path_and_text for k in skip_keywords):
                     continue
 
-                if any(k in text or k in href.lower() for k in keywords) or '.pdf' in href.lower():
+                if len(visited) <= 1 or any(k in text or k in href.lower() for k in keywords) or '.pdf' in href.lower():
                     nested_link = urllib.parse.urljoin(current_target, href)
                     
-                    if any(nested_link.lower().endswith(ext) for ext in ['.jpg', '.jpeg', '.png']) or 'format=jpg' in nested_link.lower():
-                        if any(k in nested_link.lower() or k in text for k in image_keywords):
+                    if any(nested_link.lower().endswith(ext) for ext in ['.jpg', '.jpeg', '.png', '.webp']) or 'format=jpg' in nested_link.lower() or 'format=webp' in nested_link.lower():
+                        is_menu_page = any(k in current_target.lower() for k in ['menu', 'food', 'dinner', 'lunch'])
+                        is_img_keyword = any(k in nested_link.lower() or k in text for k in image_keywords)
+                        if is_img_keyword or is_menu_page:
                             if nested_link not in image_urls_list and len(image_urls_list) < 5:
                                 image_urls_list.append(nested_link)
                         continue
@@ -103,10 +105,12 @@ def scrape_menu_text(url):
             for img in target_soup.find_all('img'):
                 src = img.get('src') or img.get('data-src') or ''
                 alt = img.get('alt') or ''
-                if any(k in src.lower() or k in alt.lower() for k in image_keywords):
-                    if any(src.lower().endswith(ext) for ext in ['.jpg', '.jpeg', '.png']) or 'format=jpg' in src.lower():
+                is_menu_page = any(k in current_target.lower() for k in ['menu', 'food', 'dinner', 'lunch'])
+                is_img_keyword = any(k in src.lower() or k in alt.lower() for k in image_keywords)
+                if is_img_keyword or is_menu_page:
+                    if any(src.lower().endswith(ext) for ext in ['.jpg', '.jpeg', '.png', '.webp']) or 'format=jpg' in src.lower() or 'format=webp' in src.lower():
                         img_link = urllib.parse.urljoin(current_target, src)
-                        if img_link not in image_urls_list and len(image_urls_list) < 5:
+                        if img_link not in image_urls_list and len(image_urls_list) < 8:
                             image_urls_list.append(img_link)
 
             # Extract text to use as fallback (now it's safe to destroy elements)
@@ -230,10 +234,11 @@ def parse_text_to_json_with_llm(restaurant_name, rest_id, raw_text, image_urls):
         "'rest_id', 'restaurant_name', 'dish_name', 'ingredients', and 'price'.\n"
         f"4. For the 'restaurant_name' field, unconditionally use this value: '{restaurant_name}'.\n"
         f"   For the 'rest_id' field, unconditionally use this value: '{rest_id}'.\n"
-        "5. If a specific field like ingredients or price cannot be found for a dish, assign it an empty string \"\".\n"
-        "6. CRITICAL: EXCLUDE ALL DRINKS. Do not extract wines, cocktails, beers, sodas, or beverages of any kind. Only extract food items.\n"
-        "7. CRITICAL: The input text contains MULTIPLE sources (e.g., PDF menus, HTML lunch/dinner menus). You MUST extract the dishes from ALL sources. Do not stop until all food items from all menus are extracted!\n"
-        "8. Output absolutely nothing else besides the raw JSON array string."
+        "5. Clean and Fix Prices: Due to PDF extraction errors, prices might appear duplicated (e.g., '2424' instead of '24', or '1616' instead of '16'). You MUST mathematically logicalize and fix these duplicated numbers back to their normal 2-digit menu price (e.g., 24). If a price is listed as 'HALF DOZEN 16 / DOZEN 32', output it exactly as '16 / 32'.\n"
+        "6. Match Missing Prices: If the text extraction jumbled the layout and separated prices from dish names, you MUST use contextual logic and ordering to reunite every dish with its correct price. Do not leave prices blank unless they truly do not exist on the menu.\n"
+        "7. CRITICAL: EXCLUDE ALL DRINKS. Do not extract wines, cocktails, beers, sodas, or beverages of any kind. Only extract food items.\n"
+        "8. CRITICAL: The input text contains MULTIPLE sources (e.g., PDF menus, HTML lunch/dinner menus). You MUST extract the dishes from ALL sources. Do not stop until all food items from all menus are extracted!\n"
+        "9. Output absolutely nothing else besides the raw JSON array string."
     )
 
     try:
@@ -298,7 +303,7 @@ def main():
     df = pd.read_csv(csv_path)
     
     # Target 1: Apply df.head(3) for testing
-    test_df = df[11:12]
+    test_df = df[56:57]
     
     all_extracted_menus = []
 

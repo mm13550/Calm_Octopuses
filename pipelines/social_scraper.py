@@ -220,12 +220,10 @@ def fetch_yelp_data_apify(restaurant_name, rest_id):
 
 def main():
     # === BATCH CONFIGURATION ===
-    # For free Custom Search limits (100 req/day), process 33 restaurants per batch.
-    # Day 1: start_row=0, end_row=33
-    # Day 2: start_row=33, end_row=66
-    # Day 3: start_row=66, end_row=99
-    start_row = 0
-    end_row = 33
+    # To save API costs, we limit processing to 3 restaurants per batch.
+    # Adjust start_row and end_row as needed.
+    start_row = 66
+    end_row = 99
     # ===========================
     
     input_file = os.path.join(DATA_DIR, 'nyc_michelin_names_cleaned.csv')
