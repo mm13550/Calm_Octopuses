@@ -9,11 +9,18 @@ with the Kaggle API to mirror the official Yelp Open Dataset.
 Usage Prerequisites:
 1. Create a free Kaggle Account at https://www.kaggle.com
 2. Go to Profile -> Settings -> "Create New API Token"
-3. Place the downloaded `kaggle.json` inside your `~/.kaggle/` directory.
+3. Open the downloaded `kaggle.json` file.
+4. Copy the username and key into your project's `.env` file like this:
+   KAGGLE_USERNAME="your_username_here"
+   KAGGLE_KEY="your_key_here"
 """
 
 import os
 import sys
+from dotenv import load_dotenv
+
+# Load environment variables (KAGGLE_USERNAME and KAGGLE_KEY) before importing kaggle
+load_dotenv()
 
 def main():
     """
@@ -32,13 +39,18 @@ def main():
     
     # Try importing Kaggle, catching authentication missing errors immediately.
     try:
+        if not os.getenv("KAGGLE_USERNAME") or not os.getenv("KAGGLE_KEY"):
+            print("\nERROR: Missing Kaggle Credentials in .env file!")
+            print("To use this automated script seamlessly, please:")
+            print("1. Log into Kaggle.com and click 'Account' -> 'Create New API Token'")
+            print("2. Open the downloaded kaggle.json and copy the details to your .env:")
+            print("   KAGGLE_USERNAME=\"your_username\"")
+            print("   KAGGLE_KEY=\"your_key\"")
+            sys.exit(1)
+            
         import kaggle
     except OSError as e:
-        print("\nERROR: Missing Kaggle Credentials!")
-        print("To use this automated script seamlessly, please:")
-        print("1. Log into Kaggle.com and click 'Account' -> 'Create New API Token'")
-        print("2. Drop the 'kaggle.json' file into your user directory: ~/.kaggle/kaggle.json")
-        print(f"Underlying OS Exception: {e}")
+        print(f"\nERROR: Kaggle Authentication Failed: {e}")
         sys.exit(1)
     except ImportError:
         print("\nERROR: Kaggle package not installed.")

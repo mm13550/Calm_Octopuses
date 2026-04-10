@@ -69,6 +69,8 @@ Copy the included `.env.example` file to `.env` to securely define your custom c
     REDDIT_CLIENT_SECRET=your_reddit_secret_here
     OPENAI_API_KEY=your_openai_key_here
     APIFY_API_TOKEN=your_apify_token_here
+    KAGGLE_USERNAME=your_kaggle_username_here
+    KAGGLE_KEY=your_kaggle_key_here
     ```
     
 
