@@ -176,20 +176,16 @@ def fetch_custom_search_images(restaurant_name, rest_id):
             
     return images
 
-def fetch_reddit_data(restaurant_name, rest_id):
-    """Gracefully inject mock Reddit data."""
-    mock_timestamp = datetime.now().timestamp() - 86400
-    mock_review = [{
-        "uid": f"r_mock_{rest_id}_01",
-        "rest_id": rest_id,
-        "source": "reddit",
-        "text": f"Just had the tasting menu at {restaurant_name}. Incredible progression, though the dessert was a bit sweet. #FoodNYC",
-        "timestamp": mock_timestamp, # 1 day ago
-        "rating": None
-    }]
-    return mock_review, []
-
 def main():
+    # === BATCH CONFIGURATION ===
+    # For free Custom Search limits (100 req/day), process 33 restaurants per batch.
+    # Day 1: start_row=0, end_row=33
+    # Day 2: start_row=33, end_row=66
+    # Day 3: start_row=66, end_row=99
+    start_row = 0
+    end_row = 33
+    # ===========================
+    
     input_file = os.path.join(DATA_DIR, 'nyc_michelin_names_cleaned.csv')
     reviews_output = os.path.join(DATA_DIR, 'social_reviews.csv')
     images_output = os.path.join(DATA_DIR, 'social_images.csv')
@@ -198,7 +194,8 @@ def main():
         print(f"Error: Input file {input_file} not found.")
         return
         
-    df = pd.read_csv(input_file).head(3) # Testing on top 3
+    df = pd.read_csv(input_file).iloc[start_row:end_row]
+    print(f"Starting batch process for restaurants {start_row} to {end_row}...")
     
     all_reviews = []
     all_images = []
@@ -217,11 +214,7 @@ def main():
         # 2. Google Custom Search Images
         cse_images = fetch_custom_search_images(rest_name, rest_id)
         all_images.extend(cse_images)
-        
-        # 3. Reddit Reviews
-        r_reviews, r_images = fetch_reddit_data(rest_name, rest_id)
-        all_reviews.extend(r_reviews)
-        all_images.extend(r_images)
+
         
         time.sleep(1) # Safety delay
         
@@ -229,12 +222,13 @@ def main():
     reviews_df = pd.DataFrame(all_reviews, columns=['uid', 'rest_id', 'source', 'text', 'timestamp', 'rating'])
     images_df = pd.DataFrame(all_images, columns=['image_uid', 'rest_id', 'source', 'image_path', 'timestamp'])
     
-    reviews_df.to_csv(reviews_output, index=False)
-    images_df.to_csv(images_output, index=False)
+    # Use append mode ('a') so we don't overwrite previous runs!
+    reviews_df.to_csv(reviews_output, mode='a', header=not os.path.exists(reviews_output), index=False)
+    images_df.to_csv(images_output, mode='a', header=not os.path.exists(images_output), index=False)
     
-    print(f"Success! Data mapped and saved.")
-    print(f" > {reviews_output} generated with {len(reviews_df)} stored reviews.")
-    print(f" > {images_output} generated with {len(images_df)} stored images.")
+    print(f"Success! Data batch mapped and added.")
+    print(f" > {reviews_output} appended with {len(reviews_df)} stored reviews.")
+    print(f" > {images_output} appended with {len(images_df)} stored images.")
 
 if __name__ == "__main__":
     main()
