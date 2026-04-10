@@ -64,20 +64,26 @@ def main():
     print(f"Target Directory: {data_dir}")
     print("\nStarting download... (Please endure silence during the zip transfer)")
     
-    dataset_name = "yelp-dataset/yelp-dataset"
+    dataset_names = [
+        "yelp-dataset/yelp-dataset",       # The core JSON reviews/users datasets
+        "joshiatri/yelp-dataset-photos"    # The official Kaggle mirrored Photos tarball
+    ]
     
     try:
-        # The kaggle package will authenticate implicitly using ~/.kaggle/kaggle.json
+        # The kaggle package will authenticate implicitly using the .env variables
         kaggle.api.authenticate()
         
-        # Download and automatically unzip straight into the sandbox
-        kaggle.api.dataset_download_files(
-            dataset_name, 
-            path=data_dir, 
-            unzip=True,
-            quiet=False
-        )
-        print("\nSUCCESS! The Yelp Open Dataset has been downloaded and extracted into you sandbox.")
+        for dataset in dataset_names:
+            print(f"\n[+] Processing: {dataset}")
+            # Download and automatically unzip straight into the sandbox
+            kaggle.api.dataset_download_files(
+                dataset, 
+                path=data_dir, 
+                unzip=True,
+                quiet=False
+            )
+            
+        print("\nSUCCESS! The entire Yelp Open Dataset (Text and Photos) has been unpacked into your sandbox.")
     except Exception as exp:
         print(f"\nDownload Process completely Failed! Reason: {exp}")
         sys.exit(1)
