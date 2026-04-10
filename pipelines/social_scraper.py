@@ -225,7 +225,7 @@ def main():
     # Day 2: start_row=33, end_row=66
     # Day 3: start_row=66, end_row=99
     start_row = 0
-    end_row = 3
+    end_row = 33
     # ===========================
     
     input_file = os.path.join(DATA_DIR, 'nyc_michelin_names_cleaned.csv')

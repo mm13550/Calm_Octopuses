@@ -20,7 +20,6 @@ test_*.csv
 data/images/
 data/social_images.csv
 data/social_reviews.csv
-data/raw_social_recent.csv
 data/embeddings/
 
 # Ignored planning files
@@ -45,3 +44,4 @@ recent_changes_summary.md
 data/yelp_sandbox/
 *.tar
 *.json
+data/extracted_menus/
