@@ -191,8 +191,19 @@ def scrape_menu_text(url):
 
 def encode_image_to_base64(image_url):
     try:
-        headers = {'User-Agent': 'Mozilla/5.0'}
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
+            'Referer': image_url
+        }
         response = requests.get(image_url, headers=headers, timeout=10)
+        
+        # Fallback: Some CDNs block "spoofed" standard browsers due to TLS mismatches, 
+        # but allow honest python-requests or cURL user-agents.
+        if response.status_code == 403:
+            # Fall back to default requests user-agent (python-requests/2.x)
+            response = requests.get(image_url, timeout=10)
+            
         response.raise_for_status()
         encoded = base64.b64encode(response.content).decode('utf-8')
         return encoded
@@ -303,7 +314,7 @@ def main():
     df = pd.read_csv(csv_path)
     
     # Target 1: Apply df.head(3) for testing
-    test_df = df[56:57]
+    test_df = df[63:64]
     
     all_extracted_menus = []
 
