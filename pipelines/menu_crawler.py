@@ -196,7 +196,22 @@ def encode_image_to_base64(image_url):
         print(f"  -> Failed to download/encode image {image_url}: {e}")
         return None
 
-def parse_text_to_json_with_llm(restaurant_name, raw_text, image_urls):
+def get_place_id(restaurant_name):
+    """Fetch the robust Google Place ID (rest_id) dynamically for relational mapping."""
+    api_key = os.getenv("GOOGLE_PLACES_API_KEY")
+    if not api_key: return None
+    url = "https://places.googleapis.com/v1/places:searchText"
+    headers = {"Content-Type": "application/json", "X-Goog-Api-Key": api_key, "X-Goog-FieldMask": "places.id"}
+    payload = {"textQuery": f"{restaurant_name} restaurant NYC"}
+    try:
+        r = requests.post(url, headers=headers, json=payload, timeout=5)
+        if r.status_code == 200 and r.json().get('places'):
+            return r.json()['places'][0]['id']
+    except Exception:
+        pass
+    return None
+
+def parse_text_to_json_with_llm(restaurant_name, rest_id, raw_text, image_urls):
     """
     Uses OpenAI's gpt-4o-mini to convert the unstructured raw text into structured JSON.
     """
@@ -212,8 +227,9 @@ def parse_text_to_json_with_llm(restaurant_name, raw_text, image_urls):
         "1. Do NOT include any markdown formatting, backticks, or code blocks (e.g., ```json) in your output.\n"
         "2. Your output must strictly be a valid JSON array of objects.\n"
         "3. Each object must exactly contain the following keys: "
-        "'restaurant_name', 'dish_name', 'ingredients', and 'price'.\n"
+        "'rest_id', 'restaurant_name', 'dish_name', 'ingredients', and 'price'.\n"
         f"4. For the 'restaurant_name' field, unconditionally use this value: '{restaurant_name}'.\n"
+        f"   For the 'rest_id' field, unconditionally use this value: '{rest_id}'.\n"
         "5. If a specific field like ingredients or price cannot be found for a dish, assign it an empty string \"\".\n"
         "6. CRITICAL: EXCLUDE ALL DRINKS. Do not extract wines, cocktails, beers, sodas, or beverages of any kind. Only extract food items.\n"
         "7. CRITICAL: The input text contains MULTIPLE sources (e.g., PDF menus, HTML lunch/dinner menus). You MUST extract the dishes from ALL sources. Do not stop until all food items from all menus are extracted!\n"
@@ -299,8 +315,10 @@ def main():
         raw_text, image_urls = scrape_menu_text(url)
         
         if raw_text or image_urls:
+            rest_id = get_place_id(restaurant_name) or f"dummy_{index}"
+            print(f"  -> Target rest_id resolved to: {rest_id}")
             print(f"  -> Extracted {len(raw_text)} characters and {len(image_urls)} menu images. Sending to GPT-4o-mini...")
-            structured_dishes = parse_text_to_json_with_llm(restaurant_name, raw_text, image_urls)
+            structured_dishes = parse_text_to_json_with_llm(restaurant_name, rest_id, raw_text, image_urls)
             print(f"  -> Successfully structured {len(structured_dishes)} dishes.")
             all_extracted_menus.extend(structured_dishes)
         else:
