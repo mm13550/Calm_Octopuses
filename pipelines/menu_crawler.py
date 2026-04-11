@@ -85,7 +85,8 @@ def scrape_menu_text(url):
                 if len(visited) <= 1 or any(k in text or k in href.lower() for k in keywords) or '.pdf' in href.lower():
                     nested_link = urllib.parse.urljoin(current_target, href)
                     
-                    if any(nested_link.lower().endswith(ext) for ext in ['.jpg', '.jpeg', '.png', '.webp']) or 'format=jpg' in nested_link.lower() or 'format=webp' in nested_link.lower():
+                    parsed_img = urllib.parse.urlparse(nested_link.lower())
+                    if any(parsed_img.path.endswith(ext) for ext in ['.jpg', '.jpeg', '.png', '.webp']) or 'format=jpg' in nested_link.lower() or 'format=webp' in nested_link.lower():
                         is_menu_page = any(k in current_target.lower() for k in ['menu', 'food', 'dinner', 'lunch'])
                         is_img_keyword = any(k in nested_link.lower() or k in text for k in image_keywords)
                         if is_img_keyword or is_menu_page:
@@ -108,7 +109,8 @@ def scrape_menu_text(url):
                 is_menu_page = any(k in current_target.lower() for k in ['menu', 'food', 'dinner', 'lunch'])
                 is_img_keyword = any(k in src.lower() or k in alt.lower() for k in image_keywords)
                 if is_img_keyword or is_menu_page:
-                    if any(src.lower().endswith(ext) for ext in ['.jpg', '.jpeg', '.png', '.webp']) or 'format=jpg' in src.lower() or 'format=webp' in src.lower():
+                    parsed_src = urllib.parse.urlparse(src.lower())
+                    if any(parsed_src.path.endswith(ext) for ext in ['.jpg', '.jpeg', '.png', '.webp']) or 'format=jpg' in src.lower() or 'format=webp' in src.lower():
                         img_link = urllib.parse.urljoin(current_target, src)
                         if img_link not in image_urls_list and len(image_urls_list) < 8:
                             image_urls_list.append(img_link)
@@ -189,22 +191,42 @@ def scrape_menu_text(url):
             
     return combined_text[:50000], image_urls_list
 
+def upgrade_image_resolution(image_url):
+    """Upgrade CDN image URLs to maximum resolution for better OCR by GPT."""
+    import re
+    # Shopify CDN: replace &width=NNN or ?width=NNN with &width=2000
+    image_url = re.sub(r'([?&])width=\d+', r'\g<1>width=2000', image_url)
+    # Squarespace CDN: replace ?format=NNNw with ?format=2000w
+    image_url = re.sub(r'\?format=\d+w', '?format=2000w', image_url)
+    return image_url
+
 def encode_image_to_base64(image_url):
     try:
+        # Upgrade to max resolution before downloading
+        image_url = upgrade_image_resolution(image_url)
+        
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept': 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
-            'Referer': image_url
+            # Explicitly exclude AVIF - OpenAI does not support it. CDNs like Prismic use
+            # content negotiation and will serve AVIF if it's in Accept header.
+            'Accept': 'image/webp,image/png,image/jpeg,image/*;q=0.8',
         }
         response = requests.get(image_url, headers=headers, timeout=10)
         
         # Fallback: Some CDNs block "spoofed" standard browsers due to TLS mismatches, 
         # but allow honest python-requests or cURL user-agents.
         if response.status_code == 403:
-            # Fall back to default requests user-agent (python-requests/2.x)
             response = requests.get(image_url, timeout=10)
             
         response.raise_for_status()
+        
+        # Validate content type - skip unsupported formats (AVIF, SVG, etc.)
+        content_type = response.headers.get('Content-Type', '').lower()
+        supported = any(fmt in content_type for fmt in ['jpeg', 'jpg', 'png', 'gif', 'webp'])
+        if not supported:
+            print(f"  -> Skipping unsupported image format ({content_type}): {image_url[:80]}")
+            return None
+        
         encoded = base64.b64encode(response.content).decode('utf-8')
         return encoded
     except Exception as e:
@@ -314,7 +336,7 @@ def main():
     df = pd.read_csv(csv_path)
     
     # Target 1: Apply df.head(3) for testing
-    test_df = df[63:64]
+    test_df = df[86:87]
     
     all_extracted_menus = []
 
