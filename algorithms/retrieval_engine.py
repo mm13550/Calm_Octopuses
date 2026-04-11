@@ -637,7 +637,7 @@ def demo_from_jsonl(path: str | Path) -> None:
 
 
 if __name__ == "__main__":
-    week2_path = DATA_DIR / "week2_embeddings.jsonl"
+    week2_path = DATA_DIR / "embeddings" / "week2_embeddings.jsonl"
 
     if week2_path.exists():
         print(f"Using Week 2 embeddings at: {week2_path}")
