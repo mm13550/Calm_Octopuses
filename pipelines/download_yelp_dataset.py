@@ -31,6 +31,12 @@ def main():
     2. Establish the `data/yelp_sandbox/` target directory safely.
     3. Trigger the programmatic download & extraction of the multi-gigabyte dataset.
     """
+    import argparse
+    parser = argparse.ArgumentParser(description="Download Yelp Dataset components from Kaggle.")
+    parser.add_argument("--photos-only", action="store_true", help="Download only the photos dataset.")
+    parser.add_argument("--text-only", action="store_true", help="Download only the text JSON dataset.")
+    args = parser.parse_args()
+
     print("--- Yelp Dataset Automated Downloader ---")
     
     # Establish Sandbox path
@@ -64,10 +70,11 @@ def main():
     print(f"Target Directory: {data_dir}")
     print("\nStarting download... (Please endure silence during the zip transfer)")
     
-    dataset_names = [
-        "yelp-dataset/yelp-dataset",       # The core JSON reviews/users datasets
-        "joshiatri/yelp-dataset-photos"    # The official Kaggle mirrored Photos tarball
-    ]
+    dataset_names = []
+    if not args.photos_only:
+        dataset_names.append("yelp-dataset/yelp-dataset")
+    if not args.text_only:
+        dataset_names.append("joshiatri/yelp-dataset-photos")
     
     try:
         # The kaggle package will authenticate implicitly using the .env variables
