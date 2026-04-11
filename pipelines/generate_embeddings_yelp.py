@@ -23,8 +23,10 @@ DB_PATH = os.path.join(DATA_DIR, 'yelp_relations.db')
 PHOTOS_JSON = os.path.join(DATA_DIR, 'train.json')
 PHOTOS_DIR = os.path.join(DATA_DIR, 'train', 'train') # Nested Kaggle Extractor dir
 
-TRAIN_EMBEDDINGS_OUT = os.path.join(DATA_DIR, 'train_embeddings.pt')
-VAL_EMBEDDINGS_OUT = os.path.join(DATA_DIR, 'val_embeddings.pt')
+TOY_DIR = os.path.join(DATA_DIR, 'toy_embeddings')
+os.makedirs(TOY_DIR, exist_ok=True)
+TRAIN_EMBEDDINGS_OUT = os.path.join(TOY_DIR, 'toy_train_embeddings.pt')
+VAL_EMBEDDINGS_OUT = os.path.join(TOY_DIR, 'toy_val_embeddings.pt')
 
 # Performance Restrictions
 BATCH_LIMIT = 10000
