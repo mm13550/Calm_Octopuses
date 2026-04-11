@@ -27,6 +27,21 @@ def scrape_menu_text(url):
     
     keywords = ['menu', 'food', 'dinner', 'lunch', 'tasting', 'carte', 'sweets', 'dessert']
     skip_keywords = ['drink', 'beverage', 'bev', 'wine', 'cocktail', 'beer', 'liquor', 'catering', 'event']
+    # Common non-menu PDF filenames to skip (legal docs, etc.)
+    pdf_skip_names = [
+        'terms', 'termsofuse', 'terms-of-use', 'terms_of_use',
+        'privacy', 'privacypolicy', 'privacy-policy', 'privacy_policy',
+        'disclaimer', 'accessibility', 'sitemap', 'cookie', 'gdpr',
+        'press', 'pressrelease', 'press-release', 'annual-report', 'annual_report',
+    ]
+    # Locations that are definitely NOT NYC - used to filter out menus from other cities
+    # for multi-location restaurant chains (e.g. Nami Nori has Atlantic Park, Design District, Montclair)
+    non_nyc_locations = [
+        'atlantic-park', 'design-district', 'montclair', 'chicago', 'miami', 'boston',
+        'los-angeles', 'la-', 'houston', 'dallas', 'seattle', 'denver', 'atlanta',
+        'philadelphia', 'dc', 'washington', 'san-francisco', 'sf-', 'las-vegas',
+        'toronto', 'london', 'paris', 'tokyo', 'hamptons', 'jersey','singapore','vegas'
+    ]
         
     queue = [url]
     visited = set()
@@ -96,6 +111,16 @@ def scrape_menu_text(url):
 
                     if urllib.parse.urlparse(nested_link).netloc == urllib.parse.urlparse(url).netloc:
                         if nested_link not in visited and nested_link not in queue:
+                            # Skip menus that are explicitly for non-NYC locations
+                            link_path_lower = urllib.parse.urlparse(nested_link).path.lower()
+                            is_non_nyc = any(loc in link_path_lower or loc in text for loc in non_nyc_locations)
+                            if is_non_nyc:
+                                continue
+                            # Skip legal / non-menu PDFs by filename
+                            if '.pdf' in nested_link.lower():
+                                pdf_fname = link_path_lower.split('/')[-1].split('?')[0]
+                                if any(skip in pdf_fname for skip in pdf_skip_names):
+                                    continue
                             # Prioritize PDFs
                             if '.pdf' in nested_link.lower() or 'pdf' in text:
                                 queue.insert(0, nested_link)
@@ -133,27 +158,42 @@ def scrape_menu_text(url):
         # Handles JS-heavy sites (Squarespace, Wix, Webflow) where PDFs are embedded
         # in <script> tags or data attributes, invisible to BeautifulSoup's <a> tag search.
         print(f"  -> No PDFs found via links. Scanning raw HTML source for embedded PDF URLs...")
-        pdf_url_pattern = re.compile(r'https?://[^\s"\'>]+\.pdf(?:[^\s"\'>]*)?', re.IGNORECASE)
+        pdf_url_pattern = re.compile(r'https?://[^\s"\'<>]+\.pdf(?:[^\s"\'<>]*)?', re.IGNORECASE)
         seen_pdf_urls = set()
+        seen_pdf_filenames = set()  # dedup by filename hash (same file on multiple CDNs)
+        MAX_REGEX_PDFS = 5  # cap to avoid downloading dozens of unrelated PDFs (e.g. museum sites)
         
         for page_url, raw_html in raw_html_cache.items():
             found_urls = pdf_url_pattern.findall(raw_html)
             for raw_pdf_url in found_urls:
+                if len(pdf_texts) >= MAX_REGEX_PDFS:
+                    break
                 # Decode any JSON unicode escapes (e.g. \u002F -> /)
                 try:
                     raw_pdf_url = raw_pdf_url.encode('utf-8').decode('unicode_escape')
                 except Exception:
                     pass
-                raw_pdf_url = raw_pdf_url.rstrip('"\' ')
+                raw_pdf_url = raw_pdf_url.rstrip('"\'  ')
                 
                 if raw_pdf_url in seen_pdf_urls:
                     continue
                 seen_pdf_urls.add(raw_pdf_url)
                 
+                # Dedup by filename: same PDF hosted on multiple CDNs (e.g. Sanity + BunnyCDN)
+                pdf_filename = urllib.parse.urlparse(raw_pdf_url).path.split('/')[-1].split('?')[0]
+                if pdf_filename in seen_pdf_filenames:
+                    continue
+                seen_pdf_filenames.add(pdf_filename)
+                
                 # Filter out drink menus at URL level
                 url_lower = raw_pdf_url.lower()
                 if any(k in url_lower for k in skip_keywords):
-                    print(f"  -> Skipping drink PDF: {raw_pdf_url}")
+                    continue
+                # Filter out non-NYC location PDFs
+                if any(loc in url_lower for loc in non_nyc_locations):
+                    continue
+                # Filter out legal / non-menu PDFs by filename
+                if any(skip in pdf_filename for skip in pdf_skip_names):
                     continue
                 
                 print(f"  -> [Regex] Found embedded PDF: {raw_pdf_url}")
@@ -336,7 +376,7 @@ def main():
     df = pd.read_csv(csv_path)
     
     # Target 1: Apply df.head(3) for testing
-    test_df = df[86:87]
+    test_df = df[118:119]
     
     all_extracted_menus = []
 
