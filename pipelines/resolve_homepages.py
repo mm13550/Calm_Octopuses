@@ -25,8 +25,8 @@ Options:
 
 Usage:
   python resolve_homepages.py \
-    --input data/nyc_michelin_names_cleaned.csv \
-    --output data/seeds_resolved.csv \
+    --input data/csv/nyc_michelin_names_cleaned.csv \
+    --output data/csv/seeds_resolved.csv \
     --api-key YOUR_SERPAPI_KEY
 
 Or set environment variable SERPAPI_API_KEY and omit --api-key.

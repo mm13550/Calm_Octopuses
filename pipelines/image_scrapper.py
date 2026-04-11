@@ -5,7 +5,7 @@ import requests
 import sys
 import time
 
-CSV_FILE = "data/nyc_michelin_names_cleaned.csv"
+CSV_FILE = "data/csv/nyc_michelin_names_cleaned.csv"
 OUTPUT_DIR = "data/images"
 
 # Maximum number of restaurants to process by default

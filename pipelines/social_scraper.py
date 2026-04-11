@@ -226,7 +226,7 @@ def main():
     end_row = 99
     # ===========================
     
-    input_file = os.path.join(DATA_DIR, 'nyc_michelin_names_cleaned.csv')
+    input_file = os.path.join(DATA_DIR, 'csv', 'nyc_michelin_names_cleaned.csv')
     reviews_output = os.path.join(DATA_DIR, 'social_reviews.csv')
     images_output = os.path.join(DATA_DIR, 'social_images.csv')
     

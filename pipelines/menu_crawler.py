@@ -369,7 +369,7 @@ def main():
     os.makedirs(images_dir, exist_ok=True)
     os.makedirs(extracted_menus_dir, exist_ok=True)
 
-    csv_path = os.path.join(data_dir, 'seeds_resolved.csv')
+    csv_path = os.path.join(data_dir, 'csv', 'seeds_resolved.csv')
     output_path = os.path.join(extracted_menus_dir, 'parsed_menus.json')
 
     print(f"Reading restaurants from: {csv_path}")

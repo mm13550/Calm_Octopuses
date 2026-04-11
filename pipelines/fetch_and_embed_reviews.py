@@ -137,7 +137,7 @@ def main():
         print("Error: API Key is missing. Ensure GOOGLE_MAPS_API_KEY or GOOGLE_PLACES_API_KEY is in .env")
         return
 
-    input_file = os.path.join(DATA_DIR, 'nyc_michelin_names_cleaned.csv')
+    input_file = os.path.join(DATA_DIR, 'csv', 'nyc_michelin_names_cleaned.csv')
     if not os.path.exists(input_file):
         print(f"Error: Input file {input_file} not found.")
         return
