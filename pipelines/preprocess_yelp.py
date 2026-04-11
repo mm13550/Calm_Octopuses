@@ -35,6 +35,10 @@ def init_db():
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
     
+    # Extreme DB Optimization for massive bulk streaming
+    cur.execute('PRAGMA synchronous = OFF')
+    cur.execute('PRAGMA journal_mode = MEMORY')
+    
     # Pruned schema for speed
     cur.execute('''
         CREATE TABLE businesses (
@@ -117,7 +121,7 @@ def stream_reviews(conn):
         subset.to_sql('reviews', conn, if_exists='append', index=False, chunksize=50_000)
         
         chunks_processed += 1
-        print(f"   ... Flushed {(chunks_processed * chunk_size):,}-row mark to Disk ...", end='\r')
+        print(f"   ... Flushed {(chunks_processed * chunk_size):,}-row mark to Disk ...", end='\r', flush=True)
         
     print(f"\n [DB] Out-Of-Core review extraction perfectly completed.")
 
