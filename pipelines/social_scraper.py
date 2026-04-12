@@ -2,7 +2,6 @@ import os
 import time
 import requests
 import pandas as pd
-from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from apify_client import ApifyClient
 
@@ -33,7 +32,7 @@ def download_google_photo(photo_reference, filename_prefix):
     return None
 
 def fetch_google_places_data(restaurant_name):
-    """Fetch recent reviews and photos using Google Places API"""
+    """Fetch reviews and photos using Google Places API"""
     review_results = []
     image_results = []
     place_id_val = None
@@ -59,10 +58,14 @@ def fetch_google_places_data(restaurant_name):
     place_id_val = place_id
 
     # 2. Place Details to get reviews and photos
+    # Google Places API (New) REST endpoint does not support reviewSort.
+    # publishTime from Google reflects the API request time, NOT the user's review date.
+    # Therefore we do NOT use timestamps for any scoring. Popularity weighting (review count +
+    # rating) is computed separately at the end of the pipeline.
     details_url = f"https://places.googleapis.com/v1/places/{place_id}"
     details_headers = {
         "X-Goog-Api-Key": GOOGLE_PLACES_API_KEY,
-        "X-Goog-FieldMask": "reviews,photos" 
+        "X-Goog-FieldMask": "reviews,photos"
     }
     
     details_response = requests.get(details_url, headers=details_headers)
@@ -74,35 +77,16 @@ def fetch_google_places_data(restaurant_name):
     reviews = details_data.get('reviews', [])
     photos = details_data.get('photos', [])
     
-    # Time filtering: 1 year (365 days) ago
-    one_year_ago = datetime.now() - timedelta(days=365)
-    
     for i, review in enumerate(reviews):
-        # Time filter
-        publish_time_str = review.get('publishTime')
-        if publish_time_str:
-            try:
-                # e.g. "2023-01-01T12:00:00Z"
-                publish_time = pd.to_datetime(publish_time_str).replace(tzinfo=None)
-                if publish_time < one_year_ago:
-                    continue # Skip older reviews
-                timestamp = publish_time.timestamp()
-            except Exception:
-                timestamp = datetime.now().timestamp()
-        else:
-            timestamp = datetime.now().timestamp()
-            
         review_results.append({
             "uid": f"g_{place_id}_{i}",
             "rest_id": place_id,
             "source": "google_places",
             "text": review.get('text', {}).get('text', ''),
-            "timestamp": timestamp,
             "rating": review.get('rating', None)
         })
         
-    # Process Google Photos (No reliable timestamp, using current time)
-    current_timestamp = datetime.now().timestamp()
+    # Process Google Photos
     for i, photo in enumerate(photos):
         photo_ref = photo.get('name')
         if photo_ref:
@@ -112,8 +96,7 @@ def fetch_google_places_data(restaurant_name):
                     "image_uid": f"img_g_{place_id}_{i}",
                     "rest_id": place_id,
                     "source": "google_places",
-                    "image_path": image_path,
-                    "timestamp": current_timestamp
+                    "image_path": image_path
                 })
         
     return review_results, image_results, place_id_val
@@ -142,28 +125,12 @@ def fetch_yelp_data_apify(restaurant_name, rest_id):
         print(f"  > Contacting Apify Yelp Scraper for {restaurant_name}...")
         run = client.actor("tri_angle/yelp-scraper").call(run_input=run_input)
         
-        # Time filtering: 1 year (365 days) ago
-        one_year_ago = datetime.now() - timedelta(days=365)
-        current_timestamp = datetime.now().timestamp()
-        
         for item in client.dataset(run["defaultDatasetId"]).iterate_items():
             print("  [DEBUG] Received Yelp Business Item:", item.get("name"))
             # 1. Process Reviews
             reviews = item.get("reviews", [])
             print(f"  [DEBUG] Found {len(reviews)} reviews inside 'reviews' key.")
             for i, rev in enumerate(reviews):
-                timestamp_str = rev.get("date") # e.g. "2024-11-01T10:23:00.000Z"
-                if timestamp_str:
-                    try:
-                        publish_time = pd.to_datetime(timestamp_str).replace(tzinfo=None)
-                        if publish_time < one_year_ago:
-                            continue # older than 1 year
-                        ts = publish_time.timestamp()
-                    except Exception:
-                        ts = current_timestamp
-                else:
-                    ts = current_timestamp
-                
                 content = rev.get("text") or rev.get("body") or ""
                 
                 reviews_out.append({
@@ -171,12 +138,10 @@ def fetch_yelp_data_apify(restaurant_name, rest_id):
                     "rest_id": rest_id,
                     "source": "yelp",
                     "text": content,
-                    "timestamp": ts,
                     "rating": rev.get("rating", None)
                 })
             
             # 2. Process Photos
-            # photos might be under 'photos', 'images', 'imageUrls'
             photos = item.get("photos") or item.get("images") or item.get("imageUrls") or []
             print(f"  [DEBUG] Found {len(photos)} photos keys.")
             
@@ -201,8 +166,7 @@ def fetch_yelp_data_apify(restaurant_name, rest_id):
                             "image_uid": f"img_y_{rest_id}_{i}",
                             "rest_id": rest_id,
                             "source": "yelp",
-                            "image_path": file_path,
-                            "timestamp": current_timestamp
+                            "image_path": file_path
                         })
                     else:
                         print(f"  [DEBUG] Skipping photo {i}: Bad status or content-type ({img_res.status_code}, {content_type})")
@@ -220,10 +184,9 @@ def fetch_yelp_data_apify(restaurant_name, rest_id):
 
 def main():
     # === BATCH CONFIGURATION ===
-    # To save API costs, we limit processing to 3 restaurants per batch.
     # Adjust start_row and end_row as needed.
-    start_row = 66
-    end_row = 99
+    start_row = 0
+    end_row = 120  # First batch: restaurants 0-119
     # ===========================
     
     input_file = os.path.join(DATA_DIR, 'csv', 'nyc_michelin_names_cleaned.csv')
@@ -260,16 +223,16 @@ def main():
         time.sleep(1) # Safety delay
         
     # Standardize relational schema and export to CSV
-    reviews_df = pd.DataFrame(all_reviews, columns=['uid', 'rest_id', 'source', 'text', 'timestamp', 'rating'])
-    images_df = pd.DataFrame(all_images, columns=['image_uid', 'rest_id', 'source', 'image_path', 'timestamp'])
+    # Note: timestamp column removed — neither API provides reliable review dates.
+    reviews_df = pd.DataFrame(all_reviews, columns=['uid', 'rest_id', 'source', 'text', 'rating'])
+    images_df = pd.DataFrame(all_images, columns=['image_uid', 'rest_id', 'source', 'image_path'])
     
-    # Use append mode ('a') so we don't overwrite previous runs!
-    reviews_df.to_csv(reviews_output, mode='a', header=not os.path.exists(reviews_output), index=False)
-    images_df.to_csv(images_output, mode='a', header=not os.path.exists(images_output), index=False)
+    reviews_df.to_csv(reviews_output, index=False)
+    images_df.to_csv(images_output, index=False)
     
-    print(f"Success! Data batch mapped and added.")
-    print(f" > {reviews_output} appended with {len(reviews_df)} stored reviews.")
-    print(f" > {images_output} appended with {len(images_df)} stored images.")
+    print(f"\nSuccess! Data batch mapped.")
+    print(f" > {reviews_output}: {len(reviews_df)} reviews.")
+    print(f" > {images_output}: {len(images_df)} images.")
 
 if __name__ == "__main__":
     main()

@@ -376,7 +376,7 @@ def main():
     df = pd.read_csv(csv_path)
     
     # Target 1: Apply df.head(3) for testing
-    test_df = df[118:119]
+    test_df = df[0:120]  # First batch: restaurants 0-119
     
     all_extracted_menus = []
 
