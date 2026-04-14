@@ -105,7 +105,7 @@ with tab2:
             cols = df.columns.tolist()
             for c in ['step', 'epoch']:
                 if c in cols: cols.remove(c)
-            df = df.fillna(method='ffill')
+            df = df.ffill()
             loss_cols = [c for c in cols if 'loss' in c]
             if loss_cols:
                 chart_placeholder.line_chart(df, x='epoch', y=loss_cols)
