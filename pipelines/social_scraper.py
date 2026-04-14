@@ -185,8 +185,8 @@ def fetch_yelp_data_apify(restaurant_name, rest_id):
 def main():
     # === BATCH CONFIGURATION ===
     # Adjust start_row and end_row as needed.
-    start_row = 0
-    end_row = 120  # First batch: restaurants 0-119
+    start_row = 300
+    end_row = 350  # First batch: restaurants 0-119
     # ===========================
     
     input_file = os.path.join(DATA_DIR, 'csv', 'nyc_michelin_names_cleaned.csv')
@@ -227,8 +227,15 @@ def main():
     reviews_df = pd.DataFrame(all_reviews, columns=['uid', 'rest_id', 'source', 'text', 'rating'])
     images_df = pd.DataFrame(all_images, columns=['image_uid', 'rest_id', 'source', 'image_path'])
     
-    reviews_df.to_csv(reviews_output, index=False)
-    images_df.to_csv(images_output, index=False)
+    if os.path.exists(reviews_output) and os.path.getsize(reviews_output) > 0:
+        reviews_df.to_csv(reviews_output, mode='a', header=False, index=False)
+    else:
+        reviews_df.to_csv(reviews_output, index=False)
+        
+    if os.path.exists(images_output) and os.path.getsize(images_output) > 0:
+        images_df.to_csv(images_output, mode='a', header=False, index=False)
+    else:
+        images_df.to_csv(images_output, index=False)
     
     print(f"\nSuccess! Data batch mapped.")
     print(f" > {reviews_output}: {len(reviews_df)} reviews.")

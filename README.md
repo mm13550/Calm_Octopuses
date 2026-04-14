@@ -78,9 +78,30 @@ Copy the included `.env.example` file to `.env` to securely define your custom c
 
 ## 🚀 Usage Examples
 
+**Run the Official Menu Extraction Pipeline (Crawl, Retry, Merge):**
+
+The menu extraction pipeline uses a robust 4-step workflow to handle API rate limits, frontend SPA hiding, and anti-bot firewalls without dropping data. You can pass slice indices (e.g., `180 250`) to process batches:
+
+1. **Crawl Next Batch (Append to Raw):**
+   ```bash
+   python pipelines/menu_crawler.py 180 250
+   ```
+2. **Merge and Deduplicate:**
+   ```bash
+   python pipelines/merge_menus.py
+   ```
+3. **Resuscitate Missing/Zero-Dish Restaurants:**
+   ```bash
+   python pipelines/retry_zero_dishes.py 180 250
+   ```
+4. **Final Sync Merge:**
+   ```bash
+   python pipelines/merge_menus.py
+   ```
+
 **Run the UGC Scraper (Google Places/Apify):**
 
-```
+```bash
 python pipelines/social_scraper.py
 ```
 

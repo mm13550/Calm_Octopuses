@@ -1,4 +1,5 @@
 import re
+
 import os
 import json
 import io
@@ -23,9 +24,21 @@ def scrape_menu_text(url):
     and falling back to an HTML crawler. It tracks PDFs and HTML separately,
     prioritizing parsed PDF text over HTML noise.
     """
-    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Sec-Ch-Ua': '"Not A(Brand";v="99", "Google Chrome";v="121", "Chromium";v="121"',
+        'Sec-Ch-Ua-Mobile': '?0',
+        'Sec-Ch-Ua-Platform': '"macOS"',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none',
+        'Sec-Fetch-User': '?1',
+        'Upgrade-Insecure-Requests': '1'
+    }
     
-    keywords = ['menu', 'food', 'dinner', 'lunch', 'tasting', 'carte', 'sweets', 'dessert']
+    keywords = ['menu', 'food', 'dinner', 'lunch', 'tasting', 'carte', 'sweets', 'dessert', 'cuisine', 'prix']
     skip_keywords = ['drink', 'beverage', 'bev', 'wine', 'cocktail', 'beer', 'liquor', 'catering', 'event']
     # Common non-menu PDF filenames to skip (legal docs, etc.)
     pdf_skip_names = [
@@ -33,6 +46,7 @@ def scrape_menu_text(url):
         'privacy', 'privacypolicy', 'privacy-policy', 'privacy_policy',
         'disclaimer', 'accessibility', 'sitemap', 'cookie', 'gdpr',
         'press', 'pressrelease', 'press-release', 'annual-report', 'annual_report',
+        'covid', 'safe', 'manual', 'guidelines', 'policy', 'safety'
     ]
     # Locations that are definitely NOT NYC - used to filter out menus from other cities
     # for multi-location restaurant chains (e.g. Nami Nori has Atlantic Park, Design District, Montclair)
@@ -40,7 +54,7 @@ def scrape_menu_text(url):
         'atlantic-park', 'design-district', 'montclair', 'chicago', 'miami', 'boston',
         'los-angeles', 'la-', 'houston', 'dallas', 'seattle', 'denver', 'atlanta',
         'philadelphia', 'dc', 'washington', 'san-francisco', 'sf-', 'las-vegas',
-        'toronto', 'london', 'paris', 'tokyo', 'hamptons', 'jersey','singapore','vegas'
+        'toronto', 'london', 'paris', 'tokyo', 'hamptons', 'jersey','singapore','vegas','seoul'
     ]
         
     queue = [url]
@@ -86,7 +100,17 @@ def scrape_menu_text(url):
             target_soup = BeautifulSoup(sub_response.text, 'html.parser')
             raw_html_cache[current_target] = sub_response.text  # cache for later regex scan
             
-            # Find deeper links FIRST, before we destroy nav/header tags for text extraction
+            # --- HIDDEN SPA / JSON LINK EXTRACTOR ---
+            # SPA / Next.js / Prismic CMS often hide navigation links inside huge JSON payloads rather than <a> tags
+            hidden_links = re.findall(r"\"(/(?:cuisine|menu|dining|dinner|lunch|prix-?[a-z]*|tasting|food)[^\"]*)\"", sub_response.text, re.IGNORECASE)
+            for hl in hidden_links:
+                clean_hl = hl.rstrip('\\')
+                full_nested = urllib.parse.urljoin(current_target, clean_hl)
+                if full_nested not in visited and full_nested not in queue:
+                    if not any(k in full_nested.lower() for k in skip_keywords):
+                        queue.append(full_nested)
+
+            # Find deeper HTML links FIRST, before we destroy nav/header tags for text extraction
             for link in target_soup.find_all('a', href=True):
                 if not link.has_attr('href'):
                     continue
@@ -139,6 +163,40 @@ def scrape_menu_text(url):
                         img_link = urllib.parse.urljoin(current_target, src)
                         if img_link not in image_urls_list and len(image_urls_list) < 8:
                             image_urls_list.append(img_link)
+
+            # --- RSC / JSON PAYLOAD EXTRACTOR ---
+            # Try to grab content from Next.js or React Server Component payloads hidden in the raw HTML string
+            json_food_pattern = re.compile(
+                r"\\?\"(?:name|title)\\?\"\s*:\s*\\?\"(.*?)\\?\"\s*,\s*(?:\\?\"description\\?\"\s*:\s*\\?\"(.*?)\\?\"\s*,\s*)?\\?\"price\\?\"\s*:\s*\\?\"(.*?)\\?\"", 
+                re.IGNORECASE
+            )
+            raw_matches = json_food_pattern.findall(sub_response.text)
+            for m in raw_matches:
+                try:
+                    name, desc, price = m
+                    clean_name = name.encode('utf-8').decode('unicode_escape', errors='ignore').replace('$', '')
+                    clean_desc = desc.encode('utf-8').decode('unicode_escape', errors='ignore').replace('$undefined', '')
+                    clean_price = price.encode('utf-8').decode('unicode_escape', errors='ignore')
+                    if len(clean_name) > 3 and clean_price and clean_price != 'undefined':
+                        html_texts.append(f"--- [JSON FOOD ITEM] ---\nName: {clean_name}\nDesc: {clean_desc}\nPrice: {clean_price}\n")
+                except Exception:
+                    pass
+
+            # --- JS HTML EXTRACTOR ---
+            # Try to grab content from common JS variables or blurb fields that contain embedded HTML menus (e.g. Le Bernardin)
+            html_string_pattern = re.compile(r'"((?:[^"\\]|\\.)*?<(?:p|h\d|li|div|ul|span|td).*?>.*?)"', re.IGNORECASE | re.DOTALL)
+            for script in target_soup.find_all('script'):
+                if script.string:
+                    matches = html_string_pattern.findall(script.string)
+                    for m in matches:
+                        try:
+                            # Reconstruct HTML by decoding escaped quotes and newlines
+                            decoded_m = m.encode('utf-8').decode('unicode_escape', errors='ignore')
+                            clean_text = BeautifulSoup(decoded_m, "html.parser").get_text(separator=' ', strip=True)
+                            if len(clean_text) > 20:  # Avoid tiny fragments
+                                html_texts.append(f"--- [JS CONTENT: {current_target}] ---\n{clean_text}")
+                        except Exception:
+                            pass
 
             # Extract text to use as fallback (now it's safe to destroy elements)
             for script in target_soup(["script", "style", "nav", "footer", "header", "meta"]):
@@ -193,7 +251,7 @@ def scrape_menu_text(url):
                 if any(loc in url_lower for loc in non_nyc_locations):
                     continue
                 # Filter out legal / non-menu PDFs by filename
-                if any(skip in pdf_filename for skip in pdf_skip_names):
+                if any(skip in pdf_filename.lower() for skip in pdf_skip_names):
                     continue
                 
                 print(f"  -> [Regex] Found embedded PDF: {raw_pdf_url}")
@@ -217,23 +275,15 @@ def scrape_menu_text(url):
             
     final_html_text = "\n".join(html_texts).strip()
     
-    combined_text = ""
-    if len(final_pdf_text) > 50:
-        combined_text += final_pdf_text
-    
-    # Always include HTML text now
-    if len(final_html_text) > 50:
-        print(f"  -> Extracted {len(final_html_text)} characters from HTML.")
-        if combined_text:
-            combined_text += "\n\n" + final_html_text
-        else:
-            combined_text = final_html_text
+    if len(final_pdf_text) > 0 and len(final_html_text) > 0:
+        combined_text = final_pdf_text[:25000] + "\n\n" + final_html_text[:25000]
+    else:
+        combined_text = (final_pdf_text + final_html_text)[:50000]
             
-    return combined_text[:50000], image_urls_list
+    return combined_text, image_urls_list
 
 def upgrade_image_resolution(image_url):
     """Upgrade CDN image URLs to maximum resolution for better OCR by GPT."""
-    import re
     # Shopify CDN: replace &width=NNN or ?width=NNN with &width=2000
     image_url = re.sub(r'([?&])width=\d+', r'\g<1>width=2000', image_url)
     # Squarespace CDN: replace ?format=NNNw with ?format=2000w
@@ -328,16 +378,29 @@ def parse_text_to_json_with_llm(restaurant_name, rest_id, raw_text, image_urls):
                     }
                 })
 
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_content}
-            ],
-            temperature=0.0
-        )
+        import time
+        import openai
         
-        result_text = response.choices[0].message.content.strip()
+        result_text = ""
+        for attempt in range(4):
+            try:
+                response = client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_content}
+                    ],
+                    temperature=0.0
+                )
+                result_text = response.choices[0].message.content.strip()
+                break  # Success, exit retry loop
+            except openai.RateLimitError as e:
+                if attempt < 3:
+                    wait_time = [5, 10, 20][attempt]
+                    print(f"  -> Rate limit hit! Waiting {wait_time}s before retry {attempt+1}/3...")
+                    time.sleep(wait_time)
+                else:
+                    raise e
         
         # Guard against LLM accidentally retaining markdown anyway
         if result_text.startswith("```json"):
@@ -375,8 +438,11 @@ def main():
     print(f"Reading restaurants from: {csv_path}")
     df = pd.read_csv(csv_path)
     
-    # Target 1: Apply df.head(3) for testing
-    test_df = df[0:120]  # First batch: restaurants 0-119
+    import sys
+    start_idx = int(sys.argv[1]) if len(sys.argv) > 1 else 120
+    end_idx = int(sys.argv[2]) if len(sys.argv) > 2 else 180
+    test_df = df[start_idx:end_idx]
+    print(f"Targeting batch: {start_idx} to {end_idx}")
     
     all_extracted_menus = []
 
@@ -402,9 +468,20 @@ def main():
         else:
             print(f"  -> No usable text or images found.")
 
-    # Save output rigidly as JSON
+    # Save output rigidly as JSON (append mode to prevent overwriting previous batches)
+    if os.path.exists(output_path):
+        with open(output_path, 'r', encoding='utf-8') as f:
+            try:
+                existing_data = json.load(f)
+            except json.JSONDecodeError:
+                existing_data = []
+    else:
+        existing_data = []
+
+    existing_data.extend(all_extracted_menus)
+
     with open(output_path, 'w', encoding='utf-8') as f:
-        json.dump(all_extracted_menus, f, indent=4, ensure_ascii=False)
+        json.dump(existing_data, f, indent=4, ensure_ascii=False)
         
     print(f"\n✅ Pipeline Complete. Extracted {len(all_extracted_menus)} total dish records.")
     print(f"✅ Data exported successfully to: {output_path}")

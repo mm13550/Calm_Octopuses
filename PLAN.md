@@ -29,7 +29,8 @@ This v3.0 project builds a **multimodal recommendation web application** focused
 
 - Register Developer APIs for Apify and Google Cloud (Places API).
 - Build the `social_scraper.py` pipeline: Use Google to resolve unique Place IDs (`rest_id`) and extract the 5 most recent Google maps reviews. Proxy search terms to Apify Yelp Scraper to autonomously fetch 30+ URLs of user-generated food imagery per location.
-- Enhance `menu_crawler.py` utilizing LLMs to standardize PDF extractions.
+- Enhance `menu_crawler.py` utilizing LLMs to standardize PDF extractions, alongside a robust three-stage extraction pipeline (Crawl, Retry, Merge) that automatically handles API Rate Limits, Next.js/React Server Components hidden menus, and strict firewalls (406 Bypass).
+- **[NEW]** Build the `bio_crawler.py` pipeline: Crawl homepage and 'About Us' URLs to extract official restaurant descriptions, culinary styles, and chef history to properly anchor styling representations during the UMAP/GMM clustering phase.
 - Ensure data lands in standard schemas: reviews as `[uid, rest_id, source, text, rating]`, images as `[image_uid, rest_id, source, image_path]`.
 
 ### Phase 2: Core Vectors & Recommendation Logic
