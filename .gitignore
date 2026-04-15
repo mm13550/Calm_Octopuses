@@ -44,5 +44,6 @@ recent_changes_summary.md
 data/yelp_sandbox/
 *.tar
 *.json
+!data/extracted_bios/restaurant_bios_joinable.json
 data/extracted_menus/
 data.zip # 给 Git 下禁令，以后别碰它
