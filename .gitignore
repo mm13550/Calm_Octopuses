@@ -39,6 +39,7 @@ vector_db/*
 
 # Ignored summary files
 recent_changes_summary.md
+README_LEO_HANDOFF.md
 
 # Yelp Sandbox Large Data Files
 data/yelp_sandbox/
