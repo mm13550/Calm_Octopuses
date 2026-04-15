@@ -1,235 +1,193 @@
 # Vector Database Handoff For Downstream Teammates
 
-## Executive Summary
+## Read This First
 
-Leo's overall vector database direction is sound for the current state of this repo:
+This is the current downstream-facing handoff for the vector database.
 
-- keep vectors separated by modality
-- keep retrieval at the item level
-- keep restaurant-level aggregation as a downstream layer
+- the older project PDF is **not** the current source of truth
+- `time-decay` has been removed from scope
+- LanceDB is being built following Leo's handoff, but the full DB is still in progress
 
-This is safer than forcing all embeddings into one shared ANN table, because the current project does not yet have one finalized shared embedding space across images, menus, reviews, and bios.
+If you only remember three things, remember these:
 
-There are, however, a few important clarifications for the team:
+1. `rest_id` is the main key used to connect everything.
+2. The project has both **raw data files** and **vector DB tables**.
+3. Most teammates will only use a small part of the DB, not the whole system.
 
-1. The current repo does not yet contain a finalized production vector DB. The checked-in `algorithms/retrieval_engine.py` is a LanceDB prototype around a single table called `restaurant_vectors`, not the final team contract.
-2. Time-decay has been removed from the current implementation plan and should be treated as deprecated older design material.
-3. `restaurant_profiles.fused_vector` should be treated as optional phase-2 output, not a required v1 field. We should only create one fused vector after we agree on a valid fusion strategy.
+## 1. Current Data Configuration
 
-If we follow those constraints, the design is in good shape and should be easy for downstream teammates to use.
+These are the main upstream data files that already exist in the repo.
 
-## If You Are Not Familiar With Databases
+| File | What one row means | Size | Main fields | Who will likely care |
+|---|---|---:|---|---|
+| `data/csv/restaurant_lookup.csv` | one restaurant | 349 rows | `name`, `rest_id`, `homepage`, join metadata | everyone |
+| `data/social_reviews.csv` | one review | 1,742 rows | `uid`, `rest_id`, `source`, `text`, `rating` | Grace, Leo |
+| `data/social_images.csv` | one image | 13,778 rows | `image_uid`, `rest_id`, `source`, `image_path` | Leo, Merry |
+| `data/extracted_menus/final_parsed_menus.json` | one menu item / dish | 9,261 rows | `rest_id`, `restaurant_name`, `dish_name`, `ingredients`, `price` | Merry, Leo |
+| `data/extracted_bios/restaurant_bios_joinable.json` | one restaurant bio | 349 rows | `rest_id`, `name`, `bio` | Craig, Grace, Merry |
 
-You do not need to think about the vector database as a complicated system.
+### Important coverage note
 
-For this project, it is enough to think of it like this:
+- reviews, images, and bios currently cover 349 restaurants
+- menus currently cover 310 restaurants
+- partial coverage is normal right now
 
-- a **table** is just a structured spreadsheet
-- each **row** is one item we may want to search or join later
-- a **vector** is the numeric embedding for that row
-- a **search** means "find the rows whose vectors are most similar to my query"
-- `rest_id` is the restaurant's unique key and is the main way all tables connect to each other
+So if your module expects every restaurant to have menu data, it should handle missing rows gracefully.
 
-Most downstream teammates should **not** need to manage LanceDB directly.
+## 2. How To Think About The System
 
-In practice, most people will only do one of these things:
+The simplest way to think about the project is:
 
-- read search results returned by Leo's helper function
-- fetch all rows for one restaurant using `rest_id`
-- read the one-row-per-restaurant summary table `restaurant_profiles`
-- write a small number of derived fields back by `rest_id`
+### Raw data layer
 
-If it helps, you can think of the DB as having two layers:
+- `restaurant_lookup.csv` tells us **which restaurant is which**
+- `social_reviews.csv` stores raw review text
+- `social_images.csv` stores raw image metadata and image paths
+- `final_parsed_menus.json` stores parsed dishes
+- `restaurant_bios_joinable.json` stores restaurant-level bio text
 
-- **item-level tables** for search
-  - menu items
-  - images
-  - reviews
-- **restaurant-level table** for downstream modeling and UI summaries
-  - one row per restaurant
+### Vector DB layer
 
-## Current Repo State (As Of April 15, 2026)
+Leo is turning those raw files into searchable vector tables in LanceDB.
 
-Important context:
+### Downstream layer
 
-- the uploaded project PDF reflects an older architecture version
-- some ideas in that PDF were revised after the data mining phase
-- this handoff should be treated as the current downstream-facing contract
+Different teammates read different tables depending on their task:
 
-### Canonical metadata
+- search / frontend
+- ABSA
+- clustering / prediction
 
-Use these files as the source of truth for restaurant identity and joins:
+## 3. Current LanceDB Structure (In Progress)
 
-- `data/csv/seeds_resolved.csv`: curated restaurant metadata
-- `data/csv/restaurant_lookup.csv`: join helper with stable `rest_id`
+Think of these as the main tables the team will read from once the DB build is ready.
 
-### Core upstream assets already available
+| Table | What one row means | Main contents | Who will probably use it |
+|---|---|---|---|
+| `menu_item_vectors` | one menu item | dish text + embedding + restaurant metadata | Merry, Leo |
+| `image_vectors` | one cleaned image | image path + image metadata + embedding | Merry, Leo |
+| `review_vectors` | one review | review text + rating + embedding | Grace, Leo |
+| `restaurant_profiles` | one restaurant | aggregated restaurant-level features | Craig, Grace, Merry |
+
+### What each table is for
+
+`menu_item_vectors`
+
+- use this for dish search
+- example: "show me dishes similar to uni pasta"
+
+`image_vectors`
+
+- use this for food-image retrieval and representative restaurant images
+- example: "show me the best food photos for this restaurant"
+
+`review_vectors`
+
+- use this for review-level text analysis or semantic backoff
+- example: "pull review text related to this restaurant or concept"
+
+`restaurant_profiles`
+
+- use this for one-row-per-restaurant downstream features
+- example: clustering, prediction inputs, restaurant summary cards
+
+## 4. The Main Join Rule
+
+Use `rest_id` for joins.
+
+That means:
+
+- join raw files by `rest_id`
+- join vector tables by `rest_id`
+- write derived outputs back by `rest_id`
+
+Do **not** join by restaurant name if `rest_id` is available.
+
+## 5. What You Will Probably Use
+
+### Merry
+
+Merry will probably use:
+
+- `menu_item_vectors`
+- `image_vectors`
+- `restaurant_profiles`
+
+Most likely tasks:
+
+- dish search
+- result cards
+- restaurant summary cards
+- attaching representative food images to search results
+
+### Grace
+
+Grace will probably use:
 
 - `data/social_reviews.csv`
-  - 1,742 rows
-  - 349 restaurants
-  - schema: `uid, rest_id, source, text, rating`
-  - current source coverage: Google Places only
+- `review_vectors`
+- `restaurant_profiles`
 
-- `data/social_images.csv`
-  - 13,778 rows
-  - 349 restaurants
-  - schema: `image_uid, rest_id, source, image_path`
-  - current source coverage: Yelp + Google Places
+Most likely tasks:
 
-- `data/extracted_menus/final_parsed_menus.json`
-  - 9,261 menu items
-  - 310 restaurants
-  - fields: `rest_id, restaurant_name, dish_name, ingredients, price`
+- ABSA on raw review text
+- grouping review outputs by `rest_id`
+- writing restaurant-level sentiment outputs back into `restaurant_profiles`
 
-- `data/extracted_bios/restaurant_bios_joinable.json`
-  - 349 restaurants
-  - joinable by `rest_id`
+### Craig
 
-### Coverage notes
+Craig will probably use:
 
-- 302 restaurants currently have reviews, images, menus, and bios all at once.
-- 47 restaurants currently have reviews/images/bios but no parsed menu rows.
-- 43 restaurants currently have bios but no menu rows.
+- `restaurant_profiles`
+- restaurant-level bio / image / menu / review aggregates
 
-This means downstream code must support partial-modality coverage. Do not assume every restaurant has every modality.
+Most likely tasks:
 
-## Design Verdict
+- clustering inputs
+- prediction inputs
+- feature matrix construction
 
-### What is good in the current design
+### Leo
 
-- Separate tables by modality is the right default.
-- Single-item granularity is correct for retrieval.
-- A restaurant-level aggregation table is useful for Craig, Grace, and Merry.
-- `rest_id` should remain the primary join key everywhere.
+Leo will probably use:
 
-### What needs to be tightened
+- all vector tables
+- cleaned image metadata
+- ingestion / refresh scripts
 
-- Do not rely on one shared vector space yet.
-- Do not require `created_at` on every vector row in v1.
-- Do not make `fused_vector` mandatory before the fusion logic is defined.
-- Do not treat the current `search_by_text()` prototype as production semantic search yet.
-- Do not build any downstream dependency on time-decay.
+Most likely tasks:
 
-## Why The Current Prototype Should Not Be The Team Contract
+- build vectors
+- ingest vectors into LanceDB
+- expose search helpers for the rest of the team
 
-The checked-in retrieval prototype currently assumes:
+## 6. Common Workflows
 
-- one LanceDB table: `restaurant_vectors`
-- one required `vector` column for all rows
-- one required `created_at` column for all rows
-- time-decay during ranking
+### Workflow A: Dish search for frontend
 
-That prototype is useful for local experimentation, but it does not yet match the current dataset or the safest team-facing architecture:
+1. Search `menu_item_vectors` with a text query.
+2. Get back matching dishes and their `rest_id`s.
+3. Use those `rest_id`s to fetch restaurant info and representative images.
+4. Render the results in the UI.
 
-- `data/social_reviews.csv` does not contain timestamps
-- `data/social_images.csv` does not contain timestamps
-- menu rows and bio rows do not currently come with a natural shared recency signal
-- the query path still uses a placeholder vector instead of a real embedded query
-- time-decay is no longer part of the current implementation plan
+### Workflow B: ABSA
 
-So the team should treat the current prototype as a sandbox, not the final downstream API.
+1. Read review text from `data/social_reviews.csv` or `review_vectors`.
+2. Run ABSA grouped by `rest_id`.
+3. Write final restaurant-level scores back to `restaurant_profiles`.
 
-## Recommended Vector DB Contract (v1)
+### Workflow C: Clustering / prediction
 
-### Shared rules across all vector tables
+1. Read `restaurant_profiles`.
+2. Build a modeling matrix from restaurant-level features.
+3. Train models offline in Python.
+4. Optionally write outputs back by `rest_id`.
 
-- Join on `rest_id`, never on restaurant name alone.
-- Keep one embedding model per table unless a shared space has been explicitly validated.
-- Store vector provenance on every table:
-  - `embedding_model`
-  - `embedding_dim`
-  - `embedding_version`
-  - `ingested_at`
-- Treat `created_at` as optional metadata for now.
-- Keep raw text and raw image paths available for debugging and frontend rendering.
-- Do not expose time-decay fields in the stable downstream contract.
+## 7. What Is Inside `restaurant_profiles`
 
-### Table: `image_vectors`
+This is the table most downstream teammates should think of as the final restaurant-level summary table.
 
-Purpose:
-food-image retrieval and restaurant-level image aggregation
-
-Recommended row grain:
-one row per cleaned image
-
-Recommended columns:
-
-- `image_uid`
-- `rest_id`
-- `restaurant_name`
-- `source`
-- `image_path`
-- `image_category`
-- `keep_for_food_embedding`
-- `keep_for_ambiance_embedding`
-- `quality_score`
-- `vector`
-- `embedding_model`
-- `embedding_dim`
-- `embedding_version`
-- `ingested_at`
-
-Important note:
-use cleaned images, not raw `social_images.csv`, as the main embedding input whenever Leo's cleaning pass is ready.
-
-### Table: `menu_item_vectors`
-
-Purpose:
-dish-level semantic retrieval
-
-Recommended row grain:
-one row per parsed menu item
-
-Recommended columns:
-
-- `doc_id`
-- `rest_id`
-- `restaurant_name`
-- `dish_name`
-- `ingredients`
-- `price`
-- `text_for_embedding`
-- `vector`
-- `embedding_model`
-- `embedding_dim`
-- `embedding_version`
-- `ingested_at`
-
-Recommended embedding text:
-`dish_name + ingredients + restaurant_name`
-
-### Table: `review_vectors`
-
-Purpose:
-review retrieval, semantic backoff, review summarization, and restaurant-level aggregation
-
-Recommended row grain:
-one row per review
-
-Recommended columns:
-
-- `uid`
-- `rest_id`
-- `restaurant_name`
-- `source`
-- `text`
-- `rating`
-- `vector`
-- `embedding_model`
-- `embedding_dim`
-- `embedding_version`
-- `ingested_at`
-
-Important note:
-keep the original review text intact because Grace needs it for ABSA.
-
-### Table: `restaurant_profiles`
-
-Purpose:
-one downstream-ready row per restaurant for analytics, clustering, prediction, and frontend summaries
-
-Recommended columns:
+Expected fields include:
 
 - `rest_id`
 - `restaurant_name`
@@ -251,354 +209,31 @@ Recommended columns:
 - `has_food_images`
 - `has_bio`
 
-Optional phase-2 column:
+This is the table Craig will likely use most.
+Grace will likely write part of it.
+Merry will likely read it for restaurant cards and metadata.
 
-- `fused_vector`
+## 8. What Is Not Part Of The Current Scope
 
-`fused_vector` should only be added after one of these is finalized:
+These older ideas should **not** be treated as current requirements:
 
-- a shared projection space across modalities
-- or a documented concatenation / weighting strategy for modality-specific aggregates
+- time-decay
+- trending score logic
+- timestamp-based retrieval ranking
 
-Until then, the modality-specific aggregate vectors should be treated as the source of truth.
+Also, do not assume:
 
-## The Simplest Mental Model
+- every restaurant has menu data
+- every teammate needs to touch LanceDB directly
+- the current prototype in `algorithms/retrieval_engine.py` is the final team-facing API
 
-For the team, the vector database should answer only four practical questions:
+## 9. Practical Rules
 
-1. What menu items are most similar to this text query?
-2. What food images are most similar to this image query?
-3. What data do we currently have for restaurant `X`?
-4. What is the current one-row summary for restaurant `X`?
+- Start with `restaurant_lookup.csv` if you need stable restaurant identity.
+- Use `rest_id` everywhere.
+- Use item-level tables for search.
+- Use `restaurant_profiles` for restaurant-level modeling and summaries.
+- Handle missing menu coverage gracefully.
+- If you are unsure which table to use, ask: "Am I searching for items, or am I reading one row per restaurant?"
 
-Everything else should be built around those simple use cases.
-
-## Recommended Team-Facing Usage Pattern
-
-Downstream teammates should preferably interact with small helper functions, not raw DB internals.
-
-The ideal usage pattern is:
-
-1. Leo builds or refreshes the vector tables.
-2. Leo exposes a few stable query helpers.
-3. Everyone else uses those helpers or reads exported outputs.
-4. Joins across modules always happen through `rest_id`.
-
-That means most teammates do **not** need to know:
-
-- how ANN indexing works
-- how LanceDB stores files on disk
-- how vectors are normalized internally
-
-They only need to know:
-
-- which table they should read from
-- what key to join on
-- what fields they can expect back
-
-## What Each Table Is For In Plain English
-
-### `image_vectors`
-
-Think of this as:
-"all cleaned restaurant images, one row per image, with an embedding attached"
-
-Use this table when you want to:
-
-- retrieve visually similar food photos
-- choose representative food photos for a restaurant
-- compute restaurant-level image averages later
-
-### `menu_item_vectors`
-
-Think of this as:
-"all parsed dishes, one row per dish, with a text embedding attached"
-
-Use this table when you want to:
-
-- search for dishes by text
-- find restaurants associated with a certain food idea
-- power frontend dish search results
-
-### `review_vectors`
-
-Think of this as:
-"all reviews, one row per review, with a text embedding attached"
-
-Use this table when you want to:
-
-- do semantic backoff when menu coverage is weak
-- inspect review language for one restaurant
-- group or summarize reviews
-
-### `restaurant_profiles`
-
-Think of this as:
-"one final summary row per restaurant"
-
-Use this table when you want to:
-
-- build clustering inputs
-- build prediction inputs
-- render restaurant summary cards
-- check what modalities are available for a restaurant
-
-Do **not** use `restaurant_profiles` as the primary dish-search table.
-
-## How Downstream Teammates Should Use The DB
-
-### Merry (frontend)
-
-Merry should think in terms of a user flow, not a DB flow.
-
-For dish search and result cards:
-
-- query `menu_item_vectors` first
-- use `rest_id` to join restaurant metadata
-- attach representative food images from `image_vectors`
-- do not use `restaurant_profiles` as the primary dish search table
-
-In practice, Merry's workflow should look like this:
-
-1. user enters a text query such as "uni pasta" or "creative omakase dessert"
-2. call a helper like `search_menu_items(query_text, top_k=20)`
-3. get back matching dishes with `rest_id`
-4. group or rank those results for display
-5. fetch restaurant summaries or representative images using the returned `rest_id`s
-
-For restaurant summary cards:
-
-- read `restaurant_profiles`
-- surface availability flags such as `has_menu`, `has_reviews`, and `has_food_images`
-- gracefully handle restaurants that are missing one modality
-
-Merry does not need to know how the vectors are stored internally. She mainly needs:
-
-- stable result fields
-- image paths
-- restaurant names
-- availability flags
-- a score for ranking
-
-### Grace (ABSA and integration)
-
-Use:
-
-- raw review text from `data/social_reviews.csv`
-- or `review_vectors` if she also needs semantic grouping
-
-Write back by `rest_id` into:
-
-- `restaurant_profiles.absa_food`
-- `restaurant_profiles.absa_service`
-- `restaurant_profiles.absa_ambiance`
-
-Grace should not depend on a cross-modal fused vector to begin her work.
-
-In practice, Grace's workflow should look like this:
-
-1. read all review rows for a restaurant or for the full dataset
-2. run ABSA over raw review text
-3. aggregate ABSA outputs by `rest_id`
-4. write the final per-restaurant scores into `restaurant_profiles`
-
-Grace mostly needs the DB as a stable storage and join layer, not as a search engine.
-
-### Craig (clustering and prediction)
-
-Use `restaurant_profiles` as the main modeling input table.
-
-Recommended v1 feature strategy:
-
-- start from `bio_vector`
-- add `mean_food_image_vector`
-- add `mean_menu_vector`
-- add `mean_review_vector`
-- add Grace's ABSA outputs
-- concatenate or otherwise standardize offline in the modeling pipeline
-
-Craig should not wait for a final `fused_vector` column if the modality-specific aggregates are already available.
-
-In practice, Craig's workflow should look like this:
-
-1. read `restaurant_profiles`
-2. select the columns needed for clustering or regression
-3. handle missing modalities explicitly
-4. build model matrices offline in Python
-5. write back cluster labels or prediction outputs by `rest_id` if needed
-
-Craig should treat the DB as a clean feature source, not as the place where model training happens.
-
-### Leo (vector DB owner)
-
-Leo's priority should be:
-
-1. finalize cleaned image metadata
-2. generate per-table embeddings
-3. build separated modality tables
-4. expose minimal query functions for menu search, image search, and restaurant profile fetch
-
-The first stable goal is not "full cross-modal magic." The first stable goal is a clean, queryable, auditable vector backend.
-
-## Recommended Query Surface For The Team
-
-Even if the storage backend is LanceDB, downstream teammates should consume a simple contract like this:
-
-- `search_menu_items(query_text, top_k)`
-- `search_food_images(query_image_or_vector, top_k)`
-- `get_restaurant_profile(rest_id)`
-- `get_restaurant_representatives(rest_id)`
-
-If helpful, these functions can be understood in very plain terms:
-
-- `search_menu_items(...)`
-  - "give me the dishes most similar to this text"
-- `search_food_images(...)`
-  - "give me the images most similar to this image"
-- `get_restaurant_profile(rest_id)`
-  - "give me the one-row restaurant summary"
-- `get_restaurant_representatives(rest_id)`
-  - "give me the best images / dishes / review snippets to show for this restaurant"
-
-Expected menu search output fields:
-
-- `rest_id`
-- `restaurant_name`
-- `dish_name`
-- `ingredients`
-- `price`
-- `score`
-- `source_table`
-
-Expected image search output fields:
-
-- `rest_id`
-- `restaurant_name`
-- `image_uid`
-- `image_path`
-- `image_category`
-- `score`
-- `source_table`
-
-Expected profile output fields:
-
-- `rest_id`
-- `restaurant_name`
-- modality availability flags
-- counts
-- ABSA fields
-- aggregate vectors if needed downstream
-
-## Example Workflows
-
-### Example 1: Merry builds a dish search page
-
-User asks for:
-"spicy seafood pasta"
-
-Expected backend flow:
-
-1. call `search_menu_items("spicy seafood pasta", top_k=20)`
-2. receive top menu-item matches
-3. collect the returned `rest_id`s
-4. fetch representative image rows for those restaurants
-5. render cards with:
-   - restaurant name
-   - dish name
-   - ingredients
-   - price
-   - image
-   - score
-
-### Example 2: Grace writes ABSA outputs
-
-Expected workflow:
-
-1. read reviews grouped by `rest_id`
-2. compute food/service/ambiance sentiment
-3. aggregate to one score per restaurant per aspect
-4. update `restaurant_profiles` using `rest_id`
-
-Output shape should be conceptually like:
-
-- one restaurant id
-- one food sentiment score
-- one service sentiment score
-- one ambiance sentiment score
-
-### Example 3: Craig prepares clustering inputs
-
-Expected workflow:
-
-1. read `restaurant_profiles`
-2. filter to restaurants with enough available features
-3. construct a matrix from vectors and ABSA features
-4. run UMAP / clustering offline
-5. optionally write cluster labels back by `rest_id`
-
-## What Teammates Should Usually Not Do
-
-- do not join tables on restaurant name if `rest_id` is available
-- do not assume every restaurant has menu data
-- do not assume every restaurant has a fully populated profile row on day one
-- do not depend on internal LanceDB file layout
-- do not hardcode old time-decay or trending fields from older drafts
-- do not write directly to low-level vector tables unless that is your owned module
-
-## Suggested Communication Rule
-
-When teammates talk about the DB, use this language consistently:
-
-- "search in `menu_item_vectors`"
-- "fetch by `rest_id`"
-- "read from `restaurant_profiles`"
-- "write derived outputs back by `rest_id`"
-
-This will keep the collaboration much simpler for teammates who are less familiar with database terminology.
-
-## Known Constraints And Open Issues
-
-### 1. Time-decay has been removed from scope
-
-Time-decay appeared in older drafts and prototypes, but it is no longer part of the current implementation plan. Downstream teammates should ignore old references to decay weights, trending boosts, or timestamp-based ranking.
-
-### 2. The current repo does not yet have a checked-in production DB build
-
-There is no committed `vector_db/` state to hand off yet. Downstream teammates should rely on the schema contract, not on a local DB artifact.
-
-### 3. Shared-space assumptions are still risky
-
-Images, menus, reviews, and bios should not be mixed into one ANN table unless they are embedded into a validated shared space with the same dimension and retrieval behavior.
-
-### 4. Cleaned image metadata is still a dependency
-
-`social_images_cleaned.csv` is still the missing bridge between raw image scraping and a production-quality image vector table.
-
-### 5. Partial restaurant coverage is normal right now
-
-Some restaurants are missing menu rows. Frontend and modeling code must support incomplete feature coverage.
-
-## Recommended Next-Step Order
-
-1. Freeze the v1 schema contract above.
-2. Finish `social_images_cleaned.csv`.
-3. Generate `image_vectors`, `menu_item_vectors`, and `review_vectors`.
-4. Build `restaurant_profiles` from those tables plus bios and ABSA outputs.
-5. Expose small, stable retrieval functions for Merry and the rest of the team.
-6. Revisit `fused_vector` only after the basic DB contract is stable.
-
-## Bottom Line
-
-Leo's main design idea is correct:
-
-- item-level vectors for retrieval
-- restaurant-level profiles for downstream analytics
-- separated modality tables instead of one mixed table
-
-The only real caution is that the current prototype and the current data are not yet ready for:
-
-- mandatory timestamps
-- mandatory shared cross-modal search through one mixed table
-- mandatory `fused_vector`
-
-If the team aligns on that narrower v1 contract, the vector database design is in a healthy place and downstream work can proceed without major schema churn.
+That rule alone will answer most table-selection questions.
