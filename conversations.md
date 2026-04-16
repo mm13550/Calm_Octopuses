@@ -27,3 +27,11 @@
   5. Added `compute_discriminability()` to the evaluator: groups latents by `business_id`, computes per-restaurant centroids, and measures inter-restaurant pairwise cosine distance and intra-restaurant cosine similarity to produce a discriminability score.
   6. Fixed a stale `@st.cache_data` schema issue via an auto-invalidation guard.
   7. Updated `README.md` to document the new `pipelines/yelp/` structure and `evaluate_generalization.py`.
+
+## Session: Aggregating Yelp Embeddings & Regression Architecture Plan (April 16, 2026, Part 2)
+- **Objective:** Design the regression network architecture and build Phase 1: a pipeline to aggregate per-restaurant generic embeddings.
+- **Actions Taken:** 
+  1. Drafted an Implementation Plan for predicting rating intervals via PyTorch Quantile Loss (`IntervalScorer`).
+  2. Created `pipelines/yelp/aggregate_restaurant_embeddings.py` to extract latents and group them via mathematical mean-pooling into singular unified 256-D restaurant vectors.
+  3. Ran the aggregation offline: successfully reduced 9,861 raw pairs into 6,975 discrete Yelp restaurants, and 139 high-end pairs into 54 discrete validation restaurants.
+
