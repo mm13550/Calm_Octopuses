@@ -35,3 +35,10 @@
   2. Created `pipelines/yelp/aggregate_restaurant_embeddings.py` to extract latents and group them via mathematical mean-pooling into singular unified 256-D restaurant vectors.
   3. Ran the aggregation offline: successfully reduced 9,861 raw pairs into 6,975 discrete Yelp restaurants, and 139 high-end pairs into 54 discrete validation restaurants.
 
+## Session: Building the Quantile Regression Network (April 16, 2026, Part 3)
+- **Objective:** Build the PyTorch Lightning interval regression framework inside `algorithms/quantile_regression.py`.
+- **Actions Taken:** 
+  1. Adjusted the architecture plan to model exactly a 95% Confidence Interval, modifying the output neurons to predict `[0.025, 0.50, 0.975]` bounds based on user feedback in `RegressionPlan.md`.
+  2. Built `UserRestaurantDataset` to load offline `regression_val_set.json` user profiles, lookup their historical businesses in the extracted 256-D train generic embeddings from Phase 1, build a weighted `User Taste Vector`, and concatenate it with a Michelin target `Restaurant Vector`.
+  3. Built `IntervalScorer` MLP module and wrote mathematical PyTorch matrix formulas representing `Pinball Loss` to asymmetrical punish the bounds.
+  4. Ran an offline training sandbox using an 80/20 train/validation split off of the 9,493 cross-referenced pairs. Verified the regression successfully learned the asymmetric upper and lower margin bounds effectively.
