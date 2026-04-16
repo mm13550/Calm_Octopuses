@@ -8,7 +8,7 @@ from pytorch_lightning.loggers import CSVLogger
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 
 # --- Configuration ---
-DATA_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data', 'yelp_sandbox'))
+DATA_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'yelp_sandbox'))
 TOY_DIR = os.path.join(DATA_DIR, 'toy_embeddings')
 TRAIN_EMBEDDINGS = os.path.join(TOY_DIR, 'toy_train_embeddings.pt')
 VAL_EMBEDDINGS = os.path.join(TOY_DIR, 'toy_val_embeddings.pt')

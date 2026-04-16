@@ -15,7 +15,7 @@ import pandas as pd
 import random
 
 # Core Configurations
-DATA_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data', 'yelp_sandbox'))
+DATA_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'yelp_sandbox'))
 DB_PATH = os.path.join(DATA_DIR, 'yelp_relations.db')
 
 BUSINESS_JSON = os.path.join(DATA_DIR, 'yelp_academic_dataset_business.json')

@@ -18,7 +18,7 @@ from torchvision.models import resnet50, ResNet50_Weights
 from tqdm import tqdm
 
 # Path Configuration
-DATA_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data', 'yelp_sandbox'))
+DATA_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'yelp_sandbox'))
 DB_PATH = os.path.join(DATA_DIR, 'yelp_relations.db')
 PHOTOS_JSON = os.path.join(DATA_DIR, 'train.json')
 PHOTOS_DIR = os.path.join(DATA_DIR, 'train', 'train') # Nested Kaggle Extractor dir

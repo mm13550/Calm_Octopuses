@@ -40,7 +40,7 @@ def main():
     print("--- Yelp Dataset Automated Downloader ---")
     
     # Establish Sandbox path
-    data_dir = os.path.join(os.path.dirname(__file__), '..', 'data', 'yelp_sandbox')
+    data_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'yelp_sandbox')
     os.makedirs(data_dir, exist_ok=True)
     
     # Try importing Kaggle, catching authentication missing errors immediately.

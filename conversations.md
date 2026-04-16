@@ -16,3 +16,14 @@
   2. Initial `git push` failed because `origin/main` had newer commits (housekeeping moves under `data/embeddings`, CSV routing, PyTorch toy isolation).
   3. Ran `git pull --rebase origin main`; resolved a rename/delete conflict (`debug_output.txt` moved upstream to `tests/tests_output/debug_output.txt` while the local commit removed it) by removing `tests/tests_output/debug_output.txt` to match the cleanup intent.
   4. Pushed rebased `main` successfully (`9854efa..9f9951b`).
+
+## Session: Pipeline Reorganization & Generalization Analysis Tab (April 16, 2026)
+- **Objective:** Organize Yelp pipelines into a subfolder and add a cross-modal generalization analysis tab to the Streamlit app.
+- **Actions Taken:**
+  1. Moved all Yelp-related pipelines (`cross_modal_embeddings.py`, `download_yelp_dataset.py`, `generate_embeddings_yelp.py`, `preprocess_yelp.py`) into a new `pipelines/yelp/` subfolder and fixed all broken `DATA_DIR` relative paths caused by the move.
+  2. Fixed the `cross_modal_embeddings.py` subprocess path reference in `app.py` Tab 2.
+  3. Created `pipelines/yelp/evaluate_generalization.py`: loads the best model checkpoint, runs inference on both the Yelp general (train) and Philadelphia high-end (val) cohorts, and computes alignment MSE, reconstruction MSE, cosine similarity distributions, t-SNE projections, and restaurant discriminability metrics.
+  4. Added a new **"Generalization Analysis"** tab (Tab 3) to `app.py` with KPI cards, epoch curves, reconstruction MSE bar chart, cosine similarity histogram, t-SNE scatter, inter-restaurant pairwise distance histogram, and an auto-classified interpretation table (🟢/🟡/🔴).
+  5. Added `compute_discriminability()` to the evaluator: groups latents by `business_id`, computes per-restaurant centroids, and measures inter-restaurant pairwise cosine distance and intra-restaurant cosine similarity to produce a discriminability score.
+  6. Fixed a stale `@st.cache_data` schema issue via an auto-invalidation guard.
+  7. Updated `README.md` to document the new `pipelines/yelp/` structure and `evaluate_generalization.py`.

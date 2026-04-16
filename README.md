@@ -16,11 +16,21 @@ The project pipeline is built on a highly decoupled architecture utilizing Visio
 
 ### 1. Data Pipelines (`pipelines/`)
 
+#### Yelp Sub-pipeline (`pipelines/yelp/`)
+
+All Yelp Open Dataset pipelines are grouped under `pipelines/yelp/`:
+
+- **`download_yelp_dataset.py`** *(Neil)*: Automated Kaggle API downloader for the Yelp Open Dataset (photos + text JSON).
+- **`preprocess_yelp.py`** *(Neil)*: Out-of-core SQLite preprocessing pipeline. Streams the multi-GB Yelp dataset to disk, separating casual training restaurants from a held-out Philadelphia high-end validation cohort (proxy for fine-dining OOD inference).
+- **`generate_embeddings_yelp.py`** *(Neil)*: Offline PyTorch embedding generator (disjoint mode). Streams through the Yelp Open Dataset, pairing food photos with review text, and computes separate ResNet50 (2048-D) image vectors and DistilBERT (768-D) text vectors, saving to `.pt` binaries for downstream training.
+- **`cross_modal_embeddings.py`** *(Neil)*: PyTorch Lightning training pipeline for the **Cross-Modal Dual Encoder**. Loads the disjointed Yelp embeddings and trains a dual-tower autoencoder (Image: 2048→256, Text: 768→256) using joint **Reconstruction Loss + MSE Alignment Loss** to align text-image pairs in a shared 256-D latent space. Logs metrics to CSV for live Streamlit visualization.
+- **`evaluate_generalization.py`** *(Neil)*: Evaluates how well the trained encoder generalizes to the held-out Philadelphia high-end cohort. Computes alignment MSE, reconstruction MSE, cosine similarity distributions, t-SNE projections, and **restaurant discriminability** (inter vs. intra-restaurant centroid distances) to determine whether the latent space separates different restaurants effectively.
+
+#### Other Pipelines
+
 - **`social_scraper.py`** *(Neil)*: Lightweight hybrid crawler utilizing **Google Places API** and **Apify Yelp Scraper**. Automatically circumvents API barriers by proxying queries to Yelp for unlimited high-quality images and full timestamped reviews.
 - **`fetch_and_embed_reviews.py`** *(Neil)*: Scalable script to scrape Google Places text reviews and directly embed them using the local `distilbert-base-uncased` language model into standard Parquet format for downstream algorithms.
 - **`menu_crawler.py`** *(Neil)*: Crawls websites and PDFs, leveraging lightweight LLMs (e.g., GPT-4o-mini) to extract and structure complex fine-dining menus into clean JSON.
-- **`generate_embeddings_yelp.py`** *(Neil)*: Offline PyTorch embedding generator (disjoint mode). Streams through the Yelp Open Dataset, pairing food photos with review text, and computes separate ResNet50 (2048-D) image vectors and DistilBERT (768-D) text vectors, saving to `.pt` binaries for downstream training.
-- **`cross_modal_embeddings.py`** *(Neil)*: PyTorch Lightning training pipeline for the **Cross-Modal Dual Encoder**. Loads the disjointed Yelp embeddings and trains a dual-tower autoencoder (Image: 2048→512, Text: 768→512) using joint **Reconstruction Loss + InfoNCE Contrastive Loss** to align text-image pairs in a shared 512-D Latent Taste Space. Logs metrics to CSV for live Streamlit visualization.
 - **`absa_processor.py`** *(Grace)*: Runs Aspect-Based Sentiment Analysis (ABSA) on UGC text to extract specific sentiment scores for Food, Service, and Ambiance.
 
 ### 2. Core Algorithms (`algorithms/`)
