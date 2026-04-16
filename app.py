@@ -10,7 +10,7 @@ st.set_page_config(page_title="Image Similarity Explorer", layout="wide")
 
 st.title("Multimodal App")
 
-tab1, tab2, tab3 = st.tabs(["Image Similarity Explorer", "Dual Encoder Training Logs", "Generalization Analysis"])
+tab1, tab2, tab3, tab4 = st.tabs(["Image Similarity Explorer", "Dual Encoder Training Logs", "Generalization Analysis", "Risk Regression Analysis"])
 
 # --- Data Loading ---
 @st.cache_data
@@ -479,4 +479,86 @@ with tab3:
 
     **Overall recommendation:** {overall_action}
     """)
+
+# ============================================================
+# Tab 4 — Risk Regression Analysis
+# ============================================================
+with tab4:
+    st.header("📈 Risk Regression Analysis")
+    st.markdown(
+        """
+        Visualizing the 512-D concatenated Multi-Layer Perceptron (IntervalScorer) trained 
+        with Confidence-Weighted Pinball Loss. It models the **95% Confidence Interval** 
+        for an expected user rating explicitly.
+        """
+    )
+    
+    st.info("Training computes locally on baseline Yelp users natively extracted from SQLite, and validates zero-shot against held-out Michelin test users.")
+    
+    if st.button("🚀 Train & Evaluate Risk Network"):
+        import sys as _sys
+        _sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'algorithms'))
+        try:
+            from algorithms.quantile_regression import evaluate_regression
+            
+            _ROOT = os.path.dirname(__file__)
+            TRAIN_JSON = os.path.join(_ROOT, 'data', 'yelp_sandbox', 'regression_train_set.json')
+            TEST_JSON  = os.path.join(_ROOT, 'data', 'yelp_sandbox', 'regression_val_set.json')
+            TRAIN_EMB  = os.path.join(_ROOT, 'data', 'yelp_sandbox', 'toy_embeddings', 'toy_restaurant_embeddings_train.pt')
+            VAL_EMB    = os.path.join(_ROOT, 'data', 'yelp_sandbox', 'toy_embeddings', 'toy_restaurant_embeddings_val.pt')
+            
+            with st.spinner("Extracting datasets and dynamically training interval network (~30s)..."):
+                train_res, test_res = evaluate_regression(TRAIN_JSON, TEST_JSON, TRAIN_EMB, VAL_EMB, max_epochs=10)
+                
+            if train_res is None or train_res.empty:
+                st.error("Training dataset not generated! Waiting for background export script to finish.")
+            else:
+                st.success("Training and inference achieved successfully.")
+                
+                t_mae = (train_res['Actual_Rating'] - train_res['Predicted_Median']).abs().mean()
+                t_cov = train_res['In_Bounds'].mean() * 100
+                v_mae = (test_res['Actual_Rating'] - test_res['Predicted_Median']).abs().mean()
+                v_cov = test_res['In_Bounds'].mean() * 100
+                
+                st.subheader("Generalization KPIs")
+                c1, c2, c3, c4 = st.columns(4)
+                c1.metric("Generic Train MAE", f"{t_mae:.3f}★")
+                c2.metric("Michelin Test MAE", f"{v_mae:.3f}★", delta=f"{v_mae - t_mae:+.3f} vs train", delta_color="inverse")
+                c3.metric("Generic Train Cov (95% CI)", f"{t_cov:.1f}%")
+                c4.metric("Michelin Test Cov (95% CI)", f"{v_cov:.1f}%", delta=f"{v_cov - t_cov:+.1f}% vs train", delta_color="normal")
+                
+                import altair as alt
+                # Plot test results scatter
+                st.subheader("Michelin Holdout Predictions vs Network Confidence bounds")
+                
+                # We limit to 200 points to not overcrowd the chart
+                vis_df = test_res.head(200).copy()
+                vis_df['User_ID_Proxy'] = range(len(vis_df))
+                
+                # Create a point chart for the Median predictions vs Truth
+                points = alt.Chart(vis_df).mark_circle(size=60).encode(
+                    x=alt.X('User_ID_Proxy:O', title="Test User Profile #", axis=alt.Axis(labels=False, ticks=False)),
+                    y=alt.Y('Predicted_Median:Q', title="Rating [1-5]"),
+                    color=alt.Color('In_Bounds:N', scale=alt.Scale(domain=[1, 0], range=["#2ca02c", "#d62728"])),
+                    tooltip=['Actual_Rating', 'Lower_CI', 'Predicted_Median', 'Upper_CI']
+                )
+                
+                # Create the error bars representing the interval bounds
+                error_bars = alt.Chart(vis_df).mark_errorbar().encode(
+                    x=alt.X('User_ID_Proxy:O'),
+                    y=alt.Y('Lower_CI:Q', title=''),
+                    y2=alt.Y2('Upper_CI:Q'),
+                    color=alt.value('rgba(150, 150, 150, 0.4)')
+                )
+                
+                # Actual rating markers
+                actuals = alt.Chart(vis_df).mark_tick(thickness=2, size=15, color='white').encode(
+                    x=alt.X('User_ID_Proxy:O'),
+                    y=alt.Y('Actual_Rating:Q')
+                )
+                
+                st.altair_chart((error_bars + points + actuals).properties(height=400), use_container_width=True)
+                
+        except Exception as e:
+            st.error(f"Error computing regression: {e}")
 

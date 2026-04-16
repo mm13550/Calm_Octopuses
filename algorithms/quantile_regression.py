@@ -75,22 +75,31 @@ class UserRestaurantDataset(Dataset):
         # 3. Concatenate (512-D)
         feature_vec = torch.cat([user_vec, target_vec])
         
-        return feature_vec, torch.tensor(row['target_rating'], dtype=torch.float32)
+        # 4. Compute Sample Confidence Weight (logarithmic scaling of history size)
+        # Users with large histories produce a higher weight multiplier on the loss
+        raw_count = len(row['hist_ids'])
+        sample_weight = torch.log1p(torch.tensor(raw_count, dtype=torch.float32))
+        
+        return feature_vec, torch.tensor(row['target_rating'], dtype=torch.float32), sample_weight
 
 
-def pinball_loss(y_pred, y_true, quantiles):
+def pinball_loss(y_pred, y_true, quantiles, sample_weights=None):
     """
-    Computes the quantile (pinball) loss.
-    y_pred: (batch_size, num_quantiles)
-    y_true: (batch_size,)
+    Computes the quantile (pinball) loss, heavily weighted by user statistical certainty.
     """
     losses = []
     for i, q in enumerate(quantiles):
         errors = y_true - y_pred[:, i]
         loss_q = torch.max((q - 1) * errors, q * errors)
         losses.append(loss_q)
-    # Sum over quantiles, mean over batch
-    return torch.mean(torch.sum(torch.stack(losses, dim=1), dim=1))
+        
+    stacked_losses = torch.stack(losses, dim=1) # (batch_size, num_quantiles)
+    sample_losses = torch.sum(stacked_losses, dim=1) # (batch_size,)
+    
+    if sample_weights is not None:
+        sample_losses = sample_losses * sample_weights
+        
+    return torch.mean(sample_losses)
 
 
 class IntervalScorer(pl.LightningModule):
@@ -115,16 +124,16 @@ class IntervalScorer(pl.LightningModule):
         return self.mlp(x)
         
     def training_step(self, batch, batch_idx):
-        x, y = batch
+        x, y, w = batch
         y_pred = self(x)
-        loss = pinball_loss(y_pred, y, self.quantiles)
+        loss = pinball_loss(y_pred, y, self.quantiles, sample_weights=w)
         self.log("train_loss", loss, prog_bar=True)
         return loss
         
     def validation_step(self, batch, batch_idx):
-        x, y = batch
+        x, y, w = batch
         y_pred = self(x)
-        loss = pinball_loss(y_pred, y, self.quantiles)
+        loss = pinball_loss(y_pred, y, self.quantiles, sample_weights=w)
         self.log("val_loss", loss, prog_bar=True)
         
         # Calculate MAE on the median prediction (50th percentile)
@@ -136,56 +145,84 @@ class IntervalScorer(pl.LightningModule):
         return torch.optim.Adam(self.parameters(), lr=self.hparams.lr)
 
 
+import pandas as pd
+
+def evaluate_regression(train_json, test_json, train_emb, test_emb, max_epochs=20):
+    """
+    Called by app.py: 
+    1. Trains IntervalScorer locally on the generic training payload.
+    2. Zero-shot inference against the Michelin testing payload.
+    3. Returns DataFrames mapped for Streamlit visualizations.
+    """
+    print("--- Localizing Regression Context ---")
+    train_ds = UserRestaurantDataset(train_json, [train_emb, test_emb])
+    if len(train_ds) == 0:
+        return None, None
+        
+    test_ds = UserRestaurantDataset(test_json, [train_emb, test_emb])
+    
+    # 80/20 train/val structural split
+    t_size = int(0.8 * len(train_ds))
+    v_size = len(train_ds) - t_size
+    train_sub, val_sub = torch.utils.data.random_split(
+        train_ds, [t_size, v_size], generator=torch.Generator().manual_seed(42)
+    )
+    
+    train_loader = DataLoader(train_sub, batch_size=128, shuffle=True)
+    val_loader   = DataLoader(val_sub, batch_size=128)
+    test_loader  = DataLoader(test_ds, batch_size=256)
+    
+    model = IntervalScorer()
+    trainer = pl.Trainer(
+        max_epochs=max_epochs,
+        callbacks=[EarlyStopping(monitor="val_loss", patience=3, mode="min")],
+        enable_checkpointing=False,
+        logger=False
+    )
+    
+    print("--- Training IntervalScorer on Baseline Users ---")
+    trainer.fit(model, train_loader, val_loader)
+    
+    print("--- Zero-Shot Inference on Testing Set ---")
+    model.eval()
+    
+    def _extract_results(dl):
+        rows = []
+        with torch.no_grad():
+            for x, y, _ in dl:
+                preds = model(x)
+                for i in range(len(y)):
+                    lower = preds[i, 0].item()
+                    median = preds[i, 1].item()
+                    upper = preds[i, 2].item()
+                    truth = y[i].item()
+                    coverage = 1 if (lower <= truth <= upper) else 0
+                    rows.append({
+                        "Actual_Rating": truth,
+                        "Predicted_Median": median,
+                        "Lower_CI": lower,
+                        "Upper_CI": upper,
+                        "In_Bounds": coverage
+                    })
+        return pd.DataFrame(rows)
+
+    train_results = _extract_results(val_loader)
+    test_results = _extract_results(test_loader)
+    
+    return train_results, test_results
+
+
 if __name__ == "__main__":
     _HERE = os.path.dirname(os.path.abspath(__file__))
     _ROOT = os.path.abspath(os.path.join(_HERE, '..'))
     
-    # We dynamically train and evaluate the performance of our embeddings using the sandbox regressions
-    JSON_PATH  = os.path.join(_ROOT, 'data', 'yelp_sandbox', 'regression_val_set.json')
+    TRAIN_JSON = os.path.join(_ROOT, 'data', 'yelp_sandbox', 'regression_train_set.json')
+    TEST_JSON  = os.path.join(_ROOT, 'data', 'yelp_sandbox', 'regression_val_set.json')
     TRAIN_EMB  = os.path.join(_ROOT, 'data', 'yelp_sandbox', 'toy_embeddings', 'toy_restaurant_embeddings_train.pt')
     VAL_EMB    = os.path.join(_ROOT, 'data', 'yelp_sandbox', 'toy_embeddings', 'toy_restaurant_embeddings_val.pt')
     
-    if not os.path.exists(JSON_PATH) or not os.path.exists(TRAIN_EMB) or not os.path.exists(VAL_EMB):
-        print("Missing required data files. Please ensure you have run Phase 1 aggregation.")
+    if not os.path.exists(TRAIN_JSON):
+        print("Missing train JSON. Execute pipelines/yelp/export_regression_train.py first!")
         exit(1)
         
-    dataset = UserRestaurantDataset(JSON_PATH, [TRAIN_EMB, VAL_EMB])
-    
-    if len(dataset) == 0:
-        print("Error: Emtpy dataset after filtering. Adjust logic if no elements matched.")
-        exit(1)
-    
-    # Force 80/20 train/val split so it actually trains locally
-    train_size = int(0.8 * len(dataset))
-    val_size = len(dataset) - train_size
-    train_dataset, val_dataset = torch.utils.data.random_split(
-        dataset, [train_size, val_size], generator=torch.Generator().manual_seed(42)
-    )
-    
-    train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
-    val_loader   = DataLoader(val_dataset, batch_size=64)
-    
-    model = IntervalScorer()
-    
-    trainer = pl.Trainer(
-        max_epochs=20,
-        callbacks=[EarlyStopping(monitor="val_loss", patience=3, mode="min")],
-        enable_checkpointing=False, # We don't need to bloat the artifact dir for toy runs
-        logger=False
-    )
-    
-    print("--- Starting Quantile Regression Neural Network Training ---")
-    trainer.fit(model, train_loader, val_loader)
-    
-    # Run a quick check on the validation set to prove interval sanity
-    print("\n--- 95% Confidence Interval Sanity Check (Validation Set) ---")
-    model.eval()
-    x, y = next(iter(val_loader))
-    with torch.no_grad():
-        preds = model(x)
-        
-    for i in range(5):
-        print(f"Target Rating (Truth): {y[i]:.1f}")
-        print(f"  Lower Bound 95% CI (Risk Level) : {preds[i, 0]:.2f}")
-        print(f"  50th %ile Median (Expected)     : {preds[i, 1]:.2f}")
-        print(f"  Upper Bound 95% CI (Best Case)  : {preds[i, 2]:.2f}\n")
+    evaluate_regression(TRAIN_JSON, TEST_JSON, TRAIN_EMB, VAL_EMB)
