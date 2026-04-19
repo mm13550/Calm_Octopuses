@@ -48,3 +48,6 @@ data/yelp_sandbox/
 !data/extracted_bios/restaurant_bios_joinable.json
 data/extracted_menus/
 data.zip # 给 Git 下禁令，以后别碰它
+
+data/social_images_cleaned.csv
+data/vector_db/

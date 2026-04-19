@@ -1,0 +1,472 @@
+from __future__ import annotations
+
+import json
+import math
+import re
+from dataclasses import asdict, dataclass
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Iterable
+
+import lancedb
+import torch
+from transformers import CLIPModel, CLIPTokenizer
+
+BASE_DIR = Path(__file__).resolve().parent.parent if Path(__file__).resolve().parent.name == "algorithms" else Path(__file__).resolve().parent
+DATA_DIR = BASE_DIR / "data"
+DB_PATH = DATA_DIR / "vector_db"
+EMBEDDINGS_PATH = DATA_DIR / "embeddings" / "review_embeddings_latest.jsonl"
+TABLE_NAME = "review_vectors"
+DEFAULT_CLIP_MODEL_ID = "openai/clip-vit-base-patch32"
+UTC = timezone.utc
+
+
+@dataclass
+class RankedReviewResult:
+    doc_id: str
+    restaurant_id: str
+    restaurant_name: str
+    content_type: str
+    source: str
+    rating: float | None
+    created_at: str
+    age_days: float
+    cosine_distance: float
+    semantic_similarity: float
+    decay_factor: float
+    freshness_adjustment: float
+    lexical_bonus: float
+    final_score: float
+    trending_badge: bool
+    text: str
+
+
+@dataclass
+class ReviewQueryUnderstanding:
+    original_query: str
+    normalized_query: str
+    must_include: list[str]
+    should_include: list[str]
+    exclude: list[str]
+
+
+TOKEN_PATTERN = re.compile(r"[a-zA-Z0-9]+(?:['-][a-zA-Z0-9]+)?")
+POSITIVE_STYLE_TERMS = {
+    "friendly", "service", "quiet", "romantic", "cozy", "atmosphere", "staff",
+    "omakase", "tasting", "sushi", "dessert", "cocktails", "wine", "beef",
+    "seafood", "spicy", "vegetarian"
+}
+NEGATION_TERMS = {"not", "without", "no"}
+
+
+_CLIP_CACHE: dict[str, Any] = {}
+
+
+def utc_now() -> datetime:
+    return datetime.now(UTC)
+
+
+def normalize(vector: Iterable[float]) -> list[float]:
+    values = [float(x) for x in vector]
+    norm = math.sqrt(sum(x * x for x in values))
+    if norm == 0:
+        raise ValueError("Vector must not be all zeros.")
+    return [x / norm for x in values]
+
+
+def parse_timestamp(value: str | datetime) -> datetime:
+    if isinstance(value, datetime):
+        return value if value.tzinfo else value.replace(tzinfo=UTC)
+    dt = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    return dt if dt.tzinfo else dt.replace(tzinfo=UTC)
+
+
+def compute_lambda(half_life_days: float) -> float:
+    if half_life_days <= 0:
+        raise ValueError("half_life_days must be > 0")
+    return math.log(2) / half_life_days
+
+
+def exponential_decay(age_days: float, lambda_: float) -> float:
+    return math.exp(-lambda_ * max(age_days, 0.0))
+
+
+def build_freshness_adjustment(decay_factor: float, freshness_lambda: float = 0.2) -> float:
+    return 1.0 + freshness_lambda * decay_factor
+
+
+def connect_db():
+    DB_PATH.mkdir(parents=True, exist_ok=True)
+    return lancedb.connect(str(DB_PATH))
+
+
+def _open_table_if_exists(db, table_name: str):
+    try:
+        return db.open_table(table_name)
+    except Exception:
+        return None
+
+
+def tokenize(text: str) -> list[str]:
+    return [tok.lower() for tok in TOKEN_PATTERN.findall(text.lower())]
+
+
+def understand_review_query(query_text: str) -> ReviewQueryUnderstanding:
+    toks = tokenize(query_text)
+    must_include: list[str] = []
+    should_include: list[str] = []
+    exclude: list[str] = []
+
+    prev = None
+    for tok in toks:
+        if prev in NEGATION_TERMS:
+            exclude.append(tok)
+        elif tok in POSITIVE_STYLE_TERMS or len(tok) > 3:
+            must_include.append(tok)
+        else:
+            should_include.append(tok)
+        prev = tok
+
+    must_include = list(dict.fromkeys(must_include))
+    should_include = [t for t in dict.fromkeys(should_include) if t not in must_include]
+    exclude = list(dict.fromkeys(exclude))
+
+    return ReviewQueryUnderstanding(
+        original_query=query_text,
+        normalized_query=" ".join(toks),
+        must_include=must_include,
+        should_include=should_include,
+        exclude=exclude,
+    )
+
+
+def get_row_text_blob(row: dict[str, Any]) -> str:
+    return " ".join([
+        str(row.get("restaurant_name") or ""),
+        str(row.get("text") or ""),
+        str(row.get("source") or ""),
+    ]).lower()
+
+
+def row_matches_understanding(row: dict[str, Any], understanding: ReviewQueryUnderstanding) -> bool:
+    blob = get_row_text_blob(row)
+    for term in understanding.exclude:
+        if term in blob:
+            return False
+    return True
+
+
+def lexical_bonus_for_row(row: dict[str, Any], understanding: ReviewQueryUnderstanding) -> float:
+    blob = get_row_text_blob(row)
+    bonus = 0.0
+    for term in understanding.must_include:
+        if term in blob:
+            bonus += 0.03
+    for term in understanding.should_include:
+        if term in blob:
+            bonus += 0.01
+    return bonus
+
+
+def _load_clip_backend(model_id: str = DEFAULT_CLIP_MODEL_ID):
+    cached = _CLIP_CACHE.get(model_id)
+    if cached is not None:
+        return cached
+
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    tokenizer = CLIPTokenizer.from_pretrained(model_id)
+    model = CLIPModel.from_pretrained(model_id).to(device)
+    model.eval()
+
+    _CLIP_CACHE[model_id] = (tokenizer, model, device)
+    return tokenizer, model, device
+
+
+def embed_query_text_clip(query_text: str, *, model_id: str = DEFAULT_CLIP_MODEL_ID) -> list[float]:
+    tokenizer, model, device = _load_clip_backend(model_id)
+
+    with torch.no_grad():
+        inputs = tokenizer([query_text], return_tensors="pt", padding=True, truncation=True).to(device)
+        outputs = model.get_text_features(**inputs)
+
+        if isinstance(outputs, torch.Tensor):
+            text_features = outputs
+        elif hasattr(outputs, "pooler_output") and outputs.pooler_output is not None:
+            text_features = outputs.pooler_output
+            if hasattr(model, "text_projection") and model.text_projection is not None:
+                text_features = model.text_projection(text_features)
+        elif isinstance(outputs, (tuple, list)) and len(outputs) > 0:
+            text_features = outputs[0]
+        else:
+            raise TypeError(f"Unsupported CLIP text output type: {type(outputs)!r}")
+
+        if not isinstance(text_features, torch.Tensor):
+            raise TypeError(f"Failed to extract tensor from CLIP output: {type(text_features)!r}")
+
+        text_features = text_features / text_features.norm(p=2, dim=-1, keepdim=True)
+
+    return normalize(text_features[0].detach().cpu().tolist())
+
+
+def embed_query_text_hash(text: str, dim: int) -> list[float]:
+    vec = [0.0] * dim
+    tokens = tokenize(text)
+    if not tokens:
+        tokens = ["empty"]
+    for tok in tokens:
+        h = hash(tok)
+        idx = abs(h) % dim
+        sign = 1.0 if h % 2 == 0 else -1.0
+        vec[idx] += sign
+    return normalize(vec)
+
+
+def get_vector_dim_from_file(path: Path) -> int:
+    with path.open("r", encoding="utf-8") as f:
+        line = f.readline().strip()
+    if not line:
+        raise ValueError("Embedding file is empty.")
+    row = json.loads(line)
+    return len(row["vector"])
+
+
+def load_jsonl(path: str | Path) -> list[dict[str, Any]]:
+    path = Path(path)
+    rows: list[dict[str, Any]] = []
+    with path.open("r", encoding="utf-8") as f:
+        for line_no, line in enumerate(f, start=1):
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                rows.append(json.loads(line))
+            except json.JSONDecodeError as exc:
+                raise ValueError(f"Invalid JSONL at line {line_no}: {exc}") from exc
+    return rows
+
+
+REQUIRED_FIELDS = {
+    "doc_id",
+    "restaurant_id",
+    "restaurant_name",
+    "content_type",
+    "text",
+    "vector",
+    "created_at",
+    "source",
+}
+
+
+def validate_rows(rows: list[dict[str, Any]]) -> None:
+    if not rows:
+        raise ValueError("rows must not be empty")
+    for idx, row in enumerate(rows, start=1):
+        missing = REQUIRED_FIELDS - set(row.keys())
+        if missing:
+            raise ValueError(f"Row {idx} is missing required fields: {sorted(missing)}")
+        row["vector"] = normalize(row["vector"])
+        row["created_at"] = parse_timestamp(row["created_at"]).isoformat()
+        if "rating" in row and row["rating"] not in (None, ""):
+            try:
+                row["rating"] = float(row["rating"])
+            except Exception:
+                row["rating"] = None
+        else:
+            row["rating"] = None
+
+
+def ensure_table(rows: list[dict[str, Any]] | None = None, *, reset: bool = False):
+    db = connect_db()
+    table = _open_table_if_exists(db, TABLE_NAME)
+    if table is None:
+        if not rows:
+            raise ValueError("Table does not exist yet. Provide seed rows to create it.")
+        return db.create_table(TABLE_NAME, data=rows)
+    if reset:
+        if not rows:
+            raise ValueError("reset=True requires rows to recreate the table.")
+        return db.create_table(TABLE_NAME, data=rows, mode="overwrite")
+    return table
+
+
+def ingest_documents(rows: list[dict[str, Any]], *, overwrite: bool = False):
+    validate_rows(rows)
+    db = connect_db()
+    existing = _open_table_if_exists(db, TABLE_NAME)
+    if overwrite:
+        return ensure_table(rows, reset=True)
+    if existing is None:
+        return ensure_table(rows, reset=False)
+    existing.add(rows)
+    return existing
+
+
+def retrieve_reviews(
+    query_vector: Iterable[float],
+    *,
+    top_k: int = 10,
+    candidate_pool: int = 100,
+    half_life_days: float = 30.0,
+    freshness_lambda: float = 0.2,
+    understanding: ReviewQueryUnderstanding | None = None,
+) -> list[RankedReviewResult]:
+    if candidate_pool < top_k:
+        candidate_pool = top_k
+
+    db = connect_db()
+    table = _open_table_if_exists(db, TABLE_NAME)
+    if table is None:
+        raise ValueError("Review table does not exist. Run the script once to ingest review embeddings.")
+
+    query = normalize(query_vector)
+    lambda_ = compute_lambda(half_life_days)
+    raw_results = table.search(query).distance_type("cosine").limit(candidate_pool).to_list()
+
+    now = utc_now()
+    ranked: list[RankedReviewResult] = []
+    for row in raw_results:
+        if understanding and not row_matches_understanding(row, understanding):
+            continue
+
+        created_at_dt = parse_timestamp(row["created_at"])
+        age_days = max((now - created_at_dt).total_seconds() / 86400.0, 0.0)
+        cosine_distance = float(row["_distance"])
+        semantic_similarity = max(0.0, 1.0 - cosine_distance)
+        decay_factor = exponential_decay(age_days, lambda_)
+        freshness_adjustment = build_freshness_adjustment(decay_factor, freshness_lambda=freshness_lambda)
+        lexical_bonus = lexical_bonus_for_row(row, understanding) if understanding else 0.0
+        final_score = semantic_similarity * freshness_adjustment + lexical_bonus
+        trending_badge = age_days <= 30 and decay_factor >= 0.5
+
+        ranked.append(
+            RankedReviewResult(
+                doc_id=row["doc_id"],
+                restaurant_id=row["restaurant_id"],
+                restaurant_name=row["restaurant_name"],
+                content_type=row["content_type"],
+                source=row["source"],
+                rating=row.get("rating"),
+                created_at=row["created_at"],
+                age_days=age_days,
+                cosine_distance=cosine_distance,
+                semantic_similarity=semantic_similarity,
+                decay_factor=decay_factor,
+                freshness_adjustment=freshness_adjustment,
+                lexical_bonus=lexical_bonus,
+                final_score=final_score,
+                trending_badge=trending_badge,
+                text=row["text"],
+            )
+        )
+
+    ranked.sort(key=lambda item: item.final_score, reverse=True)
+    return ranked[:top_k]
+
+
+def build_query_vector_from_text(query_text: str, *, backend: str, expected_dim: int) -> list[float]:
+    if backend == "clip":
+        return embed_query_text_clip(query_text)
+    if backend == "hash":
+        return embed_query_text_hash(query_text, dim=expected_dim)
+    raise ValueError(f"Unsupported backend: {backend}")
+
+
+def results_to_dicts(results: list[RankedReviewResult]) -> list[dict[str, Any]]:
+    return [asdict(item) for item in results]
+
+
+def results_to_simple_dicts(results: list[RankedReviewResult]) -> list[dict[str, Any]]:
+    simple: list[dict[str, Any]] = []
+    for item in results:
+        simple.append(
+            {
+                "restaurant_name": item.restaurant_name,
+                "rating": item.rating,
+                "score": round(item.final_score, 4),
+                "source": item.source,
+                "text": item.text,
+            }
+        )
+    return simple
+
+
+def search_reviews_api(
+    query_text: str,
+    *,
+    top_k: int = 10,
+    candidate_pool: int = 100,
+    half_life_days: float = 30.0,
+    freshness_lambda: float = 0.2,
+    embedding_backend: str = "clip",
+) -> dict[str, Any]:
+    understanding = understand_review_query(query_text)
+    expected_dim = get_vector_dim_from_file(EMBEDDINGS_PATH)
+    query_vector = build_query_vector_from_text(
+        understanding.normalized_query or query_text,
+        backend=embedding_backend,
+        expected_dim=expected_dim,
+    )
+    results = retrieve_reviews(
+        query_vector,
+        top_k=top_k,
+        candidate_pool=candidate_pool,
+        half_life_days=half_life_days,
+        freshness_lambda=freshness_lambda,
+        understanding=understanding,
+    )
+    return {
+        "query": query_text,
+        "must_include": understanding.must_include,
+        "results": results_to_simple_dicts(results),
+    }
+
+
+def print_results(results: list[RankedReviewResult], *, half_life_days: float, freshness_lambda: float) -> None:
+    print(f"\nReview retrieval results (half_life={half_life_days}d, freshness_lambda={freshness_lambda})")
+    print("=" * 150)
+    header = (
+        f"{'rank':<5} {'restaurant':<24} {'rating':<8} {'age_days':>9} {'sem_sim':>10} {'decay':>10} "
+        f"{'fresh_adj':>10} {'lexical':>9} {'final':>10} {'trend':>7}  text"
+    )
+    print(header)
+    print("-" * 150)
+    for idx, item in enumerate(results, start=1):
+        preview = item.text.replace("\n", " ")[:70]
+        print(
+            f"{idx:<5} {item.restaurant_name:<24} {str(item.rating):<8} {item.age_days:>9.2f} {item.semantic_similarity:>10.4f} "
+            f"{item.decay_factor:>10.4f} {item.freshness_adjustment:>10.4f} {item.lexical_bonus:>9.4f} {item.final_score:>10.4f} "
+            f"{str(item.trending_badge):>7}  {preview}"
+        )
+
+
+def demo_from_jsonl(path: str | Path) -> None:
+    rows = load_jsonl(path)
+    ingest_documents(rows, overwrite=True)
+    understanding = understand_review_query("friendly staff")
+    query_vector = build_query_vector_from_text(
+        understanding.normalized_query or understanding.original_query,
+        backend="clip",
+        expected_dim=get_vector_dim_from_file(Path(path)),
+    )
+    results = retrieve_reviews(
+        query_vector,
+        top_k=10,
+        candidate_pool=100,
+        half_life_days=30.0,
+        freshness_lambda=0.2,
+        understanding=understanding,
+    )
+    print("\nQuery understanding")
+    print("=" * 80)
+    print(f"normalized    : {understanding.normalized_query}")
+    print(f"must_include  : {understanding.must_include}")
+    print(f"exclude       : {understanding.exclude}")
+    print_results(results, half_life_days=30.0, freshness_lambda=0.2)
+
+
+if __name__ == "__main__":
+    if EMBEDDINGS_PATH.exists():
+        print(f"Using review embeddings at: {EMBEDDINGS_PATH}")
+        demo_from_jsonl(EMBEDDINGS_PATH)
+    else:
+        raise FileNotFoundError(f"Review embeddings not found: {EMBEDDINGS_PATH}")

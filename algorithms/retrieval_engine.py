@@ -12,8 +12,8 @@ from typing import Any, Iterable
 import lancedb
 
 BASE_DIR = Path(__file__).resolve().parent.parent if Path(__file__).resolve().parent.name == "algorithms" else Path(__file__).resolve().parent
-DB_PATH = BASE_DIR / "vector_db"
 DATA_DIR = BASE_DIR / "data"
+DB_PATH = DATA_DIR / "vector_db"
 TABLE_NAME = "restaurant_vectors"
 UTC = timezone.utc
 
@@ -569,6 +569,128 @@ def search_api(
 def results_to_dicts(results: list[RankedResult]) -> list[dict[str, Any]]:
     return [asdict(item) for item in results]
 
+def lexical_fallback_search(
+    query_text: str,
+    *,
+    top_k: int = 10,
+    half_life_days: float = 7.0,
+    alpha: float = 0.85,
+    dedupe_restaurants: bool = True,
+    default_content_type: str | None = "menu",
+) -> tuple[QueryUnderstanding, list[RankedResult]]:
+    understanding = understand_query(query_text)
+    menu_path = DATA_DIR / "embeddings" / "menu_embeddings_latest.jsonl"
+
+    if not menu_path.exists():
+        return understanding, []
+
+    rows = load_jsonl(menu_path)
+    now = utc_now()
+    lambda_ = compute_lambda(half_life_days)
+    ranked: list[RankedResult] = []
+
+    for row in rows:
+        if not row_matches_understanding(row, understanding, default_content_type=default_content_type):
+            continue
+
+        created_at_dt = parse_timestamp(row["created_at"])
+        age_days = max((now - created_at_dt).total_seconds() / 86400.0, 0.0)
+        decay_factor = exponential_decay(age_days, lambda_)
+
+        # fallback 情况下不给真正语义分，给一个稳定的基础分
+        semantic_similarity = 0.5
+        freshness_adjustment, base_score = blend_similarity_with_decay(
+            semantic_similarity=semantic_similarity,
+            decay_factor=decay_factor,
+            alpha=alpha,
+        )
+
+        lexical_bonus = lexical_bonus_for_row(row, understanding)
+        final_score = min(base_score + lexical_bonus + 0.2, 1.5)
+        trending_badge = age_days <= 7 and decay_factor >= 0.5
+
+        ranked.append(
+            RankedResult(
+                doc_id=row["doc_id"],
+                restaurant_id=row["restaurant_id"],
+                restaurant_name=row["restaurant_name"],
+                content_type=row["content_type"],
+                source=row["source"],
+                dish_name=row.get("dish_name"),
+                price=row.get("price"),
+                created_at=row["created_at"],
+                age_days=age_days,
+                cosine_distance=1.0 - semantic_similarity,
+                semantic_similarity=semantic_similarity,
+                decay_factor=decay_factor,
+                freshness_adjustment=freshness_adjustment,
+                lexical_bonus=lexical_bonus,
+                final_score=final_score,
+                trending_badge=trending_badge,
+                text=row["text"],
+            )
+        )
+
+    ranked.sort(key=lambda item: item.final_score, reverse=True)
+
+    if dedupe_restaurants:
+        ranked = dedupe_by_restaurant(ranked, limit=top_k)
+    else:
+        ranked = ranked[:top_k]
+
+    return understanding, ranked
+
+def search_api_simple(
+    query_text: str,
+    *,
+    top_k: int = 10,
+    half_life_days: float = 7.0,
+    alpha: float = 0.85,
+    dedupe_restaurants: bool = True,
+    default_content_type: str | None = "menu",
+) -> dict[str, Any]:
+    full = search_api(
+        query_text,
+        top_k=top_k,
+        half_life_days=half_life_days,
+        alpha=alpha,
+        dedupe_restaurants=dedupe_restaurants,
+        default_content_type=default_content_type,
+    )
+
+    understanding = full.get("query_understanding", {})
+    results = full.get("results", [])
+
+    # 如果旧向量召回返回空，并且是严格关键词查询，则走 lexical fallback
+    if not results:
+        fallback_understanding, fallback_results = lexical_fallback_search(
+            query_text,
+            top_k=top_k,
+            half_life_days=half_life_days,
+            alpha=alpha,
+            dedupe_restaurants=dedupe_restaurants,
+            default_content_type=default_content_type,
+        )
+        understanding = asdict(fallback_understanding)
+        results = [asdict(x) for x in fallback_results]
+
+    simple_results = []
+    for item in results:
+        simple_results.append({
+            "restaurant_name": item.get("restaurant_name"),
+            "dish_name": item.get("dish_name"),
+            "price": item.get("price"),
+            "score": round(float(item.get("final_score", 0.0)), 4),
+            "content_type": item.get("content_type"),
+            "source": item.get("source"),
+            "text": item.get("text"),
+        })
+
+    return {
+        "query": query_text,
+        "must_include": understanding.get("must_include", []),
+        "results": simple_results,
+    }
 
 def print_understanding(understanding: QueryUnderstanding) -> None:
     print("\nQuery understanding")
@@ -637,11 +759,11 @@ def demo_from_jsonl(path: str | Path) -> None:
 
 
 if __name__ == "__main__":
-    week2_path = DATA_DIR / "embeddings" / "week2_embeddings.jsonl"
+    menu_path = DATA_DIR / "embeddings" / "menu_embeddings_latest.jsonl"
 
-    if week2_path.exists():
-        print(f"Using Week 2 embeddings at: {week2_path}")
-        demo_from_jsonl(week2_path)
+    if menu_path.exists():
+        print(f"Using menu embeddings at: {menu_path}")
+        demo_from_jsonl(menu_path)
     else:
-        print("No Week 2 embeddings found. Falling back to dummy documents.")
+        print("No Menu embeddings found. Falling back to dummy documents.")
         demo_from_dummy_data()

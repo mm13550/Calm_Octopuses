@@ -1,0 +1,374 @@
+from __future__ import annotations
+
+import json
+import math
+import re
+import sys
+from dataclasses import dataclass, asdict
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Iterable
+
+import lancedb
+import torch
+from transformers import CLIPModel, CLIPTokenizer
+
+
+# 允许两种运行方式：
+# 1) python -m algorithms.retrieval_engine_profiles
+# 2) python .\algorithms\retrieval_engine_profiles.py
+CURRENT_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = CURRENT_DIR.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+BASE_DIR = PROJECT_ROOT
+DATA_DIR = BASE_DIR / "data"
+EMBEDDINGS_DIR = DATA_DIR / "embeddings"
+DB_PATH = DATA_DIR / "vector_db"
+
+PROFILE_PATH = EMBEDDINGS_DIR / "restaurant_profiles_latest.jsonl"
+TABLE_NAME = "restaurant_profiles"
+DEFAULT_CLIP_MODEL_ID = "openai/clip-vit-base-patch32"
+UTC = timezone.utc
+
+TOKEN_PATTERN = re.compile(r"[a-zA-Z0-9]+(?:['-][a-zA-Z0-9]+)?")
+STRICT_TERMS = {
+    "omakase", "dessert", "quiet", "romantic", "cozy", "intimate",
+    "staff", "service", "seafood", "sushi", "yakitori", "vegetarian"
+}
+
+
+@dataclass
+class RankedProfile:
+    doc_id: str
+    restaurant_id: str
+    restaurant_name: str
+    content_type: str
+    source: str
+    created_at: str
+    semantic_similarity: float
+    lexical_bonus: float
+    final_score: float
+    text: str
+    menu_item_count: int
+    review_count: int
+    food_image_count: int
+    interior_image_count: int
+    top_menu_items: list[str]
+    top_review_snippets: list[str]
+
+
+@dataclass
+class QueryUnderstanding:
+    original_query: str
+    normalized_query: str
+    semantic_query: str
+    must_include: list[str]
+
+
+def utc_now() -> datetime:
+    return datetime.now(UTC)
+
+
+def normalize(vector: Iterable[float]) -> list[float]:
+    values = [float(x) for x in vector]
+    norm = math.sqrt(sum(x * x for x in values))
+    if norm == 0:
+        raise ValueError("Vector must not be all zeros.")
+    return [x / norm for x in values]
+
+
+def parse_timestamp(value: str | datetime) -> datetime:
+    if isinstance(value, datetime):
+        return value if value.tzinfo else value.replace(tzinfo=UTC)
+    dt = datetime.fromisoformat(str(value))
+    return dt if dt.tzinfo else dt.replace(tzinfo=UTC)
+
+
+def tokenize(text: str) -> list[str]:
+    return [tok.lower() for tok in TOKEN_PATTERN.findall(str(text).lower())]
+
+
+def understand_query(query_text: str) -> QueryUnderstanding:
+    tokens = tokenize(query_text)
+    must_include: list[str] = []
+    for tok in tokens:
+        if tok in STRICT_TERMS and tok not in must_include:
+            must_include.append(tok)
+
+    semantic_query = " ".join(tokens).strip() or str(query_text).strip()
+    normalized_query = " ".join(tokens).strip() or str(query_text).strip().lower()
+
+    return QueryUnderstanding(
+        original_query=query_text,
+        normalized_query=normalized_query,
+        semantic_query=semantic_query,
+        must_include=must_include,
+    )
+
+
+_CLIP_CACHE: dict[str, Any] = {}
+
+
+def load_clip_backend(model_id: str = DEFAULT_CLIP_MODEL_ID):
+    cached = _CLIP_CACHE.get(model_id)
+    if cached is not None:
+        return cached
+
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    tokenizer = CLIPTokenizer.from_pretrained(model_id)
+    model = CLIPModel.from_pretrained(model_id).to(device)
+    model.eval()
+
+    _CLIP_CACHE[model_id] = (tokenizer, model, device)
+    return tokenizer, model, device
+
+
+@torch.no_grad()
+def embed_query_text_clip(query_text: str, *, model_id: str = DEFAULT_CLIP_MODEL_ID) -> list[float]:
+    tokenizer, model, device = load_clip_backend(model_id=model_id)
+
+    inputs = tokenizer([query_text], return_tensors="pt", padding=True, truncation=True).to(device)
+    outputs = model.get_text_features(**inputs)
+
+    if isinstance(outputs, torch.Tensor):
+        features = outputs
+    elif hasattr(outputs, "pooler_output") and outputs.pooler_output is not None:
+        features = outputs.pooler_output
+        if hasattr(model, "text_projection") and model.text_projection is not None:
+            features = model.text_projection(features)
+    elif isinstance(outputs, (tuple, list)) and len(outputs) > 0:
+        features = outputs[0]
+    else:
+        raise TypeError(f"Unsupported CLIP text output type: {type(outputs)!r}")
+
+    if not isinstance(features, torch.Tensor):
+        raise TypeError(f"Failed to extract tensor from CLIP text output: {type(features)!r}")
+
+    features = features / features.norm(p=2, dim=-1, keepdim=True)
+    return normalize(features[0].detach().cpu().tolist())
+
+
+def connect_db():
+    DB_PATH.mkdir(parents=True, exist_ok=True)
+    return lancedb.connect(str(DB_PATH))
+
+
+def _open_table_if_exists(db, table_name: str):
+    try:
+        return db.open_table(table_name)
+    except Exception:
+        return None
+
+
+def load_jsonl(path: str | Path) -> list[dict[str, Any]]:
+    path = Path(path)
+    rows: list[dict[str, Any]] = []
+    with path.open("r", encoding="utf-8") as f:
+        for line_no, line in enumerate(f, start=1):
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                rows.append(json.loads(line))
+            except json.JSONDecodeError as exc:
+                raise ValueError(f"Invalid JSONL at line {line_no}: {exc}") from exc
+    return rows
+
+
+REQUIRED_FIELDS = {
+    "doc_id",
+    "restaurant_id",
+    "restaurant_name",
+    "content_type",
+    "text",
+    "vector",
+    "created_at",
+    "source",
+}
+
+
+def validate_rows(rows: list[dict[str, Any]]) -> None:
+    if not rows:
+        raise ValueError("rows must not be empty")
+
+    for idx, row in enumerate(rows, start=1):
+        missing = REQUIRED_FIELDS - set(row.keys())
+        if missing:
+            raise ValueError(f"Row {idx} missing required fields: {sorted(missing)}")
+
+        if not isinstance(row["vector"], list) or not row["vector"]:
+            raise ValueError(f"Row {idx} must contain a non-empty vector list")
+
+        row["vector"] = normalize(row["vector"])
+        row["created_at"] = parse_timestamp(row["created_at"]).isoformat()
+        row.setdefault("metadata", {})
+
+
+def ensure_table(rows: list[dict[str, Any]] | None = None, *, reset: bool = False):
+    db = connect_db()
+    table = _open_table_if_exists(db, TABLE_NAME)
+
+    if table is None:
+        if not rows:
+            raise ValueError("Table does not exist yet. Provide rows to create it.")
+        return db.create_table(TABLE_NAME, data=rows)
+
+    if reset:
+        if not rows:
+            raise ValueError("reset=True requires rows.")
+        return db.create_table(TABLE_NAME, data=rows, mode="overwrite")
+
+    return table
+
+
+def ingest_profiles(rows: list[dict[str, Any]], *, overwrite: bool = True):
+    validate_rows(rows)
+    db = connect_db()
+    existing = _open_table_if_exists(db, TABLE_NAME)
+
+    if overwrite or existing is None:
+        return ensure_table(rows, reset=True if existing is not None else False)
+
+    existing.add(rows)
+    return existing
+
+
+def get_row_blob(row: dict[str, Any]) -> str:
+    metadata = row.get("metadata") or {}
+    parts = [
+        str(row.get("restaurant_name") or ""),
+        str(row.get("text") or ""),
+        " ".join(str(x) for x in metadata.get("top_menu_items", []) if x),
+        " ".join(str(x) for x in metadata.get("top_review_snippets", []) if x),
+    ]
+    return " ".join(parts).lower()
+
+
+def row_matches_query(row: dict[str, Any], understanding: QueryUnderstanding) -> bool:
+    if not understanding.must_include:
+        return True
+    blob = get_row_blob(row)
+    return all(term in blob for term in understanding.must_include)
+
+
+def lexical_bonus_for_row(row: dict[str, Any], understanding: QueryUnderstanding) -> float:
+    blob = get_row_blob(row)
+    bonus = 0.0
+    for term in understanding.must_include:
+        if term in blob:
+            bonus += 0.08
+    return bonus
+
+
+def retrieve_profiles(
+    query_vector: Iterable[float],
+    *,
+    top_k: int = 10,
+    candidate_pool: int = 100,
+    understanding: QueryUnderstanding | None = None,
+) -> list[RankedProfile]:
+    if candidate_pool < top_k:
+        candidate_pool = top_k
+
+    db = connect_db()
+    table = _open_table_if_exists(db, TABLE_NAME)
+    if table is None:
+        raise ValueError("Profile table does not exist. Run initialize_profiles_table() first.")
+
+    query = normalize(query_vector)
+    raw_results = (
+        table.search(query)
+        .distance_type("cosine")
+        .limit(candidate_pool)
+        .to_list()
+    )
+
+    ranked: list[RankedProfile] = []
+    for row in raw_results:
+        if understanding and not row_matches_query(row, understanding):
+            continue
+
+        cosine_distance = float(row["_distance"])
+        semantic_similarity = max(0.0, 1.0 - cosine_distance)
+        lexical_bonus = lexical_bonus_for_row(row, understanding) if understanding else 0.0
+        final_score = min(semantic_similarity + lexical_bonus, 1.5)
+
+        metadata = row.get("metadata") or {}
+
+        ranked.append(
+            RankedProfile(
+                doc_id=row["doc_id"],
+                restaurant_id=row["restaurant_id"],
+                restaurant_name=row["restaurant_name"],
+                content_type=row["content_type"],
+                source=row["source"],
+                created_at=row["created_at"],
+                semantic_similarity=semantic_similarity,
+                lexical_bonus=lexical_bonus,
+                final_score=final_score,
+                text=row["text"],
+                menu_item_count=int(metadata.get("menu_item_count", 0)),
+                review_count=int(metadata.get("review_count", 0)),
+                food_image_count=int(metadata.get("food_image_count", 0)),
+                interior_image_count=int(metadata.get("interior_image_count", 0)),
+                top_menu_items=list(metadata.get("top_menu_items", [])),
+                top_review_snippets=list(metadata.get("top_review_snippets", [])),
+            )
+        )
+
+    ranked.sort(key=lambda item: item.final_score, reverse=True)
+    return ranked[:top_k]
+
+
+def initialize_profiles_table(path: str | Path = PROFILE_PATH):
+    rows = load_jsonl(path)
+    ingest_profiles(rows, overwrite=True)
+    return rows
+
+
+def search_profiles_api(
+    query_text: str,
+    *,
+    top_k: int = 10,
+    candidate_pool: int = 100,
+) -> dict[str, Any]:
+    understanding = understand_query(query_text)
+    query_vector = embed_query_text_clip(understanding.semantic_query)
+
+    results = retrieve_profiles(
+        query_vector,
+        top_k=top_k,
+        candidate_pool=max(candidate_pool, top_k * 10),
+        understanding=understanding,
+    )
+
+    return {
+        "query": query_text,
+        "must_include": understanding.must_include,
+        "results": [
+            {
+                "restaurant_name": item.restaurant_name,
+                "score": round(item.final_score, 4),
+                "menu_item_count": item.menu_item_count,
+                "review_count": item.review_count,
+                "food_image_count": item.food_image_count,
+                "interior_image_count": item.interior_image_count,
+                "text": item.text,
+                "top_menu_items": item.top_menu_items,
+                "top_review_snippets": item.top_review_snippets,
+            }
+            for item in results
+        ],
+    }
+
+
+if __name__ == "__main__":
+    if PROFILE_PATH.exists():
+        print(f"Using restaurant profiles at: {PROFILE_PATH}")
+        initialize_profiles_table(PROFILE_PATH)
+        demo = search_profiles_api("quiet omakase", top_k=10)
+        print(json.dumps(demo, ensure_ascii=False, indent=2))
+    else:
+        print(f"Restaurant profiles file not found: {PROFILE_PATH}")
