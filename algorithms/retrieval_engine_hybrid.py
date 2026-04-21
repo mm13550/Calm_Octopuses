@@ -21,8 +21,11 @@ def _safe_float(value: Any, default: float = 0.0) -> float:
         return default
 
 
-def _normalize_name(name: Any) -> str:
-    return str(name or "").strip()
+def _restaurant_key(item: dict[str, Any]) -> str:
+    restaurant_id = str(item.get("restaurant_id") or "").strip()
+    if restaurant_id:
+        return f"id::{restaurant_id}"
+    return f"name::{str(item.get('restaurant_name') or '').strip().lower()}"
 
 
 def _normalize_menu_results(payload: dict[str, Any]) -> list[dict[str, Any]]:
@@ -33,15 +36,24 @@ def _normalize_menu_results(payload: dict[str, Any]) -> list[dict[str, Any]]:
         if not isinstance(item, dict):
             continue
 
-        normalized.append({
-            "restaurant_name": item.get("restaurant_name"),
-            "dish_name": item.get("dish_name"),
-            "price": item.get("price"),
-            "score": round(_safe_float(item.get("score")), 4),
-            "content_type": item.get("content_type"),
-            "source": item.get("source"),
-            "text": item.get("text"),
-        })
+        normalized.append(
+            {
+                "doc_id": item.get("doc_id"),
+                "restaurant_id": item.get("restaurant_id"),
+                "restaurant_name": item.get("restaurant_name"),
+                "homepage": item.get("homepage"),
+                "borough": item.get("borough"),
+                "michelin_category": item.get("michelin_category"),
+                "dish_name": item.get("dish_name"),
+                "price": item.get("price"),
+                "score": round(_safe_float(item.get("score")), 4),
+                "semantic_similarity": round(_safe_float(item.get("semantic_similarity")), 4),
+                "lexical_bonus": round(_safe_float(item.get("lexical_bonus")), 4),
+                "content_type": item.get("content_type"),
+                "source": item.get("source"),
+                "text": item.get("text"),
+            }
+        )
 
     return normalized
 
@@ -54,13 +66,22 @@ def _normalize_review_results(payload: dict[str, Any]) -> list[dict[str, Any]]:
         if not isinstance(item, dict):
             continue
 
-        normalized.append({
-            "restaurant_name": item.get("restaurant_name"),
-            "rating": item.get("rating"),
-            "score": round(_safe_float(item.get("score")), 4),
-            "source": item.get("source"),
-            "text": item.get("text"),
-        })
+        normalized.append(
+            {
+                "doc_id": item.get("doc_id"),
+                "restaurant_id": item.get("restaurant_id"),
+                "restaurant_name": item.get("restaurant_name"),
+                "homepage": item.get("homepage"),
+                "borough": item.get("borough"),
+                "michelin_category": item.get("michelin_category"),
+                "rating": item.get("rating"),
+                "score": round(_safe_float(item.get("score")), 4),
+                "semantic_similarity": round(_safe_float(item.get("semantic_similarity")), 4),
+                "lexical_bonus": round(_safe_float(item.get("lexical_bonus")), 4),
+                "source": item.get("source"),
+                "text": item.get("text"),
+            }
+        )
 
     return normalized
 
@@ -103,60 +124,78 @@ def _dedupe_review_items(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return deduped
 
 
+def _truncate(items: list[dict[str, Any]], *, max_items: int) -> list[dict[str, Any]]:
+    return items[:max_items]
+
+
 def _merge_by_restaurant(
     menu_results: list[dict[str, Any]],
     review_results: list[dict[str, Any]],
+    *,
+    max_menu_matches: int = 3,
+    max_review_matches: int = 3,
 ) -> list[dict[str, Any]]:
     merged: dict[str, dict[str, Any]] = {}
 
-    def ensure_card(restaurant_name: str) -> dict[str, Any]:
-        key = _normalize_name(restaurant_name)
-        if not key:
-            key = "Unknown Restaurant"
-
+    def ensure_card(item: dict[str, Any]) -> dict[str, Any]:
+        key = _restaurant_key(item)
         if key not in merged:
             merged[key] = {
-                "restaurant_name": key,
+                "restaurant_id": item.get("restaurant_id"),
+                "restaurant_name": item.get("restaurant_name"),
+                "homepage": item.get("homepage"),
+                "borough": item.get("borough"),
+                "michelin_category": item.get("michelin_category"),
                 "menu_matches": [],
                 "review_matches": [],
                 "menu_max_score": 0.0,
                 "review_max_score": 0.0,
                 "combined_score": 0.0,
             }
+        else:
+            card = merged[key]
+            for field in ("restaurant_id", "restaurant_name", "homepage", "borough", "michelin_category"):
+                if not card.get(field) and item.get(field):
+                    card[field] = item.get(field)
         return merged[key]
 
     for item in menu_results:
-        restaurant_name = _normalize_name(item.get("restaurant_name"))
-        card = ensure_card(restaurant_name)
+        card = ensure_card(item)
         card["menu_matches"].append(item)
         card["menu_max_score"] = max(card["menu_max_score"], _safe_float(item.get("score")))
 
     for item in review_results:
-        restaurant_name = _normalize_name(item.get("restaurant_name"))
-        card = ensure_card(restaurant_name)
+        card = ensure_card(item)
         card["review_matches"].append(item)
         card["review_max_score"] = max(card["review_max_score"], _safe_float(item.get("score")))
 
     cards: list[dict[str, Any]] = []
     for card in merged.values():
-        card["menu_matches"] = _dedupe_menu_items(card["menu_matches"])
-        card["review_matches"] = _dedupe_review_items(card["review_matches"])
+        menu_matches = _truncate(_dedupe_menu_items(card["menu_matches"]), max_items=max_menu_matches)
+        review_matches = _truncate(_dedupe_review_items(card["review_matches"]), max_items=max_review_matches)
 
-        card["combined_score"] = round(
-            (card["menu_max_score"] * 0.45) +
-            (card["review_max_score"] * 0.45) +
-            (0.10 if card["menu_matches"] and card["review_matches"] else 0.0),
-            4,
+        combined_score = (
+            (card["menu_max_score"] * 0.45)
+            + (card["review_max_score"] * 0.45)
+            + (0.10 if menu_matches and review_matches else 0.0)
         )
 
-        cards.append({
-            "restaurant_name": card["restaurant_name"],
-            "combined_score": card["combined_score"],
-            "menu_max_score": round(card["menu_max_score"], 4),
-            "review_max_score": round(card["review_max_score"], 4),
-            "menu_matches": card["menu_matches"],
-            "review_matches": card["review_matches"],
-        })
+        cards.append(
+            {
+                "restaurant_id": card["restaurant_id"],
+                "restaurant_name": card["restaurant_name"],
+                "homepage": card["homepage"],
+                "borough": card["borough"],
+                "michelin_category": card["michelin_category"],
+                "combined_score": round(combined_score, 4),
+                "menu_max_score": round(card["menu_max_score"], 4),
+                "review_max_score": round(card["review_max_score"], 4),
+                "has_menu_signal": bool(menu_matches),
+                "has_review_signal": bool(review_matches),
+                "menu_matches": menu_matches,
+                "review_matches": review_matches,
+            }
+        )
 
     cards.sort(key=lambda x: x["combined_score"], reverse=True)
     return cards
@@ -185,6 +224,8 @@ def hybrid_search_api(
 
     return {
         "query": query_text,
+        "menu_backend_used": menu_payload.get("backend_used"),
+        "review_backend_used": review_payload.get("backend_used"),
         "menu_results": menu_results,
         "review_results": review_results,
         "restaurant_cards": restaurant_cards,
