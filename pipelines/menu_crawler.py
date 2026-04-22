@@ -5,6 +5,7 @@ import json
 import io
 import urllib.parse
 import base64
+from difflib import SequenceMatcher
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup
@@ -323,20 +324,78 @@ def encode_image_to_base64(image_url):
         print(f"  -> Failed to download/encode image {image_url}: {e}")
         return None
 
-def get_place_id(restaurant_name):
-    """Fetch the robust Google Place ID (rest_id) dynamically for relational mapping."""
-    api_key = os.getenv("GOOGLE_PLACES_API_KEY")
-    if not api_key: return None
-    url = "https://places.googleapis.com/v1/places:searchText"
-    headers = {"Content-Type": "application/json", "X-Goog-Api-Key": api_key, "X-Goog-FieldMask": "places.id"}
-    payload = {"textQuery": f"{restaurant_name} restaurant NYC"}
+def normalize_domain(url):
+    if not url:
+        return ""
     try:
-        r = requests.post(url, headers=headers, json=payload, timeout=5)
-        if r.status_code == 200 and r.json().get('places'):
-            return r.json()['places'][0]['id']
+        host = urllib.parse.urlparse(str(url)).netloc.lower()
     except Exception:
-        pass
-    return None
+        return ""
+    return host[4:] if host.startswith("www.") else host
+
+
+def normalize_name(value):
+    if isinstance(value, dict):
+        value = value.get("text") or value.get("displayName") or ""
+    value = str(value or "").lower()
+    value = re.sub(r"[^a-z0-9]+", " ", value)
+    return " ".join(value.split())
+
+
+def get_place_id(restaurant_name, homepage=None, strict_homepage_match=True):
+    """Resolve a Google Place ID, preferring candidates that match the known homepage."""
+    api_key = os.getenv("GOOGLE_PLACES_API_KEY")
+    if not api_key:
+        return None
+
+    url = "https://places.googleapis.com/v1/places:searchText"
+    headers = {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": api_key,
+        "X-Goog-FieldMask": "places.id,places.displayName,places.websiteUri",
+    }
+    payload = {"textQuery": f"{restaurant_name} restaurant NYC"}
+    target_name = normalize_name(restaurant_name)
+    target_domain = normalize_domain(homepage)
+
+    try:
+        response = requests.post(url, headers=headers, json=payload, timeout=5)
+        if response.status_code != 200:
+            return None
+
+        places = response.json().get("places") or []
+        if not places:
+            return None
+
+        best_place = None
+        best_score = -1.0
+        best_accepted_place = None
+        best_accepted_score = -1.0
+
+        for place in places:
+            candidate_name = normalize_name(place.get("displayName"))
+            candidate_domain = normalize_domain(place.get("websiteUri"))
+            name_score = SequenceMatcher(None, target_name, candidate_name).ratio()
+            homepage_match = bool(target_domain and candidate_domain and target_domain == candidate_domain)
+            accepted = homepage_match or name_score >= 0.72
+            score = name_score + (1.0 if homepage_match else 0.0)
+
+            if score > best_score:
+                best_score = score
+                best_place = place
+            if accepted and score > best_accepted_score:
+                best_accepted_score = score
+                best_accepted_place = place
+
+        if best_accepted_place:
+            return best_accepted_place.get("id")
+
+        if homepage and strict_homepage_match:
+            return None
+
+        return (best_place or {}).get("id")
+    except Exception:
+        return None
 
 def parse_text_to_json_with_llm(restaurant_name, rest_id, raw_text, image_urls):
     """
@@ -459,7 +518,7 @@ def main():
         raw_text, image_urls = scrape_menu_text(url)
         
         if raw_text or image_urls:
-            rest_id = get_place_id(restaurant_name) or f"dummy_{index}"
+            rest_id = get_place_id(restaurant_name, homepage=url) or f"dummy_{index}"
             print(f"  -> Target rest_id resolved to: {rest_id}")
             print(f"  -> Extracted {len(raw_text)} characters and {len(image_urls)} menu images. Sending to GPT-4o-mini...")
             structured_dishes = parse_text_to_json_with_llm(restaurant_name, rest_id, raw_text, image_urls)

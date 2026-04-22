@@ -63,7 +63,7 @@ def main():
             
         raw_text, image_urls = scrape_menu_text(url)
         if raw_text or image_urls:
-            rest_id = get_place_id(restaurant_name) or f"dummy_{index}"
+            rest_id = get_place_id(restaurant_name, homepage=url) or f"dummy_{index}"
             structured_dishes = parse_text_to_json_with_llm(restaurant_name, rest_id, raw_text, image_urls)
             print(f"  -> Successfully structured {len(structured_dishes)} dishes.")
             retried_menus.extend(structured_dishes)
