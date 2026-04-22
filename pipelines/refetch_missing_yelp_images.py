@@ -3,8 +3,12 @@ from pathlib import Path
 
 import pandas as pd
 import requests
-from apify_client import ApifyClient
 from dotenv import load_dotenv
+
+try:
+    from apify_client import ApifyClient
+except Exception:  # pragma: no cover - optional local dependency
+    ApifyClient = None
 
 
 load_dotenv()
@@ -23,7 +27,8 @@ def parse_expected_index(image_uid: str) -> int:
 
 def get_restaurant_name(rest_id: str) -> str:
     lookup_df = pd.read_csv(LOOKUP_CSV)
-    match = lookup_df.loc[lookup_df["rest_id"] == rest_id, "restaurant_name"]
+    name_col = "restaurant_name" if "restaurant_name" in lookup_df.columns else "name"
+    match = lookup_df.loc[lookup_df["rest_id"] == rest_id, name_col]
     if match.empty:
         raise ValueError(f"rest_id '{rest_id}' not found in {LOOKUP_CSV}")
     return str(match.iloc[0])
@@ -49,6 +54,8 @@ def get_missing_yelp_rows(rest_id: str) -> pd.DataFrame:
 def fetch_yelp_photo_urls(restaurant_name: str) -> list[str]:
     if not APIFY_API_TOKEN:
         raise ValueError("Missing APIFY_API_TOKEN in environment.")
+    if ApifyClient is None:
+        raise ValueError("apify_client is not installed in this environment.")
 
     client = ApifyClient(APIFY_API_TOKEN)
     run_input = {
