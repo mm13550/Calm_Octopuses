@@ -13,8 +13,7 @@ import sqlite3
 import torch
 import numpy as np
 from PIL import Image
-from transformers import DistilBertTokenizer, DistilBertModel
-from torchvision.models import resnet50, ResNet50_Weights
+from transformers import CLIPProcessor, CLIPModel
 from tqdm import tqdm
 
 # Path Configuration
@@ -43,18 +42,11 @@ def main():
     device = get_device()
     print(f"--- Booting PyTorch Embedding Extractor (Device: {device}) ---")
 
-    print("> Loading DistilBERT Text Tower [768-D]...")
-    tokenizer = DistilBertTokenizer.from_pretrained('distilbert-base-uncased')
-    text_model = DistilBertModel.from_pretrained('distilbert-base-uncased').to(device)
-    text_model.eval()
-
-    print("> Loading ResNet50 Image Tower [2048-D]...")
-    img_weights = ResNet50_Weights.DEFAULT
-    image_model = resnet50(weights=img_weights).to(device)
-    # Strip the final classification layer perfectly isolating the native 2048 embeddings matrix
-    image_model = torch.nn.Sequential(*list(image_model.children())[:-1]) 
-    image_model.eval()
-    img_preprocess = img_weights.transforms()
+    print("> Loading CLIP Model [512-D]...")
+    model_id = "openai/clip-vit-base-patch32"
+    processor = CLIPProcessor.from_pretrained(model_id)
+    model = CLIPModel.from_pretrained(model_id).to(device)
+    model.eval()
 
     print("> Connecting to Database for Relational Pairings...")
     conn = sqlite3.connect(DB_PATH)
@@ -98,17 +90,28 @@ def main():
                 review_text, is_val = res
                 
                 try:
-                    # 1. Crunch Image Vector into VRAM
+                    # 1. Open and Validate Image
                     img = Image.open(photo_path).convert('RGB')
-                    img_tnsr = img_preprocess(img).unsqueeze(0).to(device)
                     
-                    # 2. Crunch Text Vector into VRAM natively truncating huge blocks
-                    inputs = tokenizer(review_text[:512], return_tensors='pt', truncation=True, max_length=512, padding=True).to(device)
+                    # 2. Process both Text and Image using CLIP (Truncating text to max 77 tokens)
+                    inputs = processor(
+                        text=[review_text[:512]], 
+                        images=img, 
+                        return_tensors="pt", 
+                        padding=True,
+                        truncation=True,
+                        max_length=77
+                    ).to(device)
                     
                     # Mathematical forward-pass without updating weights (Inferencing mode)
                     with torch.no_grad():
-                        img_emb = image_model(img_tnsr).flatten()
-                        text_emb = text_model(**inputs).last_hidden_state[:, 0, :].flatten()
+                        outputs = model(**inputs)
+                        img_emb = outputs.image_embeds.flatten()
+                        text_emb = outputs.text_embeds.flatten()
+                        
+                        # L2-normalize to align with LanceDB expectation
+                        img_emb = img_emb / img_emb.norm(dim=-1, keepdim=True)
+                        text_emb = text_emb / text_emb.norm(dim=-1, keepdim=True)
                         
                     # Detach from VRAM natively and store exclusively on standard CPU for array saves
                     item = {

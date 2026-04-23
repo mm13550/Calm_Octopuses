@@ -25,7 +25,7 @@ def render_image_grid(similar_df, top_k):
                     try:
                         img = Image.open(img_path)
                         # We use a constrained column display
-                        st.image(img, use_container_width=True)
+                        st.image(img, width="stretch")
                     except Exception as e:
                         st.error("Failed to render image.")
                 else:

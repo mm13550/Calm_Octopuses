@@ -47,6 +47,7 @@ All Yelp Open Dataset pipelines are grouped under `pipelines/yelp/`:
 ### 4. Applications & UI (`ui_components/`)
 
 - **`app.py`** *(Merry)*: Native Streamlit GUI supporting multimodal cross-domain search (Text-to-Image / Image-to-Image) and latent style visualization.
+- **`frontend.py`**: Main entry point placeholder for the upcoming Streamlit frontend application.
 - **`ui_components/image_grid.py`** *(Merry)*: Renders matrix maps with visual badges (e.g., "🔥 Trending") based on recent metadata and Leo's time-decay scores.
 
 ### 5. Testing Structure (`tests/`)
