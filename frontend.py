@@ -731,9 +731,21 @@ def main() -> None:
             if exact_results_df.empty:
                 st.info("No restaurants found.")
             else:
+                user_ratings = st.session_state.get("user_ratings", {})
+                if user_ratings:
+                    with st.spinner("Ranking by predicted rating..."):
+                        scored_df = _score_mdn_recommendations(exact_results_df, user_ratings)
+                    if not scored_df.empty:
+                        exact_results_df = scored_df
+                        sort_label = "Predicted Rating"
+                    else:
+                        sort_label = "Exact Match"
+                else:
+                    sort_label = "Exact Match"
+
                 st.success(f"Found {len(exact_results_df)} restaurants with exact matches.")
                 for _, result_row in exact_results_df.iterrows():
-                    _render_result_card(result_row.to_dict(), "Exact Match")
+                    _render_result_card(result_row.to_dict(), sort_label)
 
     with browse_tab:
         st.subheader("Restaurant Browser")
