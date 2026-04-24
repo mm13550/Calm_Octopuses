@@ -219,10 +219,10 @@ def _extract_menu_items(menu_rows: List[Dict[str, Any]], limit: int = 6) -> List
 def _extract_review_snippets(review_rows: List[Dict[str, Any]], limit: int = 4) -> List[str]:
     snippets: List[str] = []
     for row in review_rows[:limit]:
-        text = _truncate(_clean_text(row.get("text")), 180)
+        text = _clean_text(row.get("text"))
         rating = _clean_text(row.get("rating"))
         if text:
-            snippets.append(f"{text} {'(' + rating + ')' if rating else ''}".strip())
+            snippets.append(f"{text} {'(⭐ ' + rating + ')' if rating else ''}".strip())
     return snippets
 
 
@@ -544,7 +544,9 @@ def _render_result_card(row: Dict[str, Any], score_label: str) -> None:
             if review_snippets:
                 st.markdown("**Review snippets**")
                 for snippet in review_snippets[:2]:
-                    st.write(f"- {_truncate(_clean_text(snippet), 180)}")
+                    title = _truncate(snippet, 75)
+                    with st.expander(title):
+                        st.write(snippet)
 
 
 def _render_data_overview(catalog: pd.DataFrame) -> None:
