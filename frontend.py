@@ -34,6 +34,10 @@ IMAGES_CSV = DATA_DIR / "social_images.csv"
 MENUS_JSON = DATA_DIR / "extracted_menus" / "final_parsed_menus.json"
 BIOS_JSON = DATA_DIR / "extracted_bios" / "restaurant_bios_joinable.json"
 EMBEDDINGS_JSONL = DATA_DIR / "embeddings" / "restaurant_profiles.jsonl"
+MENU_EMBEDDINGS_JSONL = DATA_DIR / "embeddings" / "menu_embeddings.jsonl"
+REVIEW_EMBEDDINGS_JSONL = DATA_DIR / "embeddings" / "review_embeddings.jsonl"
+FOOD_EMBEDDINGS_JSONL = DATA_DIR / "embeddings" / "image_embeddings_food.jsonl"
+INTERIOR_EMBEDDINGS_JSONL = DATA_DIR / "embeddings" / "image_embeddings_interior.jsonl"
 MDN_CHECKPOINT = DATA_DIR / "yelp_sandbox" / "mdn_models" / "lightning_logs" / "version_0" / "checkpoints" / "epoch=9-step=270.ckpt"
 DEFAULT_CLIP_MODEL_ID = "openai/clip-vit-base-patch32"
 
@@ -149,6 +153,33 @@ def load_restaurant_embeddings() -> Dict[str, np.ndarray]:
             except json.JSONDecodeError:
                 continue
 
+    return embeddings
+
+
+@st.cache_resource(show_spinner=False)
+def load_finegrained_embeddings(file_path: Path) -> Dict[str, List[np.ndarray]]:
+    """
+    Loads fine-grained vectors from a specific JSONL file.
+    Returns a dictionary mapping 'restaurant_id' -> List[np.ndarray].
+    """
+    if not file_path.exists():
+        return {}
+        
+    embeddings = {}
+    with file_path.open("r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line: continue
+            try:
+                data = json.loads(line)
+                rest_id = _clean_text(data.get("restaurant_id", data.get("rest_id")))
+                vector = data.get("vector")
+                if rest_id and vector:
+                    if rest_id not in embeddings:
+                        embeddings[rest_id] = []
+                    embeddings[rest_id].append(np.array(vector, dtype=np.float32))
+            except json.JSONDecodeError:
+                continue
     return embeddings
 
 
@@ -361,14 +392,25 @@ def _keyword_overlap(text: str, query_terms: set) -> float:
 
 
 def _score_text_results(catalog: pd.DataFrame, query: str, scope: str) -> pd.DataFrame:
-    """Scores restaurant text results by combining semantic search over pre-computed profiles and a lexical bonus."""
+    """Scores restaurant text results by max-pooling semantic search over fine-grained vectors and adding a lexical bonus."""
     if catalog.empty or not _clean_text(query):
         return pd.DataFrame()
 
     query_vector = np.array(embed_text(query), dtype=np.float32)
     query_terms = set(re.findall(r"[a-z0-9]+", query.lower()))
 
-    embeddings_map = load_restaurant_embeddings()
+    # Determine which embedding file to use for semantic score
+    if scope == "Menu items":
+        embeddings_map = load_finegrained_embeddings(MENU_EMBEDDINGS_JSONL)
+        generic_map = None
+    elif scope == "Reviews":
+        embeddings_map = load_finegrained_embeddings(REVIEW_EMBEDDINGS_JSONL)
+        generic_map = None
+    else:
+        # For "Bios" or "All", fallback to the generic restaurant profiles, 
+        # or we could combine. But to keep it performant, we use generic map.
+        embeddings_map = None
+        generic_map = load_restaurant_embeddings()
 
     rows: List[Dict[str, Any]] = []
     for row in catalog.to_dict(orient="records"):
@@ -386,11 +428,22 @@ def _score_text_results(catalog: pd.DataFrame, query: str, scope: str) -> pd.Dat
         if not candidate_text:
             continue
 
-        candidate_vector = embeddings_map.get(rest_id)
-        if candidate_vector is None:
+        semantic_score = 0.0
+        
+        if embeddings_map is not None:
+            vectors = embeddings_map.get(rest_id, [])
+            if vectors:
+                # Max-pooling: compute similarity against all raw vectors and take the max
+                scores = [_cosine_similarity(query_vector, v) for v in vectors]
+                semantic_score = max(scores)
+        elif generic_map is not None:
+            candidate_vector = generic_map.get(rest_id)
+            if candidate_vector is not None:
+                semantic_score = _cosine_similarity(query_vector, candidate_vector)
+
+        if semantic_score == 0.0:
             continue
 
-        semantic_score = _cosine_similarity(query_vector, candidate_vector)
         lexical_score = _keyword_overlap(candidate_text, query_terms)
         final_score = (0.85 * semantic_score) + (0.15 * lexical_score)
 
@@ -411,7 +464,7 @@ def _score_text_results(catalog: pd.DataFrame, query: str, scope: str) -> pd.Dat
 
 
 def _score_image_results(catalog: pd.DataFrame, image_path: str) -> pd.DataFrame:
-    """Scores visual search results using cross-modal alignment between the query image and pre-computed text profiles."""
+    """Scores visual search results using cross-modal alignment between query image and raw food/interior image vectors."""
     if catalog.empty or not _clean_text(image_path):
         return pd.DataFrame()
 
@@ -419,17 +472,25 @@ def _score_image_results(catalog: pd.DataFrame, image_path: str) -> pd.DataFrame
     if query_vector.size == 0:
         return pd.DataFrame()
 
-    embeddings_map = load_restaurant_embeddings()
+    food_map = load_finegrained_embeddings(FOOD_EMBEDDINGS_JSONL)
+    interior_map = load_finegrained_embeddings(INTERIOR_EMBEDDINGS_JSONL)
 
     rows: List[Dict[str, Any]] = []
     for row in catalog.to_dict(orient="records"):
         rest_id = _clean_text(row.get("rest_id"))
-        candidate_vector = embeddings_map.get(rest_id)
-        if candidate_vector is None:
+        
+        food_vectors = food_map.get(rest_id, [])
+        interior_vectors = interior_map.get(rest_id, [])
+        all_vectors = food_vectors + interior_vectors
+        
+        if not all_vectors:
             continue
 
-        score = _cosine_similarity(query_vector, candidate_vector)
-        rows.append({**row, "score": score})
+        # Max-pooling over all specific image vectors
+        scores = [_cosine_similarity(query_vector, v) for v in all_vectors]
+        best_score = max(scores)
+        
+        rows.append({**row, "score": best_score})
 
     if not rows:
         return pd.DataFrame()
