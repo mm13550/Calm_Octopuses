@@ -34,7 +34,7 @@ IMAGES_CSV = DATA_DIR / "social_images.csv"
 MENUS_JSON = DATA_DIR / "extracted_menus" / "final_parsed_menus.json"
 BIOS_JSON = DATA_DIR / "extracted_bios" / "restaurant_bios_joinable.json"
 EMBEDDINGS_JSONL = DATA_DIR / "embeddings" / "restaurant_profiles.jsonl"
-MDN_CHECKPOINT = DATA_DIR / "yelp_sandbox" / "models" / "best_model-epoch=29-val_loss=3.79.ckpt"
+MDN_CHECKPOINT = DATA_DIR / "yelp_sandbox" / "mdn_models" / "lightning_logs" / "version_0" / "checkpoints" / "epoch=9-step=270.ckpt"
 DEFAULT_CLIP_MODEL_ID = "openai/clip-vit-base-patch32"
 
 
@@ -706,12 +706,20 @@ def main() -> None:
 
             st.divider()
             st.subheader("Rate this Restaurant")
-            current_rating = st.session_state.user_ratings.get(selected_row["rest_id"], 0)
-            new_rating = st.slider("Rating (1-5 stars)", min_value=0, max_value=5, value=int(current_rating), help="Set to 0 to remove rating")
-            if new_rating > 0:
-                st.session_state.user_ratings[selected_row["rest_id"]] = float(new_rating)
-            elif new_rating == 0 and selected_row["rest_id"] in st.session_state.user_ratings:
-                del st.session_state.user_ratings[selected_row["rest_id"]]
+            current_rating = st.session_state.user_ratings.get(selected_row["rest_id"])
+            
+            if current_rating:
+                st.write(f"Your rating: **{int(current_rating)} ⭐**")
+            
+            feedback_val = st.feedback("stars", key=f"stars_{selected_row['rest_id']}")
+            
+            if feedback_val is not None:
+                st.session_state.user_ratings[selected_row["rest_id"]] = float(feedback_val + 1)
+                
+            if current_rating:
+                if st.button("Clear Rating", key=f"clear_{selected_row['rest_id']}"):
+                    del st.session_state.user_ratings[selected_row["rest_id"]]
+                    st.rerun()
 
     with rec_tab:
         st.subheader("Personalized Recommendations")
