@@ -157,11 +157,12 @@ def load_restaurant_embeddings() -> Dict[str, np.ndarray]:
 
 
 @st.cache_resource(show_spinner=False)
-def load_finegrained_embeddings(file_path: Path) -> Dict[str, List[np.ndarray]]:
+def load_finegrained_embeddings(file_path_str: str) -> Dict[str, List[np.ndarray]]:
     """
     Loads fine-grained vectors from a specific JSONL file.
     Returns a dictionary mapping 'restaurant_id' -> List[np.ndarray].
     """
+    file_path = Path(file_path_str)
     if not file_path.exists():
         return {}
         
@@ -401,10 +402,10 @@ def _score_text_results(catalog: pd.DataFrame, query: str, scope: str) -> pd.Dat
 
     # Determine which embedding file to use for semantic score
     if scope == "Menu items":
-        embeddings_map = load_finegrained_embeddings(MENU_EMBEDDINGS_JSONL)
+        embeddings_map = load_finegrained_embeddings(str(MENU_EMBEDDINGS_JSONL))
         generic_map = None
     elif scope == "Reviews":
-        embeddings_map = load_finegrained_embeddings(REVIEW_EMBEDDINGS_JSONL)
+        embeddings_map = load_finegrained_embeddings(str(REVIEW_EMBEDDINGS_JSONL))
         generic_map = None
     else:
         # For "Bios" or "All", fallback to the generic restaurant profiles, 
@@ -472,8 +473,8 @@ def _score_image_results(catalog: pd.DataFrame, image_path: str) -> pd.DataFrame
     if query_vector.size == 0:
         return pd.DataFrame()
 
-    food_map = load_finegrained_embeddings(FOOD_EMBEDDINGS_JSONL)
-    interior_map = load_finegrained_embeddings(INTERIOR_EMBEDDINGS_JSONL)
+    food_map = load_finegrained_embeddings(str(FOOD_EMBEDDINGS_JSONL))
+    interior_map = load_finegrained_embeddings(str(INTERIOR_EMBEDDINGS_JSONL))
 
     rows: List[Dict[str, Any]] = []
     for row in catalog.to_dict(orient="records"):
