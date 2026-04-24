@@ -51,3 +51,4 @@ data.zip # 给 Git 下禁令，以后别碰它
 
 data/social_images_cleaned.csv
 data/vector_db/
+data/embeddings/restaurant_profiles_latest.jsonl

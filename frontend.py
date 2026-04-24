@@ -268,9 +268,21 @@ def embed_text(text: str) -> tuple:
 
     with torch.no_grad():
         outputs = model.get_text_features(**inputs)
-        if not isinstance(outputs, torch.Tensor):
-            raise TypeError("Unexpected CLIP text output type.")
-        outputs = outputs / outputs.norm(p=2, dim=-1, keepdim=True)
+        
+        if isinstance(outputs, torch.Tensor):
+            features = outputs
+        elif hasattr(outputs, "pooler_output") and outputs.pooler_output is not None:
+            features = outputs.pooler_output
+            if hasattr(model, "text_projection") and model.text_projection is not None:
+                features = model.text_projection(features)
+        elif hasattr(outputs, "text_embeds") and outputs.text_embeds is not None:
+            features = outputs.text_embeds
+        elif isinstance(outputs, (tuple, list)) and len(outputs) > 0:
+            features = outputs[0]
+        else:
+            raise TypeError(f"Unexpected CLIP text output type: {type(outputs)}")
+            
+        outputs = features / features.norm(p=2, dim=-1, keepdim=True)
 
     return tuple(float(value) for value in outputs[0].detach().cpu().tolist())
 
