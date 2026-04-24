@@ -11,7 +11,7 @@ import hashlib
 import json
 import re
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -179,35 +179,6 @@ def load_finegrained_embeddings(file_path_str: str) -> Dict[str, List[np.ndarray
                     if rest_id not in embeddings:
                         embeddings[rest_id] = []
                     embeddings[rest_id].append(np.array(vector, dtype=np.float32))
-            except json.JSONDecodeError:
-                continue
-    return embeddings
-
-
-@st.cache_resource(show_spinner=False)
-def load_image_embeddings(file_path_str: str) -> Dict[str, List[Tuple[np.ndarray, str]]]:
-    """
-    Loads fine-grained image vectors from a specific JSONL file.
-    Returns a dictionary mapping 'restaurant_id' -> List[Tuple[vector, image_path]].
-    """
-    file_path = Path(file_path_str)
-    if not file_path.exists():
-        return {}
-        
-    embeddings = {}
-    with file_path.open("r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if not line: continue
-            try:
-                data = json.loads(line)
-                rest_id = _clean_text(data.get("restaurant_id", data.get("rest_id")))
-                vector = data.get("vector")
-                image_path = _clean_text(data.get("image_path"))
-                if rest_id and vector and image_path:
-                    if rest_id not in embeddings:
-                        embeddings[rest_id] = []
-                    embeddings[rest_id].append((np.array(vector, dtype=np.float32), image_path))
             except json.JSONDecodeError:
                 continue
     return embeddings
@@ -429,9 +400,6 @@ def _score_text_results(catalog: pd.DataFrame, query: str, scope: str) -> pd.Dat
     query_vector = np.array(embed_text(query), dtype=np.float32)
     query_terms = set(re.findall(r"[a-z0-9]+", query.lower()))
 
-    food_map = load_image_embeddings(str(FOOD_EMBEDDINGS_JSONL))
-    interior_map = load_image_embeddings(str(INTERIOR_EMBEDDINGS_JSONL))
-
     # Determine which embedding file to use for semantic score
     if scope == "Menu items":
         embeddings_map = load_finegrained_embeddings(str(MENU_EMBEDDINGS_JSONL))
@@ -479,17 +447,6 @@ def _score_text_results(catalog: pd.DataFrame, query: str, scope: str) -> pd.Dat
 
         lexical_score = _keyword_overlap(candidate_text, query_terms)
         final_score = (0.85 * semantic_score) + (0.15 * lexical_score)
-        
-        # Dynamic Image Alignment
-        food_vectors = food_map.get(rest_id, [])
-        interior_vectors = interior_map.get(rest_id, [])
-        all_image_vectors = food_vectors + interior_vectors
-        
-        best_image_path = row.get("representative_image_path")
-        if all_image_vectors:
-            scores = [_cosine_similarity(query_vector, tup[0]) for tup in all_image_vectors]
-            best_idx = np.argmax(scores)
-            best_image_path = all_image_vectors[best_idx][1]
 
         rows.append(
             {
@@ -497,7 +454,6 @@ def _score_text_results(catalog: pd.DataFrame, query: str, scope: str) -> pd.Dat
                 "score": final_score,
                 "semantic_score": semantic_score,
                 "lexical_score": lexical_score,
-                "representative_image_path": best_image_path
             }
         )
 
@@ -517,8 +473,8 @@ def _score_image_results(catalog: pd.DataFrame, image_path: str) -> pd.DataFrame
     if query_vector.size == 0:
         return pd.DataFrame()
 
-    food_map = load_image_embeddings(str(FOOD_EMBEDDINGS_JSONL))
-    interior_map = load_image_embeddings(str(INTERIOR_EMBEDDINGS_JSONL))
+    food_map = load_finegrained_embeddings(str(FOOD_EMBEDDINGS_JSONL))
+    interior_map = load_finegrained_embeddings(str(INTERIOR_EMBEDDINGS_JSONL))
 
     rows: List[Dict[str, Any]] = []
     for row in catalog.to_dict(orient="records"):
@@ -532,12 +488,10 @@ def _score_image_results(catalog: pd.DataFrame, image_path: str) -> pd.DataFrame
             continue
 
         # Max-pooling over all specific image vectors
-        scores = [_cosine_similarity(query_vector, tup[0]) for tup in all_vectors]
-        best_idx = np.argmax(scores)
-        best_score = scores[best_idx]
-        best_image_path = all_vectors[best_idx][1]
+        scores = [_cosine_similarity(query_vector, v) for v in all_vectors]
+        best_score = max(scores)
         
-        rows.append({**row, "score": best_score, "representative_image_path": best_image_path})
+        rows.append({**row, "score": best_score})
 
     if not rows:
         return pd.DataFrame()
