@@ -28,6 +28,7 @@ REVIEWS_CSV = DATA_DIR / "social_reviews.csv"
 IMAGES_CSV = DATA_DIR / "social_images.csv"
 MENUS_JSON = DATA_DIR / "extracted_menus" / "final_parsed_menus.json"
 BIOS_JSON = DATA_DIR / "extracted_bios" / "restaurant_bios_joinable.json"
+EMBEDDINGS_JSONL = DATA_DIR / "embeddings" / "restaurant_profiles.jsonl"
 DEFAULT_CLIP_MODEL_ID = "openai/clip-vit-base-patch32"
 
 
@@ -116,6 +117,33 @@ def load_bios_df() -> pd.DataFrame:
         )
 
     return pd.DataFrame(flattened)
+
+
+@st.cache_data(show_spinner=False)
+def load_restaurant_embeddings() -> Dict[str, np.ndarray]:
+    """
+    Loads pre-computed 512-D CLIP text embeddings from the JSONL profiles.
+    Returns a dictionary mapping 'restaurant_id' -> np.ndarray.
+    """
+    if not EMBEDDINGS_JSONL.exists():
+        return {}
+
+    embeddings: Dict[str, np.ndarray] = {}
+    with EMBEDDINGS_JSONL.open("r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                data = json.loads(line)
+                rest_id = _clean_text(data.get("restaurant_id", data.get("rest_id")))
+                vector = data.get("vector")
+                if rest_id and vector:
+                    embeddings[rest_id] = np.array(vector, dtype=np.float32)
+            except json.JSONDecodeError:
+                continue
+
+    return embeddings
 
 
 def _resolve_path(path_value: str) -> Path:
@@ -327,14 +355,19 @@ def _keyword_overlap(text: str, query_terms: set) -> float:
 
 
 def _score_text_results(catalog: pd.DataFrame, query: str, scope: str) -> pd.DataFrame:
+    """Scores restaurant text results by combining semantic search over pre-computed profiles and a lexical bonus."""
     if catalog.empty or not _clean_text(query):
         return pd.DataFrame()
 
     query_vector = np.array(embed_text(query), dtype=np.float32)
     query_terms = set(re.findall(r"[a-z0-9]+", query.lower()))
 
+    embeddings_map = load_restaurant_embeddings()
+
     rows: List[Dict[str, Any]] = []
     for row in catalog.to_dict(orient="records"):
+        rest_id = _clean_text(row.get("rest_id"))
+        
         if scope == "Menu items":
             candidate_text = _join_snippets(row.get("menu_items", []))
         elif scope == "Reviews":
@@ -347,7 +380,10 @@ def _score_text_results(catalog: pd.DataFrame, query: str, scope: str) -> pd.Dat
         if not candidate_text:
             continue
 
-        candidate_vector = np.array(embed_text(candidate_text), dtype=np.float32)
+        candidate_vector = embeddings_map.get(rest_id)
+        if candidate_vector is None:
+            continue
+
         semantic_score = _cosine_similarity(query_vector, candidate_vector)
         lexical_score = _keyword_overlap(candidate_text, query_terms)
         final_score = (0.85 * semantic_score) + (0.15 * lexical_score)
@@ -369,6 +405,7 @@ def _score_text_results(catalog: pd.DataFrame, query: str, scope: str) -> pd.Dat
 
 
 def _score_image_results(catalog: pd.DataFrame, image_path: str) -> pd.DataFrame:
+    """Scores visual search results using cross-modal alignment between the query image and pre-computed text profiles."""
     if catalog.empty or not _clean_text(image_path):
         return pd.DataFrame()
 
@@ -376,14 +413,13 @@ def _score_image_results(catalog: pd.DataFrame, image_path: str) -> pd.DataFrame
     if query_vector.size == 0:
         return pd.DataFrame()
 
+    embeddings_map = load_restaurant_embeddings()
+
     rows: List[Dict[str, Any]] = []
     for row in catalog.to_dict(orient="records"):
-        candidate_path = _clean_text(row.get("representative_image_path"))
-        if not candidate_path:
-            continue
-
-        candidate_vector = np.array(embed_image(candidate_path), dtype=np.float32)
-        if candidate_vector.size == 0:
+        rest_id = _clean_text(row.get("rest_id"))
+        candidate_vector = embeddings_map.get(rest_id)
+        if candidate_vector is None:
             continue
 
         score = _cosine_similarity(query_vector, candidate_vector)
