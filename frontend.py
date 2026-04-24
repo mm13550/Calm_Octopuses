@@ -228,6 +228,7 @@ def _extract_review_snippets(review_rows: List[Dict[str, Any]], limit: int = 4) 
 
 @st.cache_data(show_spinner=False)
 def build_restaurant_catalog() -> pd.DataFrame:
+    # Cache buster: 1
     lookup_df = load_lookup_df()
     reviews_df = load_reviews_df()
     images_df = load_images_df()
