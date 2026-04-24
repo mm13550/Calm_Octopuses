@@ -21,7 +21,12 @@ from PIL import Image
 from transformers import CLIPModel, CLIPProcessor
 
 
+import sys
 PROJECT_ROOT = Path(__file__).resolve().parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.append(str(PROJECT_ROOT))
+from algorithms.mdn_regression import MDNScorer
+
 DATA_DIR = PROJECT_ROOT / "data"
 LOOKUP_CSV = DATA_DIR / "csv" / "restaurant_lookup.csv"
 REVIEWS_CSV = DATA_DIR / "social_reviews.csv"
@@ -29,6 +34,7 @@ IMAGES_CSV = DATA_DIR / "social_images.csv"
 MENUS_JSON = DATA_DIR / "extracted_menus" / "final_parsed_menus.json"
 BIOS_JSON = DATA_DIR / "extracted_bios" / "restaurant_bios_joinable.json"
 EMBEDDINGS_JSONL = DATA_DIR / "embeddings" / "restaurant_profiles.jsonl"
+MDN_CHECKPOINT = DATA_DIR / "yelp_sandbox" / "models" / "best_model-epoch=29-val_loss=3.79.ckpt"
 DEFAULT_CLIP_MODEL_ID = "openai/clip-vit-base-patch32"
 
 
@@ -517,14 +523,80 @@ def _render_data_overview(catalog: pd.DataFrame) -> None:
         st.dataframe(coverage_df, use_container_width=True, hide_index=True)
 
 
+@st.cache_resource(show_spinner=False)
+def load_mdn_model():
+    if not MDN_CHECKPOINT.exists():
+        return None
+    model = MDNScorer.load_from_checkpoint(str(MDN_CHECKPOINT), map_location="cpu")
+    model.eval()
+    return model
+
+
+def _score_mdn_recommendations(catalog: pd.DataFrame, user_ratings: Dict[str, float]) -> pd.DataFrame:
+    if catalog.empty or not user_ratings:
+        return pd.DataFrame()
+        
+    model = load_mdn_model()
+    if model is None:
+        st.error("MDN checkpoint not found.")
+        return pd.DataFrame()
+        
+    embeddings_map = load_restaurant_embeddings()
+    
+    hist_vecs = []
+    hist_weights = []
+    for rest_id, rating in user_ratings.items():
+        vec = embeddings_map.get(rest_id)
+        if vec is not None:
+            weight = float(rating) / 5.0
+            hist_vecs.append(torch.from_numpy(vec).float() * weight)
+            hist_weights.append(weight)
+            
+    if not hist_vecs:
+        return pd.DataFrame()
+        
+    user_vec = torch.stack(hist_vecs).sum(dim=0) / sum(hist_weights)
+    mean_hist_rating = sum(user_ratings.values()) / len(user_ratings)
+    scalar_feature = torch.tensor([mean_hist_rating], dtype=torch.float32)
+    
+    rows = []
+    for row in catalog.to_dict(orient="records"):
+        rest_id = _clean_text(row.get("rest_id"))
+        if rest_id in user_ratings:
+            continue
+            
+        target_vec_np = embeddings_map.get(rest_id)
+        if target_vec_np is None:
+            continue
+            
+        target_vec = torch.from_numpy(target_vec_np).float()
+        feature_vec = torch.cat([user_vec, target_vec, scalar_feature]).unsqueeze(0)
+        
+        with torch.no_grad():
+            mus, log_sigmas, pi_logits = model(feature_vec)
+            pis = torch.softmax(pi_logits, dim=1)
+            expected_mu = (mus * pis).sum(dim=1).item()
+            
+        rows.append({**row, "score": expected_mu})
+        
+    if not rows:
+        return pd.DataFrame()
+        
+    result_df = pd.DataFrame(rows)
+    return result_df.sort_values(by="score", ascending=False)
+
+
 def main() -> None:
     st.set_page_config(page_title="Calm Octopuses Frontend", layout="wide")
     st.title("Calm Octopuses")
     st.caption("Raw-data Streamlit frontend for the current vector DB handoff.")
 
+    if "user_ratings" not in st.session_state:
+        st.session_state.user_ratings = {}
+
     catalog = build_restaurant_catalog()
 
-    search_tab, browse_tab, overview_tab = st.tabs(["Search", "Browse Restaurants", "Data Overview"])
+    search_tab, browse_tab, rec_tab, overview_tab = st.tabs(["Search", "Browse Restaurants", "Recommended", "Data Overview"])
 
     with search_tab:
         st.subheader("Multimodal Search")
@@ -631,6 +703,30 @@ def main() -> None:
                     st.write(bio_text)
                 else:
                     st.info("No bio available.")
+
+            st.divider()
+            st.subheader("Rate this Restaurant")
+            current_rating = st.session_state.user_ratings.get(selected_row["rest_id"], 0)
+            new_rating = st.slider("Rating (1-5 stars)", min_value=0, max_value=5, value=int(current_rating), help="Set to 0 to remove rating")
+            if new_rating > 0:
+                st.session_state.user_ratings[selected_row["rest_id"]] = float(new_rating)
+            elif new_rating == 0 and selected_row["rest_id"] in st.session_state.user_ratings:
+                del st.session_state.user_ratings[selected_row["rest_id"]]
+
+    with rec_tab:
+        st.subheader("Personalized Recommendations")
+        if not st.session_state.user_ratings:
+            st.info("Please rate some restaurants in the 'Browse Restaurants' tab to get personalized recommendations!")
+        else:
+            st.write(f"You have rated **{len(st.session_state.user_ratings)}** restaurants.")
+            with st.spinner("Generating MDN recommendations..."):
+                rec_df = _score_mdn_recommendations(catalog, st.session_state.user_ratings)
+            
+            if rec_df.empty:
+                st.warning("Could not generate recommendations.")
+            else:
+                for _, result_row in rec_df.head(6).iterrows():
+                    _render_result_card(result_row.to_dict(), "Predicted Rating")
 
     with overview_tab:
         _render_data_overview(catalog)
