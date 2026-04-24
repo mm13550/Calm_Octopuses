@@ -577,7 +577,17 @@ def _score_mdn_recommendations(catalog: pd.DataFrame, user_ratings: Dict[str, fl
             pis = torch.softmax(pi_logits, dim=1)
             expected_mu = (mus * pis).sum(dim=1).item()
             
-        rows.append({**row, "score": expected_mu})
+            # Calculate PDF for HDR Visualization
+            grid_y = torch.linspace(1.0, 5.0, 101)
+            grid_y_expanded = grid_y.view(1, -1, 1)
+            mus_exp = mus.unsqueeze(1)
+            sigmas_exp = torch.exp(log_sigmas).unsqueeze(1)
+            pis_exp = pis.unsqueeze(1)
+            component_pdfs = (1.0 / (2.0 * sigmas_exp)) * torch.exp(-torch.abs(grid_y_expanded - mus_exp) / sigmas_exp)
+            total_pdfs = (pis_exp * component_pdfs).sum(dim=2)
+            pdf_array = total_pdfs[0].cpu().numpy()
+            
+        rows.append({**row, "score": expected_mu, "pdf_grid": pdf_array})
         
     if not rows:
         return pd.DataFrame()
@@ -648,6 +658,24 @@ def main() -> None:
             restaurant_names = catalog["restaurant_name"].tolist()
             selected_name = st.selectbox("Choose a restaurant", restaurant_names)
             selected_row = catalog[catalog["restaurant_name"] == selected_name].iloc[0].to_dict()
+            
+            st.subheader("Rate this Restaurant")
+            current_rating = st.session_state.user_ratings.get(selected_row["rest_id"])
+            
+            if current_rating:
+                st.write(f"Your rating: **{int(current_rating)} ⭐**")
+            
+            feedback_val = st.feedback("stars", key=f"stars_{selected_row['rest_id']}")
+            
+            if feedback_val is not None:
+                st.session_state.user_ratings[selected_row["rest_id"]] = float(feedback_val + 1)
+                
+            if current_rating:
+                if st.button("Clear Rating", key=f"clear_{selected_row['rest_id']}"):
+                    del st.session_state.user_ratings[selected_row["rest_id"]]
+                    st.rerun()
+            st.divider()
+
             _render_result_card(selected_row, "Catalog score")
 
             st.markdown("### Raw records")
@@ -704,23 +732,6 @@ def main() -> None:
                 else:
                     st.info("No bio available.")
 
-            st.divider()
-            st.subheader("Rate this Restaurant")
-            current_rating = st.session_state.user_ratings.get(selected_row["rest_id"])
-            
-            if current_rating:
-                st.write(f"Your rating: **{int(current_rating)} ⭐**")
-            
-            feedback_val = st.feedback("stars", key=f"stars_{selected_row['rest_id']}")
-            
-            if feedback_val is not None:
-                st.session_state.user_ratings[selected_row["rest_id"]] = float(feedback_val + 1)
-                
-            if current_rating:
-                if st.button("Clear Rating", key=f"clear_{selected_row['rest_id']}"):
-                    del st.session_state.user_ratings[selected_row["rest_id"]]
-                    st.rerun()
-
     with rec_tab:
         st.subheader("Personalized Recommendations")
         if not st.session_state.user_ratings:
@@ -735,6 +746,10 @@ def main() -> None:
             else:
                 for _, result_row in rec_df.head(6).iterrows():
                     _render_result_card(result_row.to_dict(), "Predicted Rating")
+                    
+                    st.caption("Rating Probability Distribution (HDR)")
+                    chart_df = pd.DataFrame({"Probability Density": result_row["pdf_grid"]}, index=np.linspace(1.0, 5.0, 101))
+                    st.area_chart(chart_df, height=150, color="#FF4B4B")
 
     with overview_tab:
         _render_data_overview(catalog)
