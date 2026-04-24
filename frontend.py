@@ -533,7 +533,9 @@ def _render_result_card(row: Dict[str, Any], score_label: str) -> None:
 
             bio_text = _clean_text(row.get("bio_text"))
             if bio_text:
-                st.write(_truncate(bio_text, 280))
+                title = _truncate(bio_text, 80)
+                with st.expander(title):
+                    st.write(bio_text)
 
             menu_items = row.get("menu_items", []) or []
             if menu_items:
