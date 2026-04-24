@@ -26,7 +26,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.append(str(PROJECT_ROOT))
 from algorithms.mdn_regression import MDNScorer
-from algorithms.retrieval import score_text_results, score_image_results
+from algorithms.retrieval import score_text_results, score_image_results, score_exact_dish_search
 
 DATA_DIR = PROJECT_ROOT / "data"
 LOOKUP_CSV = DATA_DIR / "csv" / "restaurant_lookup.csv"
@@ -674,7 +674,7 @@ def main() -> None:
 
     catalog = build_restaurant_catalog()
 
-    search_tab, browse_tab, rec_tab, overview_tab = st.tabs(["Search", "Browse Restaurants", "Recommended", "Data Overview"])
+    search_tab, dish_search_tab, browse_tab, rec_tab, overview_tab = st.tabs(["Search", "Dish Search", "Browse Restaurants", "Recommended", "Data Overview"])
 
     with search_tab:
         st.subheader("Multimodal Search")
@@ -717,6 +717,23 @@ def main() -> None:
                     st.success(f"Found {len(results_df)} visually similar restaurants.")
                     for _, result_row in results_df.head(top_k).iterrows():
                         _render_result_card(result_row.to_dict(), "Image similarity")
+
+    with dish_search_tab:
+        st.subheader("Exact Dish Search")
+        st.write("Search specifically for an exact dish or ingredient across all menus.")
+        dish_query = st.text_input("Enter exact dish name or ingredient")
+        
+        if dish_query:
+            with st.spinner("Searching menus..."):
+                menus_df = load_menus_df()
+                exact_results_df = score_exact_dish_search(catalog, menus_df, dish_query)
+                
+            if exact_results_df.empty:
+                st.info("No restaurants found.")
+            else:
+                st.success(f"Found {len(exact_results_df)} restaurants with exact matches.")
+                for _, result_row in exact_results_df.iterrows():
+                    _render_result_card(result_row.to_dict(), "Exact Match")
 
     with browse_tab:
         st.subheader("Restaurant Browser")

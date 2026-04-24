@@ -298,3 +298,27 @@ def score_image_results(catalog: pd.DataFrame, image_path: str) -> pd.DataFrame:
 
     result_df = pd.DataFrame(rows)
     return result_df.sort_values(by="score", ascending=False)
+
+def score_exact_dish_search(catalog: pd.DataFrame, menus_df: pd.DataFrame, query: str) -> pd.DataFrame:
+    if catalog.empty or menus_df.empty or not _clean_text(query):
+        return pd.DataFrame()
+
+    query_lower = query.lower().strip()
+    
+    mask = (
+        menus_df['dish_name'].str.contains(query_lower, case=False, regex=False, na=False) |
+        menus_df['ingredients'].str.contains(query_lower, case=False, regex=False, na=False)
+    )
+    
+    matched_menus = menus_df[mask]
+    if matched_menus.empty:
+        return pd.DataFrame()
+        
+    matched_rest_ids = set(matched_menus['rest_id'].unique())
+    
+    results = catalog[catalog['rest_id'].isin(matched_rest_ids)].copy()
+    if results.empty:
+        return pd.DataFrame()
+        
+    results['score'] = 1.0
+    return results
