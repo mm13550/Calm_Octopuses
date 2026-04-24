@@ -26,6 +26,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.append(str(PROJECT_ROOT))
 from algorithms.mdn_regression import MDNScorer
+from algorithms.retrieval import score_text_results, score_image_results
 
 DATA_DIR = PROJECT_ROOT / "data"
 LOOKUP_CSV = DATA_DIR / "csv" / "restaurant_lookup.csv"
@@ -393,7 +394,7 @@ def _keyword_overlap(text: str, query_terms: set) -> float:
     return float(matches) / float(max(len(query_terms), 1))
 
 
-def _score_text_results(catalog: pd.DataFrame, query: str, scope: str) -> pd.DataFrame:
+def score_text_results(catalog: pd.DataFrame, query: str, scope: str) -> pd.DataFrame:
     """Scores restaurant text results by max-pooling semantic search over fine-grained vectors and adding a lexical bonus."""
     if catalog.empty or not _clean_text(query):
         return pd.DataFrame()
@@ -465,7 +466,7 @@ def _score_text_results(catalog: pd.DataFrame, query: str, scope: str) -> pd.Dat
     return result_df.sort_values(by="score", ascending=False)
 
 
-def _score_image_results(catalog: pd.DataFrame, image_path: str) -> pd.DataFrame:
+def score_image_results(catalog: pd.DataFrame, image_path: str) -> pd.DataFrame:
     """Scores visual search results using cross-modal alignment between query image and raw food/interior image vectors."""
     if catalog.empty or not _clean_text(image_path):
         return pd.DataFrame()
@@ -686,7 +687,7 @@ def main() -> None:
 
             if query:
                 with st.spinner("Searching restaurant cards..."):
-                    results_df = _score_text_results(catalog, query, scope)
+                    results_df = score_text_results(catalog, query, scope)
 
                 if results_df.empty:
                     st.info("No matches found. Try a broader query.")
@@ -705,7 +706,7 @@ def main() -> None:
                     temp_path = PROJECT_ROOT / f".streamlit_uploaded_query_image_{image_digest}.png"
                     temp_path.write_bytes(uploaded_image.getbuffer())
                     try:
-                        results_df = _score_image_results(catalog, str(temp_path))
+                        results_df = score_image_results(catalog, str(temp_path))
                     finally:
                         if temp_path.exists():
                             temp_path.unlink()
@@ -824,3 +825,6 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+
+

@@ -10,8 +10,8 @@ PROJECT_ROOT = CURRENT_DIR.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from algorithms import retrieval_engine as menu_engine
-from algorithms import retrieval_engine_reviews as review_engine
+from quarry import retrieval_engine as menu_engine
+from quarry import retrieval_engine_reviews as review_engine
 
 
 def _safe_float(value: Any, default: float = 0.0) -> float:

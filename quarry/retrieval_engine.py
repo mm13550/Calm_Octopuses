@@ -16,7 +16,7 @@ from typing import Any, Iterable
 
 import lancedb
 
-from algorithms.retrieval_metadata import get_restaurant_metadata
+from quarry.retrieval_metadata import get_restaurant_metadata
 
 try:
     import torch
@@ -27,7 +27,7 @@ except Exception:  # pragma: no cover - dependency availability varies by machin
     CLIPTokenizer = None
 
 
-BASE_DIR = Path(__file__).resolve().parent.parent if Path(__file__).resolve().parent.name == "algorithms" else Path(__file__).resolve().parent
+BASE_DIR = Path(__file__).resolve().parent.parent if Path(__file__).resolve().parent.name == "quarry" else Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data"
 DB_PATH = DATA_DIR / "vector_db"
 TABLE_NAME = "restaurant_vectors"
