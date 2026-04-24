@@ -1,3 +1,10 @@
+"""
+app.py
+
+This script serves as the main interactive Streamlit frontend for the Calm Octopuses application.
+It provides interfaces for the Image Similarity Explorer, Dual Encoder Training Logs,
+Cross-Modal Generalization Analysis, and Risk Regression Analysis.
+"""
 import os
 import streamlit as st
 import pandas as pd
@@ -15,6 +22,13 @@ tab1, tab2, tab3, tab4 = st.tabs(["Image Similarity Explorer", "Dual Encoder Tra
 # --- Data Loading ---
 @st.cache_data
 def load_data():
+    """
+    Loads pre-computed image embeddings from a Parquet file.
+    
+    Returns:
+        pd.DataFrame or None: DataFrame containing the image embeddings and paths,
+                              or None if the file does not exist.
+    """
     parquet_path = os.path.join("data", "embeddings", "image_embeddings.parquet")
     if not os.path.exists(parquet_path):
         return None
@@ -86,6 +100,13 @@ with tab2:
     status_text = st.empty()
     
     def get_latest_metrics_df():
+        """
+        Retrieves the most recent metrics.csv file from the PyTorch Lightning
+        training logs directory.
+        
+        Returns:
+            pd.DataFrame or None: DataFrame containing training metrics over time.
+        """
         if not os.path.exists(logs_dir): return None
         versions = glob.glob(os.path.join(logs_dir, "version_*"))
         if not versions: return None
@@ -101,6 +122,12 @@ with tab2:
         return None
 
     def plot_metrics(df):
+        """
+        Plots the training loss curves on the Streamlit dashboard.
+        
+        Args:
+            df (pd.DataFrame): DataFrame containing 'epoch' and loss columns.
+        """
         if df is not None and not df.empty:
             cols = df.columns.tolist()
             for c in ['step', 'epoch']:
@@ -145,6 +172,11 @@ with tab2:
 # ============================================================
 with tab3:
     def render_tab3_content():
+        """
+        Renders the Cross-Modal Generalization Analysis tab.
+        This includes key metrics, alignment loss curves, reconstruction MSE charts,
+        cosine similarity distributions, and t-SNE projections.
+        """
         import altair as alt
         import sys as _sys
         _sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'pipelines', 'yelp'))
@@ -163,6 +195,13 @@ with tab3:
         # --- Cached wrappers (heavy: loads ~2.6 GB PT file on first call) ---
         @st.cache_data(show_spinner=False)
         def _cached_gen_metrics():
+            """
+            Computes and caches generalization metrics across train and val cohorts.
+            
+            Returns:
+                dict: A dictionary of computed metrics including alignment MSE,
+                      cosine similarities, and discriminability scores.
+            """
             return compute_generalization_metrics(max_train_samples=1000, max_val_samples=1000)
 
         @st.cache_data(show_spinner=False)

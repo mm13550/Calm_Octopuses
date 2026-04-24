@@ -1,3 +1,8 @@
+"""
+image_comparison.py
+
+Provides functions for evaluating the similarity between image embeddings.
+"""
 import numpy as np
 
 def get_similar_images(target_embedding, df, top_k=10):

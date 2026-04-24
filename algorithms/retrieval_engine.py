@@ -1,3 +1,9 @@
+"""
+retrieval_engine.py
+
+Provides the core retrieval logic for the Calm Octopuses application, interfacing
+with LanceDB to perform lexical, semantic, and hybrid searches over multimodal vectors.
+"""
 from __future__ import annotations
 
 import json
@@ -32,6 +38,10 @@ UTC = timezone.utc
 
 @dataclass
 class RankedResult:
+    """
+    Represents a scored and ranked result retrieved from the vector database.
+    Contains both the payload data and the scoring components.
+    """
     doc_id: str
     restaurant_id: str | None
     restaurant_name: str
@@ -56,6 +66,10 @@ class RankedResult:
 
 @dataclass
 class QueryUnderstanding:
+    """
+    Encapsulates the parsed semantics of a user query, including required terms,
+    exclusions, style preferences, and content type preferences.
+    """
     parser: str
     original_query: str
     normalized_query: str
@@ -69,10 +83,12 @@ class QueryUnderstanding:
 
 
 def utc_now() -> datetime:
+    """Returns the current UTC datetime."""
     return datetime.now(UTC)
 
 
 def normalize(vector: Iterable[float]) -> list[float]:
+    """L2-normalizes a numerical vector."""
     values = [float(x) for x in vector]
     norm = math.sqrt(sum(x * x for x in values))
     if norm == 0:
@@ -81,6 +97,7 @@ def normalize(vector: Iterable[float]) -> list[float]:
 
 
 def parse_timestamp(value: str | datetime) -> datetime:
+    """Parses a string or datetime into a UTC-aware datetime object."""
     if isinstance(value, datetime):
         return value if value.tzinfo else value.replace(tzinfo=UTC)
     dt = datetime.fromisoformat(str(value))
@@ -88,11 +105,13 @@ def parse_timestamp(value: str | datetime) -> datetime:
 
 
 def connect_db():
+    """Establishes and returns a connection to the LanceDB vector database."""
     DB_PATH.mkdir(parents=True, exist_ok=True)
     return lancedb.connect(str(DB_PATH))
 
 
 def _open_table_if_exists(db, table_name: str):
+    """Attempts to open a LanceDB table, returning None if it doesn't exist."""
     try:
         return db.open_table(table_name)
     except Exception:
@@ -100,6 +119,10 @@ def _open_table_if_exists(db, table_name: str):
 
 
 def ensure_table(rows: list[dict[str, Any]] | None = None, *, reset: bool = False):
+    """
+    Ensures the target LanceDB table exists. If reset=True or the table is missing,
+    it initializes or overwrites the table using the provided seed rows.
+    """
     db = connect_db()
     table = _open_table_if_exists(db, TABLE_NAME)
 
@@ -129,6 +152,7 @@ REQUIRED_FIELDS = {
 
 
 def validate_rows(rows: list[dict[str, Any]]) -> None:
+    """Validates that a list of dictionary rows contains all required fields and normalizes their vectors."""
     if not rows:
         raise ValueError("rows must not be empty")
 
@@ -148,6 +172,10 @@ def validate_rows(rows: list[dict[str, Any]]) -> None:
 
 
 def ingest_documents(rows: list[dict[str, Any]], *, overwrite: bool = False):
+    """
+    Ingests validated documents into the LanceDB vector table.
+    If overwrite is True, replaces the existing table.
+    """
     validate_rows(rows)
     db = connect_db()
     existing = _open_table_if_exists(db, TABLE_NAME)
@@ -163,6 +191,7 @@ def ingest_documents(rows: list[dict[str, Any]], *, overwrite: bool = False):
 
 
 def load_jsonl(path: str | Path) -> list[dict[str, Any]]:
+    """Loads a JSONL file into a list of dictionaries."""
     path = Path(path)
     rows: list[dict[str, Any]] = []
     with path.open("r", encoding="utf-8") as f:
@@ -178,12 +207,14 @@ def load_jsonl(path: str | Path) -> list[dict[str, Any]]:
 
 
 def initialize_menu_table(path: str | Path = MENU_EMBEDDINGS_PATH):
+    """Initializes or overwrites the menu embeddings table from a JSONL file."""
     rows = load_jsonl(path)
     ingest_documents(rows, overwrite=True)
     return rows
 
 
 def ensure_menu_table_initialized(path: str | Path = MENU_EMBEDDINGS_PATH):
+    """Ensures the menu embeddings table exists, creating it from JSONL if it doesn't."""
     db = connect_db()
     table = _open_table_if_exists(db, TABLE_NAME)
     if table is not None:
@@ -195,6 +226,7 @@ def ensure_menu_table_initialized(path: str | Path = MENU_EMBEDDINGS_PATH):
 
 
 def make_dummy_documents() -> list[dict[str, Any]]:
+    """Generates a small list of dummy documents for testing and local fallback."""
     now = utc_now()
     return [
         {
@@ -227,6 +259,7 @@ def make_dummy_documents() -> list[dict[str, Any]]:
 
 
 def initialize_dummy_db(*, reset: bool = True):
+    """Initializes the LanceDB table using dummy documents for testing."""
     rows = make_dummy_documents()
     validate_rows(rows)
     return ensure_table(rows, reset=reset)
@@ -263,10 +296,12 @@ STYLE_TERMS = {"omakase", "dessert", "vegetarian", "yakitori", "seafood", "korea
 
 
 def tokenize(text: str) -> list[str]:
+    """Extracts alphanumeric tokens from a text string."""
     return [tok.lower() for tok in TOKEN_PATTERN.findall(text.lower())]
 
 
 def canonicalize_token(token: str) -> str:
+    """Maps a token or alias to its canonical semantic representation."""
     lowered = token.lower().strip()
     for canonical, aliases in TOKEN_ALIASES.items():
         if lowered == canonical or lowered in aliases:
@@ -275,6 +310,7 @@ def canonicalize_token(token: str) -> str:
 
 
 def parse_query_rule_based(query_text: str) -> QueryUnderstanding:
+    """Parses a query string using strict hardcoded rules to extract preferences and exclusions."""
     tokens = [canonicalize_token(tok) for tok in tokenize(query_text)]
     normalized = " ".join(tokens)
     must_include: list[str] = []
@@ -311,10 +347,12 @@ def parse_query_rule_based(query_text: str) -> QueryUnderstanding:
 
 
 def understand_query(query_text: str) -> QueryUnderstanding:
+    """Entry point for parsing the semantics of a user query."""
     return parse_query_rule_based(query_text)
 
 
 def get_row_text_blob(row: dict[str, Any]) -> str:
+    """Concatenates all text fields of a document row into a single string for lexical search."""
     parts = [
         str(row.get("restaurant_name") or ""),
         str(row.get("dish_name") or ""),
@@ -328,6 +366,7 @@ def get_row_text_blob(row: dict[str, Any]) -> str:
 
 
 def row_matches_understanding(row: dict[str, Any], understanding: QueryUnderstanding, *, default_content_type: str | None) -> bool:
+    """Checks whether a database row satisfies the strict filters of the parsed query."""
     blob = get_row_text_blob(row)
     row_content_type = str(row.get("content_type") or "")
     expected_content_type = default_content_type or understanding.content_type_preference
@@ -350,6 +389,7 @@ def row_matches_understanding(row: dict[str, Any], understanding: QueryUnderstan
 
 
 def lexical_bonus_for_row(row: dict[str, Any], understanding: QueryUnderstanding) -> float:
+    """Calculates a lexical score boost for documents that directly contain the query terms."""
     blob = get_row_text_blob(row)
     dish_name = str(row.get("dish_name") or "").lower()
     bonus = 0.0
@@ -375,10 +415,12 @@ _CLIP_CACHE: dict[str, Any] = {}
 
 
 def _clip_backend_available() -> bool:
+    """Returns True if the PyTorch and HuggingFace dependencies for CLIP are installed."""
     return all(x is not None for x in (torch, CLIPModel, CLIPTokenizer))
 
 
 def _load_clip_backend(model_id: str = DEFAULT_CLIP_MODEL_ID):
+    """Initializes and caches the CLIP model and tokenizer in memory."""
     if not _clip_backend_available():
         raise RuntimeError("CLIP query embedding dependencies are unavailable.")
 
@@ -396,6 +438,7 @@ def _load_clip_backend(model_id: str = DEFAULT_CLIP_MODEL_ID):
 
 
 def embed_query_text_clip(query_text: str, *, model_id: str = DEFAULT_CLIP_MODEL_ID) -> list[float]:
+    """Generates an L2-normalized dense vector for a query using the CLIP model."""
     tokenizer, model, device = _load_clip_backend(model_id=model_id)
 
     with torch.no_grad():
@@ -422,6 +465,7 @@ def embed_query_text_clip(query_text: str, *, model_id: str = DEFAULT_CLIP_MODEL
 
 
 def embed_query_text_hash(text: str, dim: int = 512) -> list[float]:
+    """Generates a dummy embedding vector using token hashing for testing without a GPU."""
     vec = [0.0] * dim
     tokens = tokenize(text)
     if not tokens:
@@ -437,6 +481,7 @@ def embed_query_text_hash(text: str, dim: int = 512) -> list[float]:
 
 
 def get_vector_dim_from_file(path: Path) -> int:
+    """Reads the first line of an embedding file to determine the vector dimension."""
     with path.open("r", encoding="utf-8") as f:
         line = f.readline().strip()
     if not line:
@@ -451,6 +496,7 @@ def build_query_vector_from_text(
     backend: str,
     expected_dim: int,
 ) -> list[float] | None:
+    """Routes the query text to the appropriate embedding backend (CLIP, Hash, or Lexical fallback)."""
     if backend == "auto":
         backend = "clip" if _clip_backend_available() else "lexical"
 
@@ -470,6 +516,7 @@ def _rank_row(
     cosine_distance: float,
     understanding: QueryUnderstanding | None,
 ) -> RankedResult:
+    """Compiles a database row and its cosine distance into a finalized RankedResult object."""
     restaurant_meta = get_restaurant_metadata(row.get("restaurant_id"), row.get("restaurant_name"))
     created_at_dt = parse_timestamp(row["created_at"])
     age_days = max((utc_now() - created_at_dt).total_seconds() / 86400.0, 0.0)
@@ -509,6 +556,7 @@ def retrieve_ranked(
     understanding: QueryUnderstanding | None = None,
     default_content_type: str | None = "menu",
 ) -> list[RankedResult]:
+    """Executes a dense vector similarity search in LanceDB and ranks the resulting items."""
     if candidate_pool < top_k:
         candidate_pool = top_k
 
@@ -539,6 +587,7 @@ def retrieve_ranked(
 
 
 def dedupe_by_restaurant(results: list[RankedResult], limit: int) -> list[RankedResult]:
+    """Filters search results to ensure each restaurant only appears once in the top-K list."""
     seen: set[str] = set()
     unique: list[RankedResult] = []
     for item in results:
@@ -559,6 +608,7 @@ def lexical_fallback_search(
     dedupe_restaurants: bool = True,
     default_content_type: str | None = "menu",
 ) -> tuple[QueryUnderstanding, list[RankedResult]]:
+    """Performs a purely lexical search if vector embeddings or database are unavailable."""
     understanding = understand_query(query_text)
     if not MENU_EMBEDDINGS_PATH.exists():
         return understanding, []
@@ -602,6 +652,10 @@ def search_by_text(
     default_content_type: str | None = "menu",
     embedding_backend: str = "auto",
 ) -> tuple[QueryUnderstanding, list[RankedResult], str]:
+    """
+    Main orchestration function. Understands the query, generates an embedding,
+    and queries the LanceDB index (or falls back to lexical search if needed).
+    """
     del half_life_days, alpha
     understanding = understand_query(query_text)
 
@@ -650,10 +704,12 @@ def search_by_text(
 
 
 def results_to_dicts(results: list[RankedResult]) -> list[dict[str, Any]]:
+    """Converts a list of RankedResult dataclasses into raw dictionaries."""
     return [asdict(item) for item in results]
 
 
 def results_to_simple_dicts(results: list[RankedResult]) -> list[dict[str, Any]]:
+    """Strips verbose metadata from results for a clean, simple dictionary structure."""
     simple_results: list[dict[str, Any]] = []
     for item in results:
         simple_results.append(
@@ -687,6 +743,7 @@ def search_api(
     default_content_type: str | None = "menu",
     embedding_backend: str = "auto",
 ) -> dict[str, Any]:
+    """Provides a high-level Python API returning search results as a JSON-serializable dictionary."""
     understanding, results, backend_used = search_by_text(
         query_text,
         top_k=top_k,
@@ -715,6 +772,7 @@ def search_api_simple(
     default_content_type: str | None = "menu",
     embedding_backend: str = "auto",
 ) -> dict[str, Any]:
+    """Provides a minimal, simplified dictionary output for frontend rendering APIs."""
     payload = search_api(
         query_text,
         top_k=top_k,
@@ -734,6 +792,7 @@ def search_api_simple(
 
 
 def print_understanding(understanding: QueryUnderstanding) -> None:
+    """Pretty-prints the query understanding objects to the console for debugging."""
     print("\nQuery understanding")
     print("=" * 80)
     print(f"parser        : {understanding.parser}")

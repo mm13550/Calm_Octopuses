@@ -1,3 +1,9 @@
+"""
+text_comparison.py
+
+Provides functions for semantic similarity computation and retrieval
+based on text embeddings.
+"""
 def compare_texts(text1: str, text2: str) -> float:
     """
     Computes semantic similarity between two text strings.

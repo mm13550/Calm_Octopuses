@@ -1,7 +1,13 @@
+"""
+image_grid.py
+
+This module provides UI components for rendering matrices of images
+within the Streamlit frontend, specifically designed for displaying
+search results with their associated metrics and metadata.
+"""
 import os
 import streamlit as st
 from PIL import Image
-
 def render_image_grid(similar_df, top_k):
     """
     Renders a responsive Streamlit grid of visually similar images.

@@ -1,3 +1,9 @@
+"""
+dimensionality_reduction.py
+
+Contains utilities for reducing the dimensionality of embeddings
+using autoencoders or other techniques.
+"""
 def reduce_dimensions_autoencoder(data_matrix, encoding_dim: int = 2):
     """
     Reduces the dimensionality of a dataset using an Autoencoder neural network structure.
