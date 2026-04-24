@@ -119,7 +119,7 @@ def load_bios_df() -> pd.DataFrame:
     return pd.DataFrame(flattened)
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_resource(show_spinner=False)
 def load_restaurant_embeddings() -> Dict[str, np.ndarray]:
     """
     Loads pre-computed 512-D CLIP text embeddings from the JSONL profiles.
