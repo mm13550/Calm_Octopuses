@@ -20,12 +20,16 @@ def _render_result_card(row: Dict[str, Any], score_label: str) -> None:
                 f"{_clean_text(row.get('rest_id'))} • {_clean_text(row.get('borough')) or 'N/A'} • "
                 f"{_clean_text(row.get('michelin_category')) or 'N/A'}"
             )
+            import pandas as pd
             metrics = st.columns(2)
             metrics[0].metric(score_label, f"{float(row.get('score', 0.0)):.3f}")
-            if "actual_rating" in row:
-                metrics[1].metric("Your Rating", f"{float(row.get('actual_rating', 0.0)):.1f} ⭐")
-            elif "predicted_rating" in row:
-                metrics[1].metric("Predicted Rating", f"{float(row.get('predicted_rating', 0.0)):.1f} ⭐")
+            actual_rating = row.get("actual_rating")
+            predicted_rating = row.get("predicted_rating")
+            
+            if pd.notna(actual_rating):
+                metrics[1].metric("Your Rating", f"{float(actual_rating):.1f} ⭐")
+            elif pd.notna(predicted_rating):
+                metrics[1].metric("Predicted Rating", f"{float(predicted_rating):.1f} ⭐")
 
             homepage = _clean_text(row.get("homepage"))
             if homepage:
