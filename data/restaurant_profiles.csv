@@ -1,0 +1,350 @@
+restaurant_id,restaurant_name,asp_food_quality,asp_service,asp_ambiance,asp_value,asp_wait_time,rating,review_count,rest_id,borough,michelin_category,aspect_cluster
+ChIJ-7AOKpRZwokRMq0XnG_eehU,4 Charles Prime Rib,5.0,5.0,5.0,5.0,3.01,5.0,5,ChIJ-7AOKpRZwokRMq0XnG_eehU,,,3
+ChIJ-SBoguRZwokRmTRHDYXw0EI,The Commerce Inn,5.0,5.0,5.0,5.0,3.67,4.8,5,ChIJ-SBoguRZwokRmTRHDYXw0EI,,,0
+ChIJ-TuoLitZwokRgQRHmUGEgyY,Portale,4.36,5.0,5.0,1.04,1.0,4.4,5,ChIJ-TuoLitZwokRgQRHmUGEgyY,,,3
+ChIJ-XcRtjdZwokRMcgZdhVjqYg,Lord's,3.85,5.0,5.0,1.0,5.0,4.6,5,ChIJ-XcRtjdZwokRMcgZdhVjqYg,,,1
+ChIJ-yUjn9JZwokR7Cq1cegFzZU,Covacha,4.21,5.0,5.0,5.0,4.99,4.6,5,ChIJ-yUjn9JZwokR7Cq1cegFzZU,,,0
+ChIJ0-KySwBZwokROY0ex-BEQrc,Melba's,2.62,5.0,1.83,3.66,4.86,3.6,5,ChIJ0-KySwBZwokROY0ex-BEQrc,,,2
+ChIJ00d8thlZwokRokFYn2wZy5E,Torien,5.0,5.0,5.0,,5.0,5.0,5,ChIJ00d8thlZwokRokFYn2wZy5E,,,0
+ChIJ01_9-ZdYwokR7iv7XpkKAic,Cafe Sabarsky,4.99,5.0,5.0,4.98,5.0,4.6,5,ChIJ01_9-ZdYwokR7iv7XpkKAic,,,0
+ChIJ03HMlbRPwokR4dG6Dhon-A4,Lakruwana,5.0,3.68,5.0,5.0,3.0,4.6,5,ChIJ03HMlbRPwokR4dG6Dhon-A4,,,3
+ChIJ05xWLABZwokRKCsPbbMahzo,Papa San,4.19,3.0,5.0,5.0,3.63,4.4,5,ChIJ05xWLABZwokRKCsPbbMahzo,,,4
+ChIJ09ZGju5YwokRXOcNC23JRwk,Daniel,5.0,5.0,5.0,,5.0,4.8,5,ChIJ09ZGju5YwokRXOcNC23JRwk,,,0
+ChIJ0RWk_A5ZwokR-QEzcuKdpP4,Don Antonio,5.0,3.98,4.96,5.0,3.98,5.0,5,ChIJ0RWk_A5ZwokR-QEzcuKdpP4,,,0
+ChIJ0VKRSIhZwokRdCKH7vdxs2o,Nyonya,5.0,5.0,,5.0,3.67,4.6,5,ChIJ0VKRSIhZwokRdCKH7vdxs2o,,,0
+ChIJ0VWwJI9awokRoiFWFqYZMQ8,Hometown Bar B Que New York,3.44,5.0,3.71,2.56,3.0,5.0,5,ChIJ0VWwJI9awokRoiFWFqYZMQ8,,,3
+ChIJ0Zb6HANZwokRnGIntPyqjLQ,Sushi Yasuda,5.0,5.0,4.97,1.01,5.0,4.8,5,ChIJ0Zb6HANZwokRnGIntPyqjLQ,,,1
+ChIJ0aS81yNZwokRIk-S2YSuvls,Soothr,5.0,5.0,3.04,,3.55,4.6,5,ChIJ0aS81yNZwokRIk-S2YSuvls,,,3
+ChIJ14y5HwNZwokRrNpTpUqpB7Q,Izakaya Futago,5.0,5.0,5.0,4.99,,5.0,5,ChIJ14y5HwNZwokRrNpTpUqpB7Q,,,0
+ChIJ22wiSIpZwokRUmlXovJnWDI,La Mercerie,5.0,4.0,4.91,5.0,5.0,4.6,5,ChIJ22wiSIpZwokRUmlXovJnWDI,,,0
+ChIJ25ryEZ5ZwokRNUaYyZc52_8,Sempre Oggi,5.0,5.0,5.0,5.0,4.79,4.8,5,ChIJ25ryEZ5ZwokRNUaYyZc52_8,,,0
+ChIJ26fKep1ZwokRrPzNIqBj4xU,Superiority Burger,3.83,5.0,5.0,5.0,5.0,4.8,5,ChIJ26fKep1ZwokRrPzNIqBj4xU,,,0
+ChIJ2QZOdTpawokRU_eN_EPJaX8,The River Café,4.2,5.0,5.0,3.0,5.0,5.0,5,ChIJ2QZOdTpawokRU_eN_EPJaX8,,,1
+ChIJ2VQUARFZwokRjSMEcK4rT1s,Ly Ly Vietnam Cookhouse,5.0,2.0,5.0,4.1,4.98,5.0,5,ChIJ2VQUARFZwokRjSMEcK4rT1s,,,4
+ChIJ2aw2iQ5gwokRDiwmsI9YhnE,Asian Jewels,4.16,4.33,5.0,5.0,3.67,4.0,5,ChIJ2aw2iQ5gwokRDiwmsI9YhnE,,,3
+ChIJ2xcAfQFbwokRSBBCp0svARQ,Sailor,4.99,5.0,5.0,5.0,3.83,5.0,5,ChIJ2xcAfQFbwokRSBBCp0svARQ,,,0
+ChIJ34eY6E5ZwokRvof_huM7t3U,Shota Omakase,5.0,3.69,3.67,4.76,1.0,4.4,5,ChIJ34eY6E5ZwokRvof_huM7t3U,,,3
+ChIJ35V_tZlbwokRzolpCln-mG4,Francie,5.0,3.67,4.02,3.01,3.66,4.8,5,ChIJ35V_tZlbwokRzolpCln-mG4,,,3
+ChIJ385rlW9ZwokRHTamoLqoosI,63 Clinton,3.41,5.0,5.0,5.0,5.0,4.6,5,ChIJ385rlW9ZwokRHTamoLqoosI,,,0
+ChIJ397qiflYwokRx2AOUyRXMMo,Benoit,3.98,2.33,1.0,2.27,2.33,2.4,5,ChIJ397qiflYwokRx2AOUyRXMMo,,,2
+ChIJ3TJ4moVZwokRkyy0hZnv_RA,The Musket Room,4.2,5.0,5.0,3.67,5.0,4.6,5,ChIJ3TJ4moVZwokRkyy0hZnv_RA,,,0
+ChIJ3XtEVaJbwokRydPyhK3PB_A,Seppe Pizza Bar,5.0,5.0,5.0,,5.0,5.0,5,ChIJ3XtEVaJbwokRydPyhK3PB_A,,,0
+ChIJ3aiOZQRZwokRyTh5pEHCyXY,Tempura Matsui,4.21,5.0,5.0,5.0,5.0,5.0,5,ChIJ3aiOZQRZwokRyTh5pEHCyXY,,,0
+ChIJ3bmAHghZwokRRXYO57yLuss,Atomix,4.2,5.0,4.0,5.0,3.66,4.6,5,ChIJ3bmAHghZwokRRXYO57yLuss,,,3
+ChIJ43KaxzxbwokRVjbWT05nZ_M,Chambers,4.97,4.0,5.0,5.0,5.0,5.0,5,ChIJ43KaxzxbwokRVjbWT05nZ_M,,,0
+ChIJ43dNliVbwokR-PyxKlkJOXc,Mango Bay,5.0,4.96,5.0,5.0,5.0,5.0,5,ChIJ43dNliVbwokR-PyxKlkJOXc,,,0
+ChIJ47moWdBZwokR2Ud_ilXR05E,Comal,4.2,4.97,3.67,1.02,5.0,4.4,5,ChIJ47moWdBZwokR2Ud_ilXR05E,Manhattan,selected,1
+ChIJ4aU3LC1OwokR44RNlSuxCjM,Enoteca Maria,5.0,5.0,5.0,4.0,4.0,5.0,5,ChIJ4aU3LC1OwokR44RNlSuxCjM,,,0
+ChIJ4ahOydVYwokR7cBu4R_8BXo,Gordo's Cantina,4.2,5.0,,,1.0,4.2,5,ChIJ4ahOydVYwokR7cBu4R_8BXo,,,3
+ChIJ53yq2oZZwokRqIHSP4qZT3o,Russ & Daughters Café,3.67,2.35,5.0,1.0,2.55,4.4,5,ChIJ53yq2oZZwokRqIHSP4qZT3o,,,4
+ChIJ5Q8Bl1NbwokRjuIXKz8OfRQ,Bridges,4.89,4.23,3.9,5.0,,4.8,5,ChIJ5Q8Bl1NbwokRjuIXKz8OfRQ,,,0
+ChIJ5Qa2Xu9ZwokRIyvK1rhdwgw,Nudibranch,3.41,5.0,5.0,1.02,3.05,4.0,5,ChIJ5Qa2Xu9ZwokRIyvK1rhdwgw,,,1
+ChIJ5ckmp3JZwokRYISySgjWO7k,Peppercorn Station,4.02,2.33,,,2.33,4.6,5,ChIJ5ckmp3JZwokRYISySgjWO7k,,,4
+ChIJ5fW8U5ZZwokRlk_uZ6uLlgg,Kubeh,4.2,5.0,4.8,4.98,1.05,3.4,5,ChIJ5fW8U5ZZwokRlk_uZ6uLlgg,,,3
+ChIJ60WL4SZawokRpCV_pGTfb1Y,Cha Kee,2.91,2.36,5.0,,1.06,3.4,5,ChIJ60WL4SZawokRpCV_pGTfb1Y,,,4
+ChIJ63L1ISRZwokRyEGTzZ0gAZM,Ma•dé,3.4,3.0,5.0,2.64,4.99,3.8,5,ChIJ63L1ISRZwokRyEGTzZ0gAZM,,,4
+ChIJ64RnV16NwokRtRsZaZbZzRw,Maria Restaurant,4.0,5.0,5.0,1.0,5.0,4.6,5,ChIJ64RnV16NwokRtRsZaZbZzRw,,,1
+ChIJ685zLlZZwokRiEoiYj-Iyvg,Kabawa,5.0,5.0,5.0,5.0,1.2,5.0,5,ChIJ685zLlZZwokRiEoiYj-Iyvg,,,3
+ChIJ68H4QMBYwokR42l6M4OIUCM,Persepolis,4.0,5.0,5.0,1.01,5.0,4.25,4,ChIJ68H4QMBYwokR42l6M4OIUCM,,,1
+ChIJ69NaKJdZwokR3CamunXyYig,Loring Place,4.22,5.0,5.0,1.02,3.69,4.6,5,ChIJ69NaKJdZwokR3CamunXyYig,,,1
+ChIJ6Vva1h9awokRXw_JSQ_x6y4,Tamarind,3.41,4.34,4.96,1.0,5.0,4.6,5,ChIJ6Vva1h9awokRXw_JSQ_x6y4,,,1
+ChIJ6WTjLENZwokRsU3IurxvnCI,Yoshino,4.21,5.0,4.99,5.0,4.96,4.8,5,ChIJ6WTjLENZwokRsU3IurxvnCI,,,0
+ChIJ6Xa02cFZwokRv_5HQ3fHoHk,Forsythia,4.02,3.99,5.0,3.0,3.01,4.8,5,ChIJ6Xa02cFZwokRv_5HQ3fHoHk,,,4
+ChIJ6alY3R1ZwokRQXUSqpo8OIM,Meju,5.0,5.0,5.0,1.04,4.65,4.8,5,ChIJ6alY3R1ZwokRQXUSqpo8OIM,,,1
+ChIJ7VOxKVBFwokRO4Zf1ESGNAE,Neta Shari,5.0,3.0,5.0,5.0,3.66,5.0,5,ChIJ7VOxKVBFwokRO4Zf1ESGNAE,,,4
+ChIJ7c_9NlpbwokR71rsKP5tMtw,Café Kestrel,4.99,5.0,3.63,3.67,3.84,4.0,5,ChIJ7c_9NlpbwokR71rsKP5tMtw,,,3
+ChIJ7yN3d6tZwokRATR9U3lAqLg,Potluck Club,5.0,5.0,5.0,4.99,4.95,4.8,5,ChIJ7yN3d6tZwokRATR9U3lAqLg,,,0
+ChIJ8-YKf4JZwokR8E9EvXIGnhI,Secchu Yokota,5.0,5.0,5.0,5.0,5.0,5.0,5,ChIJ8-YKf4JZwokR8E9EvXIGnhI,,,0
+ChIJ86Q39ndZwokRJTOUVW7RD-I,Yellow Rose,3.67,,,,1.35,3.67,3,ChIJ86Q39ndZwokRJTOUVW7RD-I,,,3
+ChIJ8UxZqPxYwokRQSC7-Qoeea0,The Grill,4.18,5.0,5.0,1.01,3.67,5.0,5,ChIJ8UxZqPxYwokRQSC7-Qoeea0,,,1
+ChIJ8ccTf-9YwokRMrljca_idL0,Le Veau d'Or,2.37,4.2,5.0,2.33,2.01,3.6,5,ChIJ8ccTf-9YwokRMrljca_idL0,,,4
+ChIJ9-oPPZNZwokR9XwT635xClU,Peak,4.2,5.0,4.01,3.67,3.67,4.8,5,ChIJ9-oPPZNZwokR9XwT635xClU,,,3
+ChIJ90pvtWdfwokRw86tuNLCG7g,Taverna Kyclades,5.0,5.0,,5.0,3.67,5.0,5,ChIJ90pvtWdfwokRw86tuNLCG7g,,,0
+ChIJ94LFiGZZwokRWfbAft9eBNo,Crevette,5.0,5.0,5.0,,4.99,4.8,5,ChIJ94LFiGZZwokRWfbAft9eBNo,,,0
+ChIJ95V_CVNYwokRB6Xv7wRrQZw,Cardamom,5.0,5.0,5.0,,4.98,5.0,5,ChIJ95V_CVNYwokRB6Xv7wRrQZw,,,0
+ChIJ9ev4B-FbwokRhzTqc9KP5-I,Shalom Japen,4.21,3.0,5.0,3.67,1.08,4.4,5,ChIJ9ev4B-FbwokRhzTqc9KP5-I,,,4
+ChIJA1h4NVZZwokRheUtPiYkt0g,Ammazzacaffè,3.0,3.67,5.0,1.92,4.99,3.8,5,ChIJA1h4NVZZwokRheUtPiYkt0g,,,1
+ChIJA4qq2sNZwokRYPPHJ7jwTAc,Odre,5.0,5.0,5.0,5.0,5.0,4.6,5,ChIJA4qq2sNZwokRYPPHJ7jwTAc,,,0
+ChIJAVTGb3pZwokRmKrpkrTn1NY,Madre,5.0,5.0,5.0,5.0,3.67,4.8,5,ChIJAVTGb3pZwokRmKrpkrTn1NY,,,0
+ChIJAbYL-YNZwokRIfs6jgmbXqg,Una Pizza Napoletana,4.93,5.0,5.0,4.96,4.99,5.0,5,ChIJAbYL-YNZwokRIfs6jgmbXqg,,,0
+ChIJB14pRT9FwokRnMbBprTy7RI,Yemenat,5.0,5.0,5.0,5.0,4.16,5.0,5,ChIJB14pRT9FwokRnMbBprTy7RI,,,0
+ChIJBQwbiCZawokRak_8KefFP7M,Dim Sum Go Go,3.42,3.73,,3.01,3.67,4.0,5,ChIJBQwbiCZawokRak_8KefFP7M,,,4
+ChIJBUwsto1ZwokRsW3Dy0Y1cO0,Raoul's,5.0,5.0,5.0,5.0,2.35,4.8,5,ChIJBUwsto1ZwokRsW3Dy0Y1cO0,,,3
+ChIJBXlte51ZwokRXzXtdaBG9xM,Dirt Candy,5.0,5.0,5.0,5.0,5.0,5.0,5,ChIJBXlte51ZwokRXzXtdaBG9xM,,,0
+ChIJBaD9A0ZbwokRu6ArQW3Nj1E,Carne Mare,5.0,5.0,5.0,5.0,5.0,4.8,5,ChIJBaD9A0ZbwokRu6ArQW3Nj1E,,,0
+ChIJBb-QzRRbwokRk_PoI4uduws,Risbo,5.0,5.0,5.0,3.01,,4.6,5,ChIJBb-QzRRbwokRk_PoI4uduws,,,0
+ChIJBchQ93pZwokR5AtYEzo6p1o,Jōji,5.0,4.76,4.86,4.99,,4.4,5,ChIJBchQ93pZwokR5AtYEzo6p1o,,,0
+ChIJBdMLKZBZwokRJ0tYbQ6nfZ4,Shmoné,4.99,4.93,5.0,,5.0,5.0,5,ChIJBdMLKZBZwokRJ0tYbQ6nfZ4,,,0
+ChIJBwGziqlZwokRb3MTH3xUt0Y,Tonchin,5.0,4.88,4.81,,4.91,4.4,5,ChIJBwGziqlZwokRb3MTH3xUt0Y,,,0
+ChIJBxKYEqZZwokRL__Emm2Tl2Y,Noda,5.0,5.0,5.0,,4.99,5.0,5,ChIJBxKYEqZZwokRL__Emm2Tl2Y,,,0
+ChIJCZ6-33tZwokRIika4HJVD-o,Chez Fifi,4.2,4.16,4.96,3.0,5.0,4.4,5,ChIJCZ6-33tZwokRIika4HJVD-o,,,1
+ChIJC_-pxFdbwokRuPw-9HZucGA,Saint Julivert Fisherie,4.2,3.0,5.0,3.0,3.66,4.4,5,ChIJC_-pxFdbwokRuPw-9HZucGA,,,4
+ChIJC_7NeRJfwokRsy59UhNZLao,Tong,4.8,4.98,5.0,5.0,4.97,4.2,5,ChIJC_7NeRJfwokRsy59UhNZLao,,,0
+ChIJCar0f49ZwokR6ozLV-dHNTE,Katz's,4.2,5.0,5.0,4.0,3.54,4.4,5,ChIJCar0f49ZwokR6ozLV-dHNTE,,,3
+ChIJCcAxi5RYwokRdUqdw5_FHIk,Café Boulud,5.0,5.0,5.0,,3.0,5.0,5,ChIJCcAxi5RYwokRdUqdw5_FHIk,,,3
+ChIJCf-UC1FZwokRyrUzaZicgc8,II Fiorista,4.2,4.22,5.0,,5.0,4.2,5,ChIJCf-UC1FZwokRyrUzaZicgc8,,,0
+ChIJD4wsQaRZwokRQIswTkF3YIc,Junoon,5.0,4.99,5.0,3.67,5.0,4.8,5,ChIJD4wsQaRZwokRQIswTkF3YIc,,,0
+ChIJD87O1YJbwokR6lRmQ6nsIfU,Sawa,3.42,2.4,4.99,1.01,2.39,4.6,5,ChIJD87O1YJbwokR6lRmQ6nsIfU,,,4
+ChIJD8V01OVYwokRkOtJNMtnBEs,Chola,5.0,4.94,3.06,,3.01,5.0,5,ChIJD8V01OVYwokRkOtJNMtnBEs,,,3
+ChIJDdKSyCVZwokR-9svvc9YDFo,Rezd?ra,3.4,4.0,3.01,3.0,4.01,3.6,5,ChIJDdKSyCVZwokR-9svvc9YDFo,,,2
+ChIJDyMGAgBZwokRggrgBWarG0o,Bánh Anh Em,5.0,5.0,5.0,3.0,3.4,5.0,5,ChIJDyMGAgBZwokRggrgBWarG0o,,,3
+ChIJEWbXz6ZZwokRLKmKrtPfVFY,Eleven Madison Park,3.45,3.42,5.0,1.1,3.67,3.8,5,ChIJEWbXz6ZZwokRLKmKrtPfVFY,,,4
+ChIJExJQMsdZwokR7a48kYV6EMg,Le B,5.0,4.98,5.0,5.0,4.92,4.6,5,ChIJExJQMsdZwokR7a48kYV6EMg,,,0
+ChIJFQ55zVdYwokRUyAEIvUGfHw,Gallaghers,5.0,5.0,5.0,5.0,3.67,5.0,5,ChIJFQ55zVdYwokRUyAEIvUGfHw,,,0
+ChIJFdppi6GNwokRniWwhWXgovg,Dubrovnik,5.0,4.96,3.0,5.0,4.95,4.8,5,ChIJFdppi6GNwokRniWwhWXgovg,,,0
+ChIJGUJaVtVZwokR3VU_JU2pedg,Moody Tongue Sushi,1.81,1.0,3.01,1.01,1.01,3.4,5,ChIJGUJaVtVZwokR3VU_JU2pedg,,,2
+ChIJGfdZtJdbwokREUPcjASYSr4,Glin Thai Bistro,4.2,5.0,5.0,5.0,4.96,4.6,5,ChIJGfdZtJdbwokREUPcjASYSr4,,,0
+ChIJH58NSAlZwokR9108aaP8cy8,See No Evil Pizza,4.99,3.0,5.0,1.16,4.99,4.8,5,ChIJH58NSAlZwokR9108aaP8cy8,,,1
+ChIJHSJ36dxZwokR6p8zakiCSRA,Enso,4.17,3.73,3.02,3.0,2.97,3.8,5,ChIJHSJ36dxZwokR6p8zakiCSRA,,,2
+ChIJHZyajD1ZwokREWLihHYSryQ,ILIS,2.61,4.0,5.0,1.04,2.34,3.6,5,ChIJHZyajD1ZwokREWLihHYSryQ,,,4
+ChIJHbRrFLRZwokRyYhsjTDMAUc,Veerays,5.0,4.03,5.0,2.39,3.07,4.4,5,ChIJHbRrFLRZwokRyYhsjTDMAUc,,,3
+ChIJHfvtRp1ZwokREpFE8Z1BEKs,Ruffian,5.0,5.0,5.0,,,5.0,5,ChIJHfvtRp1ZwokREpFE8Z1BEKs,,,0
+ChIJI9k11O5YwokRJXZKb8r3CoQ,JoJo,3.51,3.0,4.93,,5.0,4.2,5,ChIJI9k11O5YwokRJXZKb8r3CoQ,,,4
+ChIJISXTwWJZwokRIok4xyMeb6g,One White Street,4.99,5.0,3.0,1.0,5.0,4.8,5,ChIJISXTwWJZwokRIok4xyMeb6g,,,1
+ChIJIYMm9JldwokR3JTojl_rf8A,Olmo,4.2,3.0,5.0,4.99,3.66,5.0,5,ChIJIYMm9JldwokR3JTojl_rf8A,,,4
+ChIJIwaq1P5ZwokRmGG4WafDScw,Penny,4.23,5.0,3.66,3.01,3.41,4.8,5,ChIJIwaq1P5ZwokRmGG4WafDScw,,,3
+ChIJJ5J8yJ9bwokRjpOkpYgii5k,Chavela's,5.0,5.0,5.0,3.67,4.98,4.4,5,ChIJJ5J8yJ9bwokRjpOkpYgii5k,,,0
+ChIJJ8hFlKFZwokRFmzhJg7Qofo,Carlotto,5.0,5.0,5.0,,5.0,5.0,5,ChIJJ8hFlKFZwokRFmzhJg7Qofo,,,0
+ChIJJU-UWk1ZwokRklDKrZ_9EZE,Raf's,5.0,5.0,4.98,4.96,4.98,4.8,5,ChIJJU-UWk1ZwokRklDKrZ_9EZE,,,0
+ChIJJa93rKRZwokRPoOmc_ta6DU,?ka Ka Q?llu,4.99,5.0,4.03,4.63,5.0,4.8,5,ChIJJa93rKRZwokRPoOmc_ta6DU,,,0
+ChIJJy7oGqZZwokReiM-H1qtHYs,Huso,4.2,5.0,4.2,,3.67,4.8,5,ChIJJy7oGqZZwokReiM-H1qtHYs,,,3
+ChIJJyPbJe1ZwokRu8dDEOqAYDc,Dhamaka,5.0,5.0,5.0,3.02,4.99,4.4,5,ChIJJyPbJe1ZwokRu8dDEOqAYDc,,,0
+ChIJJye7jZBbwokRtioAck7uEIg,Theodora,5.0,5.0,5.0,5.0,3.58,5.0,5,ChIJJye7jZBbwokRtioAck7uEIg,,,0
+ChIJK2mBYJNZwokRIT4oANQ6OFY,I Sodi,4.0,4.89,4.7,,3.82,4.4,5,ChIJK2mBYJNZwokRIT4oANQ6OFY,,,3
+ChIJK7XWBaZZwokRbS6fwX6Otto,6 Restaurant,5.0,5.0,5.0,5.0,5.0,5.0,5,ChIJK7XWBaZZwokRbS6fwX6Otto,,,0
+ChIJK9DnCNlbwokR499xR5NXZII,Sofreh,4.99,5.0,5.0,5.0,1.06,4.8,5,ChIJK9DnCNlbwokR499xR5NXZII,,,3
+ChIJKRqJ1-NZwokRRBz5r9t1hb4,Taqueria El Chato,5.0,,,5.0,5.0,5.0,5,ChIJKRqJ1-NZwokRRBz5r9t1hb4,,,0
+ChIJKbKvOwBZwokRE3mEbmx_F6g,Kanyakumari,4.2,5.0,5.0,,4.94,4.8,5,ChIJKbKvOwBZwokRE3mEbmx_F6g,,,0
+ChIJKcCXHydZwokRNCwATmPZsgM,Adda,4.2,3.68,5.0,1.0,5.0,4.0,5,ChIJKcCXHydZwokRNCwATmPZsgM,,,1
+ChIJKdcKCelZwokRdFHp3hzUKok,Le Jardinier New York,4.35,5.0,5.0,,3.66,4.8,5,ChIJKdcKCelZwokRdFHp3hzUKok,,,3
+ChIJKy5pv_RYwokRtJvlzJ4oBJE,The Leopard at Des Artistes,5.0,5.0,,,4.88,4.0,1,ChIJKy5pv_RYwokRtJvlzJ4oBJE,,,0
+ChIJL6-NTmBZwokRGacx3GWq3D0,Frevo,4.22,5.0,5.0,4.98,,4.6,5,ChIJL6-NTmBZwokRGacx3GWq3D0,,,0
+ChIJLSOKsppZwokR_j81qK3aPsM,Atla,3.4,3.22,1.07,4.93,3.65,3.8,5,ChIJLSOKsppZwokR_j81qK3aPsM,,,2
+ChIJLb9vlE1awokRL4Ume5zpejQ,Mile End,5.0,3.0,5.0,3.0,5.0,4.4,5,ChIJLb9vlE1awokRL4Ume5zpejQ,,,4
+ChIJLyS5dYRZwokRlkA0g9eijjs,Laser Wolf,5.0,5.0,3.66,3.67,3.67,4.8,5,ChIJLyS5dYRZwokRlkA0g9eijjs,,,3
+ChIJM26HnlhYwokR4IfXFz-AuCA,Masa,4.95,4.98,5.0,3.0,4.97,4.6,5,ChIJM26HnlhYwokR4IfXFz-AuCA,,,0
+ChIJM2NCGJ1ZwokRA2nCkZcz08g,MáLà Project,5.0,4.98,5.0,4.96,5.0,5.0,5,ChIJM2NCGJ1ZwokRA2nCkZcz08g,,,0
+ChIJMRzjDuVbwokRXPeo4rKGGjQ,Hungry Thirsty,4.2,4.0,,5.0,2.34,4.6,5,ChIJMRzjDuVbwokRXPeo4rKGGjQ,,,3
+ChIJMW-gxPtYwokRzDlnsRgq9rA,The Modern,5.0,4.21,5.0,,4.86,4.8,5,ChIJMW-gxPtYwokRzDlnsRgq9rA,,,0
+ChIJMYIE-KlZwokRZuFHn8jkNuo,Ai Fiori,3.45,4.0,5.0,1.0,4.99,4.8,5,ChIJMYIE-KlZwokRZuFHn8jkNuo,,,1
+ChIJMy2SSj32wokRYJFmKli4HvA,Miss Mamie's Spoonbread Too,4.21,5.0,5.0,1.22,5.0,4.4,5,ChIJMy2SSj32wokRYJFmKli4HvA,,,1
+ChIJN-Kpvb9ZwokRNJQ-Y-_St7M,Kebab aur Sharab,5.0,5.0,5.0,1.0,4.99,4.4,5,ChIJN-Kpvb9ZwokRNJQ-Y-_St7M,,,1
+ChIJN1M-dmVZwokRnicgNEGnFRY,Uzuki,5.0,5.0,5.0,5.0,4.99,4.8,5,ChIJN1M-dmVZwokRnicgNEGnFRY,,,0
+ChIJN2iOxo1ZwokRIMdxk2LDHmM,Pinch Chinese,4.96,5.0,5.0,4.99,5.0,4.8,5,ChIJN2iOxo1ZwokRIMdxk2LDHmM,,,0
+ChIJN4jAggZZwokRQ38qpXSjGGQ,Little Alley,4.2,3.0,5.0,3.67,5.0,4.2,5,ChIJN4jAggZZwokRQ38qpXSjGGQ,,,4
+ChIJN8SzjFRZwokR-b5lqNXcg44,Kochi,3.59,3.67,3.02,3.0,1.05,4.0,5,ChIJN8SzjFRZwokR-b5lqNXcg44,,,2
+ChIJNUFRnFVawokRYrq3moc2q6U,Runner & Stone,4.0,5.0,5.0,5.0,5.0,4.6,5,ChIJNUFRnFVawokRYrq3moc2q6U,,,0
+ChIJNUy-BJpZwokReQu-xGJe9lI,Eulalie,5.0,5.0,3.06,,5.0,5.0,5,ChIJNUy-BJpZwokReQu-xGJe9lI,,,0
+ChIJNYYfWbhZwokRgg2gEj4N41g,Zaab Zaab,4.19,3.03,,,4.98,3.8,5,ChIJNYYfWbhZwokRgg2gEj4N41g,,,4
+ChIJNaUIchtZwokRHI8Pk3mEz1Y,8282,4.85,5.0,4.98,,3.65,5.0,5,ChIJNaUIchtZwokRHI8Pk3mEz1Y,,,0
+ChIJNbTIf5BZwokRjbkuTrLZVB4,Le Rock,5.0,5.0,5.0,5.0,5.0,4.6,5,ChIJNbTIf5BZwokRjbkuTrLZVB4,,,0
+ChIJNdS6kwVZwokRxFgqKTkyYuk,Markette,5.0,4.0,5.0,,5.0,4.8,5,ChIJNdS6kwVZwokRxFgqKTkyYuk,,,0
+ChIJO3lUXPtYwokRHcU_YPcKvcY,Lobster Club,5.0,3.02,5.0,5.0,3.0,4.5,4,ChIJO3lUXPtYwokRHcU_YPcKvcY,,,4
+ChIJORutA8BYwokR6obC5YpaamM,J.G. Melon,4.0,3.67,5.0,5.0,3.67,4.0,5,ChIJORutA8BYwokR6obC5YpaamM,,,4
+ChIJOTob_r1bwokRtUoNNbcmw_g,Speedy Romeo,4.96,5.0,5.0,5.0,5.0,4.8,5,ChIJOTob_r1bwokRtUoNNbcmw_g,,,0
+ChIJOdF5EgBZwokRP9RWtr5XA-g,Santi,5.0,4.25,5.0,5.0,3.02,4.8,5,ChIJOdF5EgBZwokRP9RWtr5XA-g,,,3
+ChIJOdxhoDtZwokRSgA_ZpTUuhg,Ishq,5.0,5.0,4.0,4.28,5.0,4.8,5,ChIJOdxhoDtZwokRSgA_ZpTUuhg,,,0
+ChIJP1f9kMNZwokRYE4hg0tw_CE,Genesis House Restaurant,3.41,5.0,5.0,5.0,4.97,4.6,5,ChIJP1f9kMNZwokRYE4hg0tw_CE,,,0
+ChIJP6l_znFbwokRpT1_G9i2i_Y,Inga's Bar,5.0,3.0,5.0,,4.0,5.0,5,ChIJP6l_znFbwokRpT1_G9i2i_Y,,,4
+ChIJPWi-ugVZwokRLBGafASWP6s,Lingo,3.48,4.99,5.0,,3.0,4.4,5,ChIJPWi-ugVZwokRLBGafASWP6s,,,3
+ChIJPbOOFvPzwokRttFt-acm5qo,Tobalá,5.0,5.0,5.0,5.0,3.67,4.8,5,ChIJPbOOFvPzwokRttFt-acm5qo,,,0
+ChIJPzFYF51ZwokRbAQY59WDJUE,Noreetuh,5.0,5.0,5.0,,,4.6,5,ChIJPzFYF51ZwokRbAQY59WDJUE,,,0
+ChIJQ1R3hKNZwokRQM4wbIrc00o,Cote,5.0,5.0,5.0,5.0,4.05,4.8,5,ChIJQ1R3hKNZwokRQM4wbIrc00o,,,0
+ChIJQ2rWiydZwokRKb1IcXrXZ-E,53,4.27,4.0,4.98,1.01,3.0,4.0,5,ChIJQ2rWiydZwokRKb1IcXrXZ-E,,,1
+ChIJQ928SqRbwokRKuID55C7xFo,Alta Calidad,5.0,5.0,4.99,2.39,4.94,4.8,5,ChIJQ928SqRbwokRKuID55C7xFo,,,1
+ChIJQQwA46BZwokRSK41tPIemGA,Novitá,5.0,5.0,5.0,4.92,3.0,4.4,5,ChIJQQwA46BZwokRSK41tPIemGA,,,3
+ChIJQSKt-VdbwokRRPjIjPe6XEA,Tolo,3.0,3.0,4.99,2.33,3.66,3.6,5,ChIJQSKt-VdbwokRRPjIjPe6XEA,,,4
+ChIJQZCdItFZwokR81gO5l3lMKc,Crane Club,4.2,4.04,5.0,1.0,5.0,4.8,5,ChIJQZCdItFZwokR81gO5l3lMKc,,,1
+ChIJQdPMK0JZwokRkq4DcvtSraA,Fasano,4.99,2.61,5.0,,3.03,4.2,5,ChIJQdPMK0JZwokRkq4DcvtSraA,,,4
+ChIJQyFr6-FZwokRr23JK7BC7_g,Thai Diner,4.21,4.0,3.0,5.0,3.66,4.4,5,ChIJQyFr6-FZwokRr23JK7BC7_g,,,2
+ChIJQzryKJxZwokRYH9Qt5wh3ZY,Kanoyama,3.66,4.0,4.99,4.98,3.01,4.2,5,ChIJQzryKJxZwokRYH9Qt5wh3ZY,,,3
+ChIJRQgS7etZwokR8IMUTfuDXOM,Tsukimi,4.21,5.0,5.0,5.0,1.66,4.8,5,ChIJRQgS7etZwokR8IMUTfuDXOM,,,3
+ChIJRQqJgYVZwokRfJB16sxh1Pg,Ballato,4.2,5.0,5.0,3.0,3.0,4.6,5,ChIJRQqJgYVZwokRfJB16sxh1Pg,,,3
+ChIJRUDshWKKwokRKEDd6H2RAmE,Legend of Taste,3.4,5.0,5.0,4.99,3.0,3.6,5,ChIJRUDshWKKwokRKEDd6H2RAmE,,,3
+ChIJRY8CqGJZwokR285BA7eLv5g,bōm,5.0,5.0,5.0,3.06,4.99,5.0,5,ChIJRY8CqGJZwokR285BA7eLv5g,,,0
+ChIJR_bK295bwokR8gM6QgEdmkY,Peter Luger,5.0,3.41,3.02,3.0,3.67,4.6,5,ChIJR_bK295bwokR8gM6QgEdmkY,,,2
+ChIJRbqLkqFZwokR3E6d0zDKAko,Sami & Susu,5.0,5.0,5.0,,4.01,5.0,5,ChIJRbqLkqFZwokR3E6d0zDKAko,,,0
+ChIJS0y1_oJYwokRp1XiiN58wKA,Dagon,5.0,5.0,5.0,,5.0,4.8,5,ChIJS0y1_oJYwokRp1XiiN58wKA,,,0
+ChIJSZLeeo1ZwokR8cNwimMuHDE,Shabushabu Mayumon,5.0,4.99,5.0,4.96,3.01,4.6,5,ChIJSZLeeo1ZwokR8cNwimMuHDE,,,3
+ChIJSdFphJdbwokRG3R5uMCxFt4,Yamada,4.33,4.0,5.0,5.0,3.01,5.0,5,ChIJSdFphJdbwokRG3R5uMCxFt4,,,3
+ChIJSfeOCf5ZwokRWuoMT5Kc6KY,Nōksu,4.27,3.67,5.0,1.32,2.34,4.4,5,ChIJSfeOCf5ZwokRWuoMT5Kc6KY,,,4
+ChIJT-gYZKFZwokR7O8LLYuYMjU,Cosme,5.0,5.0,5.0,3.66,,4.4,5,ChIJT-gYZKFZwokR7O8LLYuYMjU,,,0
+ChIJT4q4QIFZwokRs1nRu7_ckVI,Noz 17,5.0,5.0,1.01,5.0,5.0,4.8,5,ChIJT4q4QIFZwokRs1nRu7_ckVI,,,2
+ChIJT9pRklZYwokRDwIZonSnPjs,Kung Fu Little Steamed Buns Ramen,5.0,5.0,,,5.0,4.8,5,ChIJT9pRklZYwokRDwIZonSnPjs,,,0
+ChIJTQ0bJiJbwokRIjq-0C-madM,Maison Passerelle,5.0,4.97,5.0,3.0,5.0,4.6,5,ChIJTQ0bJiJbwokRIjq-0C-madM,,,0
+ChIJT_JHTgFZwokRXleXHadsVaE,Sushi Sho,4.22,3.08,5.0,4.98,3.02,5.0,5,ChIJT_JHTgFZwokRXleXHadsVaE,,,4
+ChIJTb3cUH1bwokRqVj5vctMMXs,Gus's Chop House,4.2,5.0,5.0,3.0,4.94,4.6,5,ChIJTb3cUH1bwokRqVj5vctMMXs,,,1
+ChIJU0c2Y6lZwokRKlyc_R8HN88,Cho Dang Gol,5.0,4.97,,3.0,3.33,4.4,5,ChIJU0c2Y6lZwokRKlyc_R8HN88,,,3
+ChIJU1l5-65ZwokRz4BLoRd9WDs,Win Son,5.0,4.99,5.0,4.87,3.99,4.8,5,ChIJU1l5-65ZwokRz4BLoRd9WDs,,,0
+ChIJU3gRuXpZwokRihNyTYLnc1g,Dame,3.47,3.62,5.0,3.39,3.02,3.6,5,ChIJU3gRuXpZwokRihNyTYLnc1g,,,4
+ChIJU7iTdXhZwokR2n5XFHPVdAY,Tuome,5.0,5.0,5.0,,3.68,4.6,5,ChIJU7iTdXhZwokR2n5XFHPVdAY,,,0
+ChIJUTD-vEFbwokRhahGeJOPB2Q,Sal Tang's,5.0,5.0,3.8,4.64,2.64,4.2,5,ChIJUTD-vEFbwokRhahGeJOPB2Q,,,3
+ChIJUU0Hd95fwokR3tAJqfPpDvs,SaRanRom Thai,5.0,5.0,,4.02,3.4,4.8,5,ChIJUU0Hd95fwokR3tAJqfPpDvs,,,3
+ChIJUb901VlZwokRmb0kduVLllM,Smithereens,5.0,5.0,3.0,4.61,1.16,5.0,5,ChIJUb901VlZwokRmb0kduVLllM,Manhattan,selected,3
+ChIJUd1sYJ9ZwokRRkqniQdJ144,Casa Mono,2.66,3.71,5.0,1.01,1.0,4.0,5,ChIJUd1sYJ9ZwokRRkqniQdJ144,,,4
+ChIJUwatTl1ZwokRUDXxYoFa-hk,Aska,4.99,5.0,4.99,5.0,4.65,4.6,5,ChIJUwatTl1ZwokRUDXxYoFa-hk,,,0
+ChIJV7QQ6kdZwokRax4615zpSGU,Le Bernardin,5.0,5.0,5.0,5.0,4.98,4.8,5,ChIJV7QQ6kdZwokRax4615zpSGU,,,0
+ChIJVT21BE9awokR_TVyGHmHvtU,La Vara,4.93,5.0,5.0,,,5.0,5,ChIJVT21BE9awokR_TVyGHmHvtU,,,0
+ChIJVUXabZxZwokRh-_g7s0HxVI,Sobaya,5.0,5.0,5.0,4.88,5.0,4.6,5,ChIJVUXabZxZwokRh-_g7s0HxVI,,,0
+ChIJVVXpcQBbwokRtKzSlyOoW1Y,Haenyeo,5.0,5.0,5.0,5.0,5.0,5.0,5,ChIJVVXpcQBbwokRtKzSlyOoW1Y,,,0
+ChIJVbsIFZVZwokRHGQifEDV3SU,Chick Chick,4.96,4.9,,,4.9,4.6,5,ChIJVbsIFZVZwokRHGQifEDV3SU,,,0
+ChIJWRt4WAtZwokRDRClJ45Ohzg,Claud,4.19,5.0,4.97,,3.0,4.0,5,ChIJWRt4WAtZwokRDRClJ45Ohzg,,,3
+ChIJWUhoPQhdwokRYsDwo5qMnMU,Rolo's,4.39,5.0,,5.0,5.0,4.6,5,ChIJWUhoPQhdwokRYsDwo5qMnMU,,,0
+ChIJWV3KRQBZwokRZlT-Om1I_1E,Roberta's,4.89,5.0,5.0,,,5.0,5,ChIJWV3KRQBZwokRZlT-Om1I_1E,,,0
+ChIJWVD7FadZwokRs_pS6XY7VOU,Upland,4.24,4.0,5.0,,3.67,4.8,5,ChIJWVD7FadZwokRs_pS6XY7VOU,,,3
+ChIJWd7fRdZZwokRhru5tn4KsVM,Torrisi,5.0,5.0,5.0,,5.0,4.8,5,ChIJWd7fRdZZwokRhru5tn4KsVM,,,0
+ChIJWfonJ_tYwokRwIGb6Im403E,Aquavit,5.0,5.0,3.67,5.0,1.15,4.8,5,ChIJWfonJ_tYwokRwIGb6Im403E,,,3
+ChIJX97UMwBbwokRIFRlD1YzSRc,Lei,4.03,4.99,5.0,4.99,2.61,4.8,5,ChIJX97UMwBbwokRIFRlD1YzSRc,Manhattan,selected,3
+ChIJXbVh8gRZwokR-uEVlFisxFE,Tha Phraya,5.0,5.0,4.0,5.0,,4.8,5,ChIJXbVh8gRZwokR-uEVlFisxFE,,,0
+ChIJYTKtj2dZwokR3IYU3st5VuA,Muku,4.99,5.0,5.0,2.32,,4.8,5,ChIJYTKtj2dZwokR3IYU3st5VuA,,,1
+ChIJYYDOMof0wokRvCMy2r_-3S0,Tra Di Noi,5.0,5.0,5.0,5.0,5.0,5.0,5,ChIJYYDOMof0wokRvCMy2r_-3S0,,,0
+ChIJYw5z8rhbwokRvlPiJa21fuI,Farra,5.0,5.0,5.0,5.0,,4.8,5,ChIJYw5z8rhbwokRvlPiJa21fuI,,,0
+ChIJZ-xpvadZwokRGVsoX2gW38s,Atoboy,5.0,5.0,5.0,3.0,,4.6,5,ChIJZ-xpvadZwokRGVsoX2gW38s,,,0
+ChIJZVJwHU9FwokRBuD4swvPWjY,East Harbor Seafood Palace,1.8,1.04,,1.0,1.98,3.2,5,ChIJZVJwHU9FwokRBuD4swvPWjY,,,4
+ChIJZY2-HL5ZwokRnIcy5aBG-o0,Kosaka,4.03,5.0,3.67,3.01,4.91,4.6,5,ChIJZY2-HL5ZwokRnIcy5aBG-o0,,,1
+ChIJZZlClEZbwokRZj-0-fE25tk,Saga,5.0,5.0,5.0,,5.0,5.0,5,ChIJZZlClEZbwokRZj-0-fE25tk,,,0
+ChIJZd1h-MBYwokR0Ek-F4_Sep8,Bohemian Spirit,4.2,5.0,,,1.03,4.4,5,ChIJZd1h-MBYwokR0Ek-F4_Sep8,,,3
+ChIJZdCkqrpZwokRFHIxSGlgMjc,The Dining Room at The Guesthouse,4.96,4.19,5.0,4.98,3.25,4.2,5,ChIJZdCkqrpZwokRFHIxSGlgMjc,,,3
+ChIJ_WGAABL2wokRNthCl_PuyFc,Barawine,5.0,5.0,4.23,4.98,5.0,4.2,5,ChIJ_WGAABL2wokRNthCl_PuyFc,,,0
+ChIJ_Y7rMCBawokR0mnRmN5kL2o,Atera,5.0,5.0,5.0,5.0,5.0,4.6,5,ChIJ_Y7rMCBawokR0mnRmN5kL2o,,,0
+ChIJ__-z7kBZwokRezHqB39zBLI,Oxomoco,5.0,5.0,5.0,5.0,5.0,4.6,5,ChIJ__-z7kBZwokRezHqB39zBLI,,,0
+ChIJ__9LNBZawokREnkOiVx7ydc,Crown Shy,4.39,4.86,5.0,5.0,4.94,4.8,5,ChIJ__9LNBZawokREnkOiVx7ydc,,,0
+ChIJ_ci7bvdZwokRsL4rlCOqsMk,Ci Siamo,4.2,5.0,5.0,5.0,5.0,5.0,5,ChIJ_ci7bvdZwokRsL4rlCOqsMk,,,0
+ChIJ_xTxLRpZwokRCIo4c-DuKMA,Bayon,4.96,5.0,5.0,,5.0,4.8,5,ChIJ_xTxLRpZwokRCIo4c-DuKMA,Welcome to Bayona Restaurant | A Taste of New Orleans,"Since 1990, BAYONA has been a staple in the romantic New Orleans French Quarter with the vision of providing fine dining in a comfortable, casual setting.",0
+ChIJ_zbudV1bwokRyxgi4zQEn0Y,Untable,3.41,5.0,3.0,1.02,5.0,4.2,5,ChIJ_zbudV1bwokRyxgi4zQEn0Y,,,1
+ChIJa7TQMZFbwokRjivvo3SFNDQ,Runner Up,5.0,5.0,5.0,4.99,,5.0,5,ChIJa7TQMZFbwokRjivvo3SFNDQ,,,0
+ChIJaWBLA_pZwokRX2BYIIr6rwE,Moono,5.0,5.0,5.0,5.0,5.0,4.8,5,ChIJaWBLA_pZwokRX2BYIIr6rwE,,,0
+ChIJb1yO2ZdhwokRIWlN1iszze4,Caleta 111 Cevicheria,4.2,4.74,4.99,3.0,,4.0,5,ChIJb1yO2ZdhwokRIWlN1iszze4,,,1
+ChIJb4LjG7r1wokRyAd4TrnrVeQ,Seis Vecinos,4.2,3.0,,3.0,1.99,4.2,5,ChIJb4LjG7r1wokRyAd4TrnrVeQ,,,4
+ChIJb7CqrvpZwokRFeC0MqXi7ys,Café Carmellini,3.99,5.0,4.0,5.0,,4.2,5,ChIJb7CqrvpZwokRFeC0MqXi7ys,,,3
+ChIJbQc9ABZZwokRMAK6C-Ekxg4,Bonnie's,3.14,5.0,5.0,5.0,3.02,3.2,5,ChIJbQc9ABZZwokRMAK6C-Ekxg4,,,3
+ChIJbTCMl19ZwokRUohF137p9cQ,The Four Horsemen,5.0,5.0,5.0,3.02,3.48,5.0,5,ChIJbTCMl19ZwokRUohF137p9cQ,,,3
+ChIJbwHIighZwokRbdADB-4Hzd8,Norma Gastronomia Siciliana,4.2,5.0,3.67,,4.96,4.4,5,ChIJbwHIighZwokRbdADB-4Hzd8,,,0
+ChIJcfbyqFNZwokRUoBP92II4c0,Nami Nori,5.0,5.0,5.0,5.0,,4.8,5,ChIJcfbyqFNZwokRUoBP92II4c0,,,0
+ChIJczHrvxxZwokRQP4sZs4ahxs,Sushi Ikumi,4.2,5.0,5.0,3.67,,5.0,5,ChIJczHrvxxZwokRQP4sZs4ahxs,,,3
+ChIJd4gIXTlZwokR1A8bEjuem20,La Devozione: The Oval,4.99,4.97,5.0,5.0,5.0,4.4,5,ChIJd4gIXTlZwokR1A8bEjuem20,,,0
+ChIJe94ViUFZwokRTJ3cQOMhFdI,Chez Ma Tante,5.0,4.99,5.0,,4.02,4.0,5,ChIJe94ViUFZwokRTJ3cQOMhFdI,,,0
+ChIJeQcZlpFZwokRjoemq-_w9QA,Minetta Tavern,5.0,4.95,4.77,5.0,3.0,4.8,5,ChIJeQcZlpFZwokRjoemq-_w9QA,,,3
+ChIJeWk_ncJZwokR1QHfApa0dQo,Pranakhon,5.0,5.0,5.0,5.0,4.01,4.4,5,ChIJeWk_ncJZwokR1QHfApa0dQo,,,0
+ChIJee0VTWZZwokRDYFpAoConlw,Oiji Mi,5.0,5.0,5.0,,3.06,5.0,5,ChIJee0VTWZZwokRDYFpAoConlw,,,3
+ChIJf3f-f4VZwokRcBCEciTOGRQ,Estela,4.19,5.0,3.67,1.0,5.0,4.0,5,ChIJf3f-f4VZwokRcBCEciTOGRQ,,,1
+ChIJfTgbIE9ZwokRdRjFE2OMZN8,Jua,5.0,5.0,5.0,5.0,,5.0,5,ChIJfTgbIE9ZwokRdRjFE2OMZN8,,,0
+ChIJfXtCJgBZwokRt0ncRw3PEk4,Joo Ok,5.0,5.0,5.0,5.0,4.2,5.0,5,ChIJfXtCJgBZwokRt0ncRw3PEk4,,,0
+ChIJfZrQSJ1ZwokREBcOmNf9lew,Pylos,4.2,4.99,5.0,1.01,3.0,4.4,5,ChIJfZrQSJ1ZwokREBcOmNf9lew,,,1
+ChIJfxC19JVZwokRX2uKgQAL17c,Don Angie,4.97,5.0,5.0,4.96,3.83,5.0,5,ChIJfxC19JVZwokRX2uKgQAL17c,,,0
+ChIJg0ZHaSRZwokRHymWtw9gKJk,Jiang Nan,4.21,5.0,5.0,5.0,3.52,5.0,5,ChIJg0ZHaSRZwokRHymWtw9gKJk,,,3
+ChIJgaiXlpNbwokRN0vlYTshs-c,Corima,4.82,1.01,4.98,,1.01,4.8,5,ChIJgaiXlpNbwokRN0vlYTshs-c,,,4
+ChIJgbgBJY9ZwokR3XVwPBX8n7A,Massara,4.2,3.67,5.0,1.0,2.95,4.0,5,ChIJgbgBJY9ZwokR3XVwPBX8n7A,,,4
+ChIJgbi06LFbwokRGr3pch2KH_A,Agi's Counter,5.0,5.0,5.0,4.98,5.0,4.8,5,ChIJgbi06LFbwokRGr3pch2KH_A,,,0
+ChIJh0UvcqhbwokRSLfJGK9kNDg,Fausto,4.2,3.67,5.0,1.0,3.66,3.8,5,ChIJh0UvcqhbwokRSLfJGK9kNDg,,,1
+ChIJh2cqMDNZwokRqMMqNP9srxI,Restaurant Yuu,5.0,5.0,4.98,5.0,5.0,5.0,5,ChIJh2cqMDNZwokRqMMqNP9srxI,,,0
+ChIJh5JzbfZYwokRR7KqJOksL7Y,Jean-Georges,4.0,5.0,5.0,5.0,4.97,4.8,5,ChIJh5JzbfZYwokRR7KqJOksL7Y,,,0
+ChIJh6WuOgBZwokR8Lm6IOFKk7A,Bartolo,5.0,5.0,5.0,5.0,4.98,5.0,5,ChIJh6WuOgBZwokR8Lm6IOFKk7A,,,0
+ChIJhUDJFUVZwokRkNERZsyOxWo,Ariari,5.0,5.0,5.0,,4.54,5.0,5,ChIJhUDJFUVZwokRkNERZsyOxWo,,,0
+ChIJhXlSFFVZwokRbQf-lmDUK6k,The Office of Mr.Moto,5.0,5.0,3.67,1.03,5.0,4.6,5,ChIJhXlSFFVZwokRbQf-lmDUK6k,,,1
+ChIJhYJ4e6pZwokR518xrzkUaqw,Szechuan Gourmet,4.99,5.0,5.0,,5.0,4.6,5,ChIJhYJ4e6pZwokR518xrzkUaqw,,,0
+ChIJhYcE0JlbwokRVjovgUYR65M,Hart's,4.99,5.0,5.0,1.28,5.0,4.8,5,ChIJhYcE0JlbwokRVjovgUYR65M,,,1
+ChIJhdx5XYZbwokRiPjDzj6xOQA,Daphne's,4.98,4.69,5.0,,4.95,4.6,5,ChIJhdx5XYZbwokRiPjDzj6xOQA,,,0
+ChIJhesNT51ZwokRqIACbMxk2BQ,Avant Garden,2.65,5.0,5.0,5.0,3.1,4.2,5,ChIJhesNT51ZwokRqIACbMxk2BQ,,,3
+ChIJhwCMNh5ZwokROomRErlMEpk,Chalong,5.0,5.0,5.0,3.0,3.0,4.6,5,ChIJhwCMNh5ZwokROomRErlMEpk,,,3
+ChIJi4KXPNdZwokRXc8e60p0670,Red Paper Clip,4.21,3.67,5.0,1.0,1.01,4.6,5,ChIJi4KXPNdZwokRXc8e60p0670,,,4
+ChIJi9BURJFZwokRDcqvIgxdXds,Family Meal at Blue Hill,5.0,4.97,5.0,5.0,3.02,4.6,5,ChIJi9BURJFZwokRDcqvIgxdXds,,,3
+ChIJiVVSAE1awokRzdvqVP_z3aA,Chef's Table at Brooklyn Fare,4.2,3.67,5.0,,3.67,4.2,5,ChIJiVVSAE1awokRzdvqVP_z3aA,,,4
+ChIJiW_7kM9bwokR9qMrG4XITL8,Ito,5.0,5.0,5.0,5.0,5.0,5.0,5,ChIJiW_7kM9bwokR9qMrG4XITL8,,,0
+ChIJicZ4uJNZwokR_iq6h-BM3F0,Le Gigot,4.2,4.0,5.0,1.02,1.0,4.6,5,ChIJicZ4uJNZwokR_iq6h-BM3F0,,,4
+ChIJidFNLAdfwokRDaE9PudSm7Q,Phayul,3.9,3.0,3.99,1.0,2.6,3.2,5,ChIJidFNLAdfwokRDaE9PudSm7Q,,,4
+ChIJixS5XaJZwokR1hrG2VpP1No,Mission Ceviche,5.0,5.0,5.0,5.0,5.0,5.0,5,ChIJixS5XaJZwokR1hrG2VpP1No,,,0
+ChIJjV-YTgBZwokRVeWJgF_z7eE,Hyderabadi Zaiqa,5.0,3.01,,5.0,3.01,4.6,5,ChIJjV-YTgBZwokRVeWJgF_z7eE,,,4
+ChIJj_wLYalZwokRULTcqVFlZlg,Rosella,5.0,5.0,5.0,,5.0,5.0,5,ChIJj_wLYalZwokRULTcqVFlZlg,,,0
+ChIJjcAJd-tZwokRJ0GkkJ2Urp0,Le Pavillon,5.0,4.99,5.0,3.08,5.0,4.8,5,ChIJjcAJd-tZwokRJ0GkkJ2Urp0,,,0
+ChIJjw0jcKJZwokRrqj91_P25w8,MayRee,5.0,5.0,5.0,5.0,5.0,5.0,5,ChIJjw0jcKJZwokRrqj91_P25w8,,,0
+ChIJjybX-nVZwokRbnwwPvjMw4o,Four Twenty Five,4.21,4.0,5.0,3.02,3.68,4.6,5,ChIJjybX-nVZwokRbnwwPvjMw4o,,,4
+ChIJk6_emFpbwokReeza0hzar2c,Café Mars,4.21,4.8,5.0,4.96,4.19,4.2,5,ChIJk6_emFpbwokReeza0hzar2c,,,0
+ChIJk84XGIRYwokRGrW8KFlR2_g,Eléa,5.0,5.0,4.99,5.0,5.0,4.6,5,ChIJk84XGIRYwokRGrW8KFlR2_g,,,0
+ChIJkRWC9WFZwokRfa5Uzor3e-g,Sunday in Brooklyn,4.2,5.0,5.0,,4.23,4.6,5,ChIJkRWC9WFZwokRfa5Uzor3e-g,,,0
+ChIJkXQ3_INZwokRE74ZvG46Jjc,Momofuku Noodle Bar,5.0,3.67,5.0,5.0,2.56,4.0,5,ChIJkXQ3_INZwokRE74ZvG46Jjc,,,3
+ChIJkYkkoh1ZwokRE01ymVZhhpg,YingTao,3.57,2.37,5.0,5.0,1.0,4.0,5,ChIJkYkkoh1ZwokRE01ymVZhhpg,,,4
+ChIJk_HUw2dZwokR_zqBwmFDHgo,Mari,5.0,2.99,5.0,4.56,2.31,5.0,5,ChIJk_HUw2dZwokR_zqBwmFDHgo,,,4
+ChIJkdKgqjBZwokRe0eoeX7X9Xg,L'Abeille à Côté,5.0,5.0,,,5.0,5.0,5,ChIJkdKgqjBZwokRe0eoeX7X9Xg,,,0
+ChIJkzm4uVZZwokRpH8jUC56Ry4,Hav & Mar,5.0,5.0,5.0,,4.97,5.0,5,ChIJkzm4uVZZwokRpH8jUC56Ry4,,,0
+ChIJkzwxb_VZwokRCQbOg1hggOw,Hupo,4.09,5.0,5.0,2.92,4.92,3.4,5,ChIJkzwxb_VZwokRCQbOg1hggOw,,,1
+ChIJl-l0rSdZwokReqiZ7S2yx0A,Pierozek,5.0,5.0,5.0,5.0,5.0,5.0,5,ChIJl-l0rSdZwokReqiZ7S2yx0A,,,0
+ChIJl2K8TWdbwokRVLXghh72lXs,LORE,5.0,4.99,5.0,5.0,5.0,5.0,5,ChIJl2K8TWdbwokRVLXghh72lXs,,,0
+ChIJl4SyfAlZwokRH9jp28Mfb1g,Patricia's,4.21,4.97,5.0,5.0,4.99,4.8,5,ChIJl4SyfAlZwokRH9jp28Mfb1g,,,0
+ChIJlRDB34FZwokRUVAP-qsAoUY,odo,4.21,4.99,4.93,5.0,2.7,4.8,5,ChIJlRDB34FZwokRUVAP-qsAoUY,,,3
+ChIJlxis48RZwokRCkdW3UJz00I,Rose Marie,4.12,5.0,5.0,,,4.6,5,ChIJlxis48RZwokRCkdW3UJz00I,,,3
+ChIJm3rL5YxZwokRWk_MgQ_fuAk,Altro Paradiso,3.51,4.22,3.68,,5.0,4.4,5,ChIJm3rL5YxZwokRWk_MgQ_fuAk,,,1
+ChIJm7ryTglZwokRsgnJB6CDMCo,Wayan,2.63,3.0,3.0,3.38,,3.0,5,ChIJm7ryTglZwokRsgnJB6CDMCo,,,2
+ChIJmQ7DvBFgwokRBNJbyDc81oI,Alley 41,5.0,5.0,,4.99,5.0,5.0,5,ChIJmQ7DvBFgwokRBNJbyDc81oI,,,0
+ChIJmQisBftYwokRQBBSSiPmF_k,Caviar Russe,4.99,4.18,5.0,,5.0,4.8,5,ChIJmQisBftYwokRQBBSSiPmF_k,,,0
+ChIJmSvG_ZFZwokRTOFeiLXzkmA,Carbone,4.23,4.0,5.0,4.99,4.76,4.8,5,ChIJmSvG_ZFZwokRTOFeiLXzkmA,,,0
+ChIJmUAVNb5YwokRyFZIbhQ_cxM,Sushi Noz,4.01,5.0,5.0,3.04,3.02,5.0,5,ChIJmUAVNb5YwokRyFZIbhQ_cxM,,,3
+ChIJmcr2IF9ZwokRr-u_-UTxju4,Wenwen,4.97,5.0,5.0,,4.01,4.6,5,ChIJmcr2IF9ZwokRr-u_-UTxju4,,,0
+ChIJmeKSwPFdwokRZ--71Rq0GBY,Sobre Masa,4.22,1.04,5.0,3.61,3.44,4.2,5,ChIJmeKSwPFdwokRZ--71Rq0GBY,,,4
+ChIJmfa2wdVZwokRQhZSfY9P4p0,R40,4.21,5.0,5.0,1.06,5.0,4.8,5,ChIJmfa2wdVZwokRQhZSfY9P4p0,,,1
+ChIJmxNuRpVYwokRHEkGRQ_trfc,Orsay,3.41,3.83,5.0,5.0,2.34,3.8,5,ChIJmxNuRpVYwokRHEkGRQ_trfc,,,4
+ChIJmy2pnY1ZwokRvWDMouRmdl4,King,3.4,2.33,1.05,4.99,1.0,4.2,5,ChIJmy2pnY1ZwokRvWDMouRmdl4,,,2
+ChIJn7k4jxlZwokRhDkNH9383-o,Cheli,4.98,4.0,5.0,3.67,3.66,4.4,5,ChIJn7k4jxlZwokRhDkNH9383-o,,,3
+ChIJnelMReNZwokRXqa1GK4myCk,Vert Frais,5.0,5.0,5.0,,4.99,4.6,5,ChIJnelMReNZwokRXqa1GK4myCk,,,0
+ChIJnxIAE6ZZwokRerFXklZuIvc,Ulivo,5.0,5.0,5.0,1.1,5.0,5.0,5,ChIJnxIAE6ZZwokRerFXklZuIvc,,,1
+ChIJo5Z8DuZZwokR0VamSWa1LwE,Octo,3.45,5.0,5.0,3.67,,4.2,5,ChIJo5Z8DuZZwokR0VamSWa1LwE,,,3
+ChIJoTXWl8dbwokRpKA2BJFVsGA,Manhatta,4.86,4.99,5.0,,4.0,4.6,5,ChIJoTXWl8dbwokRpKA2BJFVsGA,,,0
+ChIJoWa5-i5gwokR8v_bTyLmO6I,Tong Sam Gyup Goo Yi,4.2,3.0,5.0,4.51,5.0,4.6,5,ChIJoWa5-i5gwokR8v_bTyLmO6I,,,4
+ChIJoWqUUFhFwokRgLdrJbh0bBg,Tanoreen,4.2,4.01,5.0,1.27,3.36,4.0,5,ChIJoWqUUFhFwokRgLdrJbh0bBg,,,1
+ChIJoXWHAlJZwokRVBsijjIYQoQ,Bar Miller,5.0,5.0,4.0,1.01,4.0,5.0,5,ChIJoXWHAlJZwokRVBsijjIYQoQ,,,1
+ChIJoeTbP6hZwokR9N--sbudnCM,Dons Bogam,4.22,3.44,,4.96,4.6,4.4,5,ChIJoeTbP6hZwokR9N--sbudnCM,,,0
+ChIJp-hnIhNZwokRq1FijMduZrM,Coqodaq,4.21,5.0,5.0,5.0,4.96,4.8,5,ChIJp-hnIhNZwokRq1FijMduZrM,,,0
+ChIJp0ha1dFZwokRK9WxgN9HVuY,HAGS,4.21,5.0,4.99,3.0,4.83,4.6,5,ChIJp0ha1dFZwokRK9WxgN9HVuY,,,1
+ChIJp3PsL_ZYwokRZYqs_40RJF4,Pre Se,5.0,5.0,5.0,5.0,5.0,5.0,5,ChIJp3PsL_ZYwokRZYqs_40RJF4,,,0
+ChIJp77YbQBZwokRtrv7Pca_IJE,Gui,5.0,4.0,5.0,4.64,5.0,4.6,5,ChIJp77YbQBZwokRtrv7Pca_IJE,,,0
+ChIJpRJxMZFZwokRuAIdqebbohg,Cafe Commerce,5.0,5.0,5.0,1.02,3.67,4.8,5,ChIJpRJxMZFZwokRuAIdqebbohg,,,1
+ChIJpSTN0R9awokRI29rK_SfbeA,Jungsik New York,4.3,1.72,5.0,1.77,5.0,5.0,5,ChIJpSTN0R9awokRI29rK_SfbeA,,,4
+ChIJpT0hlqtZwokRYQqPEQPFhBo,Little Myanmar,2.6,2.0,1.07,5.0,1.93,2.8,5,ChIJpT0hlqtZwokRYQqPEQPFhBo,,,2
+ChIJp_UkrilawokRtDAS5sls7jo,Cervo's,4.18,2.0,4.98,,1.0,4.2,5,ChIJp_UkrilawokRtDAS5sls7jo,,,4
+ChIJq6pu4qJZwokRARFMcQsmd6Y,Kyma,4.31,5.0,5.0,1.04,5.0,4.6,5,ChIJq6pu4qJZwokRARFMcQsmd6Y,,,1
+ChIJq75Ur-tZwokRo7I_F_PhlcU,L'Abeille,4.2,5.0,5.0,3.0,5.0,4.6,5,ChIJq75Ur-tZwokRo7I_F_PhlcU,,,1
+ChIJq7G-HTtZwokRkQvXiYeiuco,Oceans,3.48,3.4,5.0,1.01,2.33,4.6,5,ChIJq7G-HTtZwokRkQvXiYeiuco,,,4
+ChIJqRe1FMpbwokRQqWHvCtpSO8,Casa Ora,5.0,5.0,4.01,5.0,5.0,4.6,5,ChIJqRe1FMpbwokRQqWHvCtpSO8,,,0
+ChIJqdwhvD5ZwokRMjq-dG4AVm4,Seoul Salon,5.0,,5.0,5.0,3.99,4.8,5,ChIJqdwhvD5ZwokRMjq-dG4AVm4,,,0
+ChIJqzhkS7dbwokRtGCdHcorPvU,Miss Ada,5.0,5.0,3.85,,4.93,4.8,5,ChIJqzhkS7dbwokRtGCdHcorPvU,,,0
+ChIJr15tlpJZwokRG4lyRntq3cw,Laliko,5.0,5.0,5.0,5.0,5.0,5.0,5,ChIJr15tlpJZwokRG4lyRntq3cw,,,0
+ChIJr7FOf5NZwokRu3CDYtzVmuQ,Via Carota,5.0,5.0,5.0,3.67,3.39,5.0,5,ChIJr7FOf5NZwokRu3CDYtzVmuQ,,,3
+ChIJreEXi4FZwokR_ygs7wh2fTk,Ivan Ramen,5.0,4.97,5.0,4.99,3.68,5.0,5,ChIJreEXi4FZwokR_ygs7wh2fTk,,,0
+ChIJrwTqaQBbwokRaK-iQfAWdG4,Cafe Mado,5.0,3.0,5.0,1.0,5.0,4.8,5,ChIJrwTqaQBbwokRaK-iQfAWdG4,,,1
+ChIJrwxm-gpFwokR9f10RT15Ni8,Chuan Tian Xia,4.01,5.0,5.0,,5.0,5.0,5,ChIJrwxm-gpFwokR9f10RT15Ni8,,,0
+ChIJs2_eoNBZwokR774H9Y29ANg,El Fish Marisqueria,4.2,4.16,4.0,4.99,2.01,4.0,5,ChIJs2_eoNBZwokR774H9Y29ANg,,,3
+ChIJsTUVzgBZwokRkUIgGFl_RJc,La Tête d'Or,5.0,5.0,5.0,,5.0,5.0,5,ChIJsTUVzgBZwokRkUIgGFl_RJc,,,0
+ChIJsedB_edYwokRrxhc0jZb_Mk,Lungi,5.0,5.0,5.0,,5.0,5.0,5,ChIJsedB_edYwokRrxhc0jZb_Mk,,,0
+ChIJsw80F5NZwokRcDtxajLLOeA,Sushi Nakazawa New York,4.2,5.0,1.0,5.0,1.02,4.4,5,ChIJsw80F5NZwokRcDtxajLLOeA,,,2
+ChIJtSk6aqhZwokRAA7X1yq7onk,HanGawi,5.0,5.0,5.0,5.0,5.0,4.8,5,ChIJtSk6aqhZwokRAA7X1yq7onk,,,0
+ChIJtx7ymGVbwokRzDZBJ8NVJz0,Place des Fêtes,4.0,5.0,5.0,1.0,5.0,4.4,5,ChIJtx7ymGVbwokRzDZBJ8NVJz0,,,1
+ChIJtxFgYDRdwokRmR1IiWUh8j8,il Gigante,5.0,5.0,5.0,,5.0,5.0,5,ChIJtxFgYDRdwokRmR1IiWUh8j8,,,0
+ChIJu0soFVVYwokRArPqt2VGdJs,The Lambs Club,4.08,5.0,5.0,,5.0,4.8,5,ChIJu0soFVVYwokRArPqt2VGdJs,,,0
+ChIJuYwVAmX2wokRTnBiQLDD6us,Oso,4.2,4.21,5.0,5.0,5.0,4.8,5,ChIJuYwVAmX2wokRTnBiQLDD6us,,,0
+ChIJv0LelZRbwokRrUvqWn_7o98,Red Hook Tavern,5.0,3.08,3.08,4.99,4.2,4.8,5,ChIJv0LelZRbwokRrUvqWn_7o98,,,2
+ChIJv4bbdSNZwokRCgKfDGF8az8,Casa Enrique,4.2,5.0,5.0,,5.0,4.6,5,ChIJv4bbdSNZwokRCgKfDGF8az8,,,0
+ChIJv9ZXILdbwokRkAUmIvX8CvM,Mesiba,4.92,4.21,5.0,3.07,2.97,4.8,5,ChIJv9ZXILdbwokRkAUmIvX8CvM,,,3
+ChIJvSQIgqFZwokRFYQbJdzceSs,Gramercy Tavern,4.2,5.0,5.0,1.66,1.17,4.6,5,ChIJvSQIgqFZwokRFYQbJdzceSs,,,3
+ChIJvSw_uuxZwokRwESVzh5G33s,Jeju Noodle Bar,4.2,4.2,5.0,1.12,1.01,4.2,5,ChIJvSw_uuxZwokRwESVzh5G33s,,,4
+ChIJvWSDS_ZYwokRiG9D395loxo,Marea,4.78,3.4,5.0,1.0,3.0,4.2,5,ChIJvWSDS_ZYwokRiG9D395loxo,,,4
+ChIJvduhDjVZwokReg77D1pNQaQ,Bangkok Supper Club,3.41,4.96,4.85,,4.92,4.4,5,ChIJvduhDjVZwokReg77D1pNQaQ,,,1
+ChIJw6JyhoxZwokR3mKl4FLg5rM,Essential by Christophe,5.0,5.0,5.0,4.96,5.0,5.0,5,ChIJw6JyhoxZwokR3mKl4FLg5rM,,,0
+ChIJwXUoA99bwokRU2bF-gdB25I,Meadowsweet,5.0,5.0,5.0,4.98,2.52,5.0,5,ChIJwXUoA99bwokRU2bF-gdB25I,,,3
+ChIJwZz-LWlbwokR_hshOuzdrkw,Gage & Tollner,5.0,4.98,3.67,1.0,3.98,4.6,5,ChIJwZz-LWlbwokR_hshOuzdrkw,,,1
+ChIJw_TGEwBZwokR-zLts543O-4,Gabriel Kreuther,5.0,5.0,5.0,,5.0,5.0,5,ChIJw_TGEwBZwokR-zLts543O-4,,,0
+ChIJx-bMHr1ZwokRd3i_y7F3VlE,C as in Charlie,4.2,4.34,5.0,5.0,3.67,4.6,5,ChIJx-bMHr1ZwokRd3i_y7F3VlE,,,3
+ChIJx32M-AZZwokRYXUV81ghelA,Sushi Akira,5.0,5.0,5.0,,5.0,5.0,5,ChIJx32M-AZZwokRYXUV81ghelA,Manhattan,selected,0
+ChIJxUPhRABZwokRWTa40zp_N10,Bungalow,4.2,4.07,2.68,3.95,3.2,4.2,5,ChIJxUPhRABZwokRWTa40zp_N10,,,2
+ChIJxXrbJaJZwokRAAEnPk3AJh4,abcV,5.0,5.0,5.0,4.99,4.43,4.6,5,ChIJxXrbJaJZwokRAAEnPk3AJh4,,,0
+ChIJxZmzO7hZwokRx2fls4uU4YU,Semma,4.2,3.7,3.71,4.98,4.3,4.4,5,ChIJxZmzO7hZwokRx2fls4uU4YU,,,3
+ChIJx_0o5PpZwokRrT97W5ehRn4,Al Badawi,5.0,5.0,5.0,5.0,3.68,5.0,5,ChIJx_0o5PpZwokRrT97W5ehRn4,,,0
+ChIJxy0SM0xZwokR5vC0f4wVlP0,Tatiana,4.19,4.05,4.0,5.0,4.99,4.4,5,ChIJxy0SM0xZwokR5vC0f4wVlP0,,,0
+ChIJyRIhC_dbwokRqGoh89KPQME,Icca,5.0,5.0,5.0,,,5.0,5,ChIJyRIhC_dbwokRqGoh89KPQME,,,0
+ChIJyVx4cR9ZwokRjVpmK-TnpM0,Hyun,5.0,4.0,5.0,4.84,1.29,4.6,5,ChIJyVx4cR9ZwokRjVpmK-TnpM0,,,3
+ChIJyaTH_pRbwokRp4SVDyxdALw,Ernesto's,3.5,3.67,5.0,3.7,3.4,4.0,5,ChIJyaTH_pRbwokRp4SVDyxdALw,,,4
+ChIJyflTcS1ZwokRBWTy8tCgaDM,Jupiter,4.99,4.0,5.0,4.71,4.96,4.2,5,ChIJyflTcS1ZwokRBWTy8tCgaDM,,,0
+ChIJyw5j84lZwokRnUI_UknPSNA,Le Coucou,4.11,4.89,5.0,5.0,5.0,5.0,5,ChIJyw5j84lZwokRnUI_UknPSNA,,,0
+ChIJz0Bt0ldZwokR698-eT0Dh88,KRU,4.25,5.0,4.98,1.54,3.02,4.8,5,ChIJz0Bt0ldZwokR698-eT0Dh88,,,1
+ChIJz8asT51ZwokRhNF8JQzaLqQ,Miss Lily's,4.94,4.9,5.0,,2.84,4.8,5,ChIJz8asT51ZwokRhNF8JQzaLqQ,,,3
+ChIJzRCbxRVZwokRDAzYpDpbyG4,La Dong,5.0,5.0,5.0,,4.0,4.8,5,ChIJzRCbxRVZwokRDAzYpDpbyG4,,,0
+ChIJzVWJIgVZwokRZzgRswAxIJY,Soda Club,5.0,4.2,5.0,5.0,3.0,5.0,5,ChIJzVWJIgVZwokRZzgRswAxIJY,,,3
