@@ -1,4 +1,4 @@
-﻿"""
+"""
 tests.py
 
 Diagnostic Streamlit frontend for the Calm Octopuses ML pipeline.
@@ -382,8 +382,6 @@ with tab3:
             with sim_r:
                 st.markdown("**Least similar** (lowest cosine sim)")
                 st.dataframe(pd.DataFrame(bot10), use_container_width=True, hide_index=True)
-
-    render_tab3_content()
 
 # ============================================================
 # Tab 4 â€” Risk Regression Analysis
