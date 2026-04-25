@@ -1,9 +1,10 @@
 """
-app.py
+tests.py
 
-This script serves as the main interactive Streamlit frontend for the Calm Octopuses application.
-It provides interfaces for the Image Similarity Explorer, Dual Encoder Training Logs,
-Cross-Modal Generalization Analysis, and Risk Regression Analysis.
+Diagnostic Streamlit frontend for the Calm Octopuses ML pipeline.
+Provides interfaces for the Image Similarity Explorer, Dual Encoder Training Logs,
+Cross-Modal Generalization Analysis, Risk Regression Analysis,
+and MDN Opinionatedness testing on NYC Michelin restaurants.
 """
 import os
 import streamlit as st
@@ -13,11 +14,11 @@ from PIL import Image
 from algorithms.image_comparison import get_similar_images
 
 # Streamlit App Configuration
-st.set_page_config(page_title="Image Similarity Explorer", layout="wide")
+st.set_page_config(page_title="Calm Octopuses — Diagnostics", layout="wide")
 
-st.title("Multimodal App")
+st.title("🧪 Diagnostics")
 
-tab1, tab2, tab3, tab4 = st.tabs(["Image Similarity Explorer", "Dual Encoder Training Logs", "Generalization Analysis", "Risk Regression Analysis"])
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["Image Similarity Explorer", "Dual Encoder Training Logs", "Generalization Analysis", "Risk Regression Analysis", "MDN Opinionatedness Test"])
 
 # --- Data Loading ---
 @st.cache_data
@@ -677,3 +678,264 @@ with tab4:
         
         st.altair_chart((halo_95 + core_50 + points + actuals).properties(height=400), width="stretch")
 
+
+# ============================================================
+# Tab 5 — MDN Opinionatedness Test
+# ============================================================
+with tab5:
+    import sys as _sys
+    import numpy as np
+    from pathlib import Path
+
+    _ROOT = Path(__file__).resolve().parent
+    if str(_ROOT) not in _sys.path:
+        _sys.path.insert(0, str(_ROOT))
+
+    from core.data_loader import build_restaurant_catalog, load_restaurant_embeddings, _clean_text
+    from algorithms.mdn_regression import load_mdn_model
+    import torch
+
+    st.header("🎯 MDN Opinionatedness Test")
+    st.markdown(
+        """
+        Rate a handful of **NYC Michelin** restaurants below, then click **Run Predictions**
+        to see how sharply the MDN distributes its probability mass for the restaurants you
+        haven't rated yet.  
+        A well-calibrated, opinionated model should produce **narrow, peaked PDFs**.
+        Flat / uniform distributions suggest the model is hedging — a sign of domain shift
+        or insufficient user signal.
+        """
+    )
+
+    # --- Session state for this tab ---
+    if "mdn_test_ratings" not in st.session_state:
+        st.session_state["mdn_test_ratings"] = {}
+
+    @st.cache_data(show_spinner=False)
+    def _load_catalog_cached():
+        return build_restaurant_catalog()
+
+    catalog_df = _load_catalog_cached()
+
+    if catalog_df.empty:
+        st.warning("No restaurant catalog available. Check data files.")
+    else:
+        restaurant_names = catalog_df["restaurant_name"].tolist()
+
+        # ── Rating panel ───────────────────────────────────────────────────
+        st.subheader("Step 1 — Rate some restaurants")
+        st.caption("Select a restaurant and give it a star rating. Rate at least 1 to enable predictions.")
+
+        col_sel, col_stars = st.columns([3, 2])
+        with col_sel:
+            pick_name = st.selectbox(
+                "Restaurant",
+                restaurant_names,
+                key="mdn_test_pick",
+                label_visibility="collapsed",
+            )
+        with col_stars:
+            star_val = st.feedback("stars", key=f"mdn_test_stars_{pick_name}")
+            if star_val is not None:
+                pick_id = catalog_df[catalog_df["restaurant_name"] == pick_name].iloc[0]["rest_id"]
+                st.session_state["mdn_test_ratings"][pick_id] = float(star_val + 1)
+
+        # Show current ratings table
+        if st.session_state["mdn_test_ratings"]:
+            rated_rows = []
+            for rid, rating in st.session_state["mdn_test_ratings"].items():
+                name_match = catalog_df[catalog_df["rest_id"] == rid]["restaurant_name"]
+                name = name_match.iloc[0] if not name_match.empty else rid
+                rated_rows.append({"Restaurant": name, "Your Rating": f"{int(rating)} ⭐"})
+            st.dataframe(pd.DataFrame(rated_rows), use_container_width=True, hide_index=True)
+
+            if st.button("🗑 Clear all ratings", key="mdn_test_clear"):
+                st.session_state["mdn_test_ratings"] = {}
+                st.rerun()
+
+        st.divider()
+
+        # ── Prediction panel ───────────────────────────────────────────────
+        st.subheader("Step 2 — Run MDN predictions")
+
+        n_display = st.slider(
+            "Restaurants to predict",
+            min_value=5, max_value=min(40, len(catalog_df)),
+            value=15,
+            help="Number of unrated restaurants to show predicted PDFs for.",
+        )
+
+        run_btn = st.button(
+            "▶ Run Predictions",
+            disabled=len(st.session_state["mdn_test_ratings"]) == 0,
+            key="mdn_test_run",
+        )
+
+        if run_btn or st.session_state.get("mdn_test_ran"):
+            st.session_state["mdn_test_ran"] = True
+            user_ratings = st.session_state["mdn_test_ratings"]
+
+            model = load_mdn_model()
+            if model is None:
+                st.error("MDN checkpoint not found at expected path.")
+            else:
+                embeddings_map = load_restaurant_embeddings()
+
+                # Build user vector
+                hist_vecs, hist_weights = [], []
+                for rid, rating in user_ratings.items():
+                    vec = embeddings_map.get(rid)
+                    if vec is not None:
+                        w = float(rating) / 5.0
+                        hist_vecs.append(torch.from_numpy(vec).float() * w)
+                        hist_weights.append(w)
+
+                if not hist_vecs:
+                    st.error("None of your rated restaurants have embeddings. Try rating different ones.")
+                else:
+                    user_vec = torch.stack(hist_vecs).sum(dim=0) / sum(hist_weights)
+                    mean_hist = sum(user_ratings.values()) / len(user_ratings)
+                    scalar_feat = torch.tensor([mean_hist], dtype=torch.float32)
+
+                    # Score unrated restaurants
+                    results = []
+                    for _, row in catalog_df.iterrows():
+                        rid = _clean_text(row.get("rest_id"))
+                        if rid in user_ratings:
+                            continue
+                        vec_np = embeddings_map.get(rid)
+                        if vec_np is None:
+                            continue
+
+                        target_vec = torch.from_numpy(vec_np).float()
+                        feat = torch.cat([user_vec, target_vec, scalar_feat]).unsqueeze(0)
+
+                        with torch.no_grad():
+                            mus, log_sigmas, pi_logits = model(feat)
+                            pis = torch.softmax(pi_logits, dim=1)
+                            expected_mu = (mus * pis).sum(dim=1).item()
+
+                            grid_y = torch.linspace(1.0, 5.0, 101)
+                            g_exp = grid_y.view(1, -1, 1)
+                            m_exp = mus.unsqueeze(1)
+                            s_exp = torch.exp(log_sigmas).unsqueeze(1)
+                            p_exp = pis.unsqueeze(1)
+                            pdfs = (1.0 / (2.0 * s_exp)) * torch.exp(-torch.abs(g_exp - m_exp) / s_exp)
+                            pdf_arr = (p_exp * pdfs).sum(dim=2)[0].cpu().numpy()
+
+                        # Sharpness: std of the PDF
+                        x_grid = np.linspace(1.0, 5.0, 101)
+                        mean_pdf = float(np.dot(x_grid, pdf_arr) / (pdf_arr.sum() + 1e-9))
+                        var_pdf  = float(np.dot((x_grid - mean_pdf) ** 2, pdf_arr) / (pdf_arr.sum() + 1e-9))
+                        sharpness = float(np.sqrt(var_pdf))  # std → lower is sharper
+
+                        results.append({
+                            "rest_id": rid,
+                            "restaurant_name": _clean_text(row.get("restaurant_name")),
+                            "predicted_rating": expected_mu,
+                            "sharpness": sharpness,
+                            "pdf": pdf_arr,
+                        })
+
+                    if not results:
+                        st.warning("No predictions available — all restaurants may be rated or missing embeddings.")
+                    else:
+                        results.sort(key=lambda r: r["predicted_rating"], reverse=True)
+                        results = results[:n_display]
+
+                        # ── Aggregate sharpness KPIs ───────────────────
+                        avg_sharp = float(np.mean([r["sharpness"] for r in results]))
+                        avg_pred  = float(np.mean([r["predicted_rating"] for r in results]))
+
+                        k1, k2, k3 = st.columns(3)
+                        k1.metric("Restaurants Predicted", len(results))
+                        k2.metric("Avg Predicted Rating", f"{avg_pred:.2f} ⭐")
+                        k3.metric(
+                            "Avg PDF Std Dev",
+                            f"{avg_sharp:.3f}",
+                            help="Lower = model is more opinionated. >0.8 suggests uniform hedging.",
+                        )
+
+                        st.divider()
+                        st.subheader("Predicted Rating Distributions")
+                        st.caption(
+                            "Each chart shows the full probability density over ratings 1–5. "
+                            "Narrow peaks = opinionated; flat lines = uncertain."
+                        )
+
+                        # Two-column grid of area charts
+                        import altair as alt
+                        pairs = list(zip(results[::2], results[1::2]))
+                        if len(results) % 2 == 1:
+                            # Odd one out
+                            leftover = results[-1]
+                        else:
+                            leftover = None
+
+                        for left_r, right_r in pairs:
+                            lcol, rcol = st.columns(2)
+                            for col, r in ((lcol, left_r), (rcol, right_r)):
+                                x_grid = np.linspace(1.0, 5.0, 101)
+                                chart_df = pd.DataFrame({
+                                    "Rating": x_grid,
+                                    "Density": r["pdf"],
+                                })
+                                chart = (
+                                    alt.Chart(chart_df)
+                                    .mark_area(
+                                        line={"color": "#FF4B4B"},
+                                        color=alt.Gradient(
+                                            gradient="linear",
+                                            stops=[
+                                                alt.GradientStop(color="rgba(255,75,75,0.05)", offset=0),
+                                                alt.GradientStop(color="rgba(255,75,75,0.5)",  offset=1),
+                                            ],
+                                            x1=1, x2=1, y1=1, y2=0,
+                                        ),
+                                    )
+                                    .encode(
+                                        x=alt.X("Rating:Q", scale=alt.Scale(domain=[1, 5]), title="Rating"),
+                                        y=alt.Y("Density:Q", title="PDF"),
+                                        tooltip=[alt.Tooltip("Rating:Q", format=".2f"), alt.Tooltip("Density:Q", format=".4f")],
+                                    )
+                                    .properties(
+                                        title=alt.Title(
+                                            f"{r['restaurant_name']}",
+                                            subtitle=f"Predicted: {r['predicted_rating']:.2f}⭐  |  Std: {r['sharpness']:.3f}",
+                                        ),
+                                        height=180,
+                                    )
+                                )
+                                col.altair_chart(chart, use_container_width=True)
+
+                        if leftover:
+                            r = leftover
+                            x_grid = np.linspace(1.0, 5.0, 101)
+                            chart_df = pd.DataFrame({"Rating": x_grid, "Density": r["pdf"]})
+                            chart = (
+                                alt.Chart(chart_df)
+                                .mark_area(
+                                    line={"color": "#FF4B4B"},
+                                    color=alt.Gradient(
+                                        gradient="linear",
+                                        stops=[
+                                            alt.GradientStop(color="rgba(255,75,75,0.05)", offset=0),
+                                            alt.GradientStop(color="rgba(255,75,75,0.5)",  offset=1),
+                                        ],
+                                        x1=1, x2=1, y1=1, y2=0,
+                                    ),
+                                )
+                                .encode(
+                                    x=alt.X("Rating:Q", scale=alt.Scale(domain=[1, 5])),
+                                    y=alt.Y("Density:Q", title="PDF"),
+                                    tooltip=[alt.Tooltip("Rating:Q", format=".2f"), alt.Tooltip("Density:Q", format=".4f")],
+                                )
+                                .properties(
+                                    title=alt.Title(
+                                        f"{r['restaurant_name']}",
+                                        subtitle=f"Predicted: {r['predicted_rating']:.2f}⭐  |  Std: {r['sharpness']:.3f}",
+                                    ),
+                                    height=180,
+                                )
+                            )
+                            st.altair_chart(chart, use_container_width=True)
