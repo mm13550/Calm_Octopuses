@@ -1,4 +1,4 @@
-﻿"""Streamlit frontend for the Calm Octopuses raw data MVP.
+"""Streamlit frontend for the Calm Octopuses raw data MVP.
 
 This entrypoint stays lightweight: it reads the raw data files already present
 in the repo, lets users search by text or image, and renders restaurant-level
@@ -29,7 +29,7 @@ from core.data_loader import (
     _resolve_path,
 )
 from algorithms.retrieval import score_text_results, score_image_results, score_exact_dish_search
-from algorithms.mdn_regression import _score_mdn_recommendations
+from algorithms.mdn_regression import _score_mdn_recommendations, add_mdn_predictions
 from ui_components.cards import _render_result_card
 from ui_components.overview import _render_data_overview
 
@@ -61,6 +61,10 @@ def main() -> None:
                 if results_df.empty:
                     st.info("No matches found. Try a broader query.")
                 else:
+                    if st.session_state.user_ratings:
+                        with st.spinner("Adding personalized predicted ratings..."):
+                            results_df = add_mdn_predictions(results_df, st.session_state.user_ratings)
+                    
                     st.success(f"Found {len(results_df)} matching restaurants.")
                     for _, result_row in results_df.head(top_k).iterrows():
                         _render_result_card(result_row.to_dict(), "Match score")
@@ -83,6 +87,10 @@ def main() -> None:
                 if results_df.empty:
                     st.info("No visually similar restaurants found.")
                 else:
+                    if st.session_state.user_ratings:
+                        with st.spinner("Adding personalized predicted ratings..."):
+                            results_df = add_mdn_predictions(results_df, st.session_state.user_ratings)
+                            
                     st.success(f"Found {len(results_df)} visually similar restaurants.")
                     for _, result_row in results_df.head(top_k).iterrows():
                         _render_result_card(result_row.to_dict(), "Image similarity")
@@ -103,14 +111,13 @@ def main() -> None:
                 user_ratings = st.session_state.get("user_ratings", {})
                 if user_ratings:
                     with st.spinner("Ranking by predicted rating..."):
-                        scored_df = _score_mdn_recommendations(exact_results_df, user_ratings)
+                        scored_df = add_mdn_predictions(exact_results_df, user_ratings)
+                        if "predicted_rating" in scored_df.columns:
+                            scored_df = scored_df.sort_values(by="predicted_rating", ascending=False)
                     if not scored_df.empty:
                         exact_results_df = scored_df
-                        sort_label = "Predicted Rating"
-                    else:
-                        sort_label = "Exact Match"
-                else:
-                    sort_label = "Exact Match"
+                
+                sort_label = "Exact Match"
 
                 st.success(f"Found {len(exact_results_df)} restaurants with exact matches.")
                 for _, result_row in exact_results_df.iterrows():

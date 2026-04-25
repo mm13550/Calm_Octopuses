@@ -440,3 +440,60 @@ def _score_mdn_recommendations(catalog: pd.DataFrame, user_ratings: Dict[str, fl
         
     result_df = pd.DataFrame(rows)
     return result_df.sort_values(by="score", ascending=False)
+def add_mdn_predictions(catalog: pd.DataFrame, user_ratings: Dict[str, float]) -> pd.DataFrame:
+    if catalog.empty or not user_ratings:
+        return catalog
+        
+    model = load_mdn_model()
+    if model is None:
+        return catalog
+        
+    from core.data_loader import load_restaurant_embeddings, _clean_text
+    embeddings_map = load_restaurant_embeddings()
+    
+    hist_vecs = []
+    hist_weights = []
+    for rest_id, rating in user_ratings.items():
+        vec = embeddings_map.get(rest_id)
+        if vec is not None:
+            weight = float(rating) / 5.0
+            hist_vecs.append(torch.from_numpy(vec).float() * weight)
+            hist_weights.append(weight)
+            
+    if not hist_vecs:
+        return catalog
+        
+    user_vec = torch.stack(hist_vecs).sum(dim=0) / sum(hist_weights)
+    mean_hist_rating = sum(user_ratings.values()) / len(user_ratings)
+    scalar_feature = torch.tensor([mean_hist_rating], dtype=torch.float32)
+    
+    rows = []
+    for row in catalog.to_dict(orient="records"):
+        rest_id = _clean_text(row.get("rest_id"))
+            
+        target_vec_np = embeddings_map.get(rest_id)
+        if target_vec_np is None:
+            rows.append(row)
+            continue
+            
+        target_vec = torch.from_numpy(target_vec_np).float()
+        feature_vec = torch.cat([user_vec, target_vec, scalar_feature]).unsqueeze(0)
+        
+        with torch.no_grad():
+            mus, log_sigmas, pi_logits = model(feature_vec)
+            pis = torch.softmax(pi_logits, dim=1)
+            expected_mu = (mus * pis).sum(dim=1).item()
+            
+            # Calculate PDF for HDR Visualization
+            grid_y = torch.linspace(1.0, 5.0, 101)
+            grid_y_expanded = grid_y.view(1, -1, 1)
+            mus_exp = mus.unsqueeze(1)
+            sigmas_exp = torch.exp(log_sigmas).unsqueeze(1)
+            pis_exp = pis.unsqueeze(1)
+            component_pdfs = (1.0 / (2.0 * sigmas_exp)) * torch.exp(-torch.abs(grid_y_expanded - mus_exp) / sigmas_exp)
+            total_pdfs = (pis_exp * component_pdfs).sum(dim=2)
+            pdf_array = total_pdfs[0].cpu().numpy()
+            
+        rows.append({**row, "predicted_rating": expected_mu, "pdf_grid": pdf_array})
+        
+    return pd.DataFrame(rows)

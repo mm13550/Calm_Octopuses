@@ -1,4 +1,4 @@
-﻿import streamlit as st
+import streamlit as st
 from typing import Dict, Any
 from core.data_loader import _clean_text, _resolve_path, _truncate
 
@@ -20,7 +20,10 @@ def _render_result_card(row: Dict[str, Any], score_label: str) -> None:
                 f"{_clean_text(row.get('rest_id'))} • {_clean_text(row.get('borough')) or 'N/A'} • "
                 f"{_clean_text(row.get('michelin_category')) or 'N/A'}"
             )
-            st.metric(score_label, f"{float(row.get('score', 0.0)):.3f}")
+            metrics = st.columns(2)
+            metrics[0].metric(score_label, f"{float(row.get('score', 0.0)):.3f}")
+            if "predicted_rating" in row:
+                metrics[1].metric("Predicted Rating", f"{float(row.get('predicted_rating', 0.0)):.1f} ⭐")
 
             homepage = _clean_text(row.get("homepage"))
             if homepage:
