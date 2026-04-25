@@ -717,14 +717,74 @@ with tab5:
                         )
 
                         st.divider()
-                        st.subheader("Predicted Rating Distributions")
-                        st.caption(
-                            "Each chart shows the full probability density over ratings 1â€“5. "
-                            "Narrow peaks = opinionated; flat lines = uncertain."
-                        )
-
-                        # Two-column grid of area charts
                         import altair as alt
+
+                        # HDR helper
+                        def _compute_hdr_segments(pdf, x_grid, mass_threshold):
+                            total = pdf.sum()
+                            if total == 0:
+                                return []
+                            norm_pdf = pdf / total
+                            sorted_idx = np.argsort(norm_pdf)[::-1]
+                            cumulative = 0.0
+                            in_hdr = np.zeros(len(pdf), dtype=bool)
+                            for i in sorted_idx:
+                                in_hdr[i] = True
+                                cumulative += norm_pdf[i]
+                                if cumulative >= mass_threshold:
+                                    break
+                            segments = []
+                            start = None
+                            for i, v in enumerate(in_hdr):
+                                if v and start is None:
+                                    start = x_grid[i]
+                                elif not v and start is not None:
+                                    segments.append((start, x_grid[i - 1]))
+                                    start = None
+                            if start is not None:
+                                segments.append((start, x_grid[-1]))
+                            return segments
+
+                        # Build scatter data
+                        x_grid_hdr = np.linspace(1.0, 5.0, 101)
+                        scatter_rows, rows_50, rows_95 = [], [], []
+                        for _sidx, _r in enumerate(results):
+                            _segs50 = _compute_hdr_segments(_r['pdf'], x_grid_hdr, 0.50)
+                            _segs95 = _compute_hdr_segments(_r['pdf'], x_grid_hdr, 0.95)
+                            _base = {'idx': _sidx, 'name': _r['restaurant_name'],
+                                     'predicted_rating': _r['predicted_rating'], 'sharpness': _r['sharpness']}
+                            scatter_rows.append(_base)
+                            for lo, hi in _segs50:
+                                rows_50.append({**_base, 'Seg_Low': lo, 'Seg_High': hi})
+                            for lo, hi in _segs95:
+                                rows_95.append({**_base, 'Seg_Low': lo, 'Seg_High': hi})
+
+                        scatter_df = pd.DataFrame(scatter_rows)
+                        _ec = ['idx', 'name', 'predicted_rating', 'sharpness', 'Seg_Low', 'Seg_High']
+                        df_50 = pd.DataFrame(rows_50) if rows_50 else pd.DataFrame(columns=_ec)
+                        df_95 = pd.DataFrame(rows_95) if rows_95 else pd.DataFrame(columns=_ec)
+
+                        st.subheader('Predicted Ratings with Confidence Intervals')
+                        st.caption('Restaurants sorted by predicted rating (left=highest). Red bar = 50% HDR, grey halo = 95% HDR. Narrow bars = opinionated model.')
+                        _x = alt.X('idx:O', title='Restaurant (sorted by predicted rating)', axis=alt.Axis(labels=False, ticks=False))
+                        _halo = (alt.Chart(df_95).mark_errorbar(opacity=0.35, thickness=1)
+                            .encode(x=_x, y=alt.Y('Seg_Low:Q', title='Rating [1-5]', scale=alt.Scale(domain=[1, 5])),
+                                    y2=alt.Y2('Seg_High:Q'), color=alt.value('rgba(150,150,150,0.45)'),
+                                    tooltip=['name:N', alt.Tooltip('predicted_rating:Q', format='.2f'), alt.Tooltip('sharpness:Q', format='.3f')]))
+                        _core = (alt.Chart(df_50).mark_errorbar(opacity=0.75, thickness=4)
+                            .encode(x=_x, y=alt.Y('Seg_Low:Q', title=''), y2=alt.Y2('Seg_High:Q'),
+                                    color=alt.value('rgba(255,75,75,0.75)')))
+                        _pts = (alt.Chart(scatter_df).mark_circle(size=70)
+                            .encode(x=_x, y=alt.Y('predicted_rating:Q', scale=alt.Scale(domain=[1, 5])),
+                                    color=alt.Color('sharpness:Q', scale=alt.Scale(scheme='redyellowgreen', reverse=True),
+                                                    legend=alt.Legend(title='PDF Std (lower=sharper)')),
+                                    tooltip=['name:N', alt.Tooltip('predicted_rating:Q', format='.2f'), alt.Tooltip('sharpness:Q', format='.3f')]))
+                        st.altair_chart((_halo + _core + _pts).properties(height=380), use_container_width=True)
+
+                        st.divider()
+                        st.subheader('Per-Restaurant Rating Distributions')
+                        st.caption('Each chart shows the full probability density over ratings 1-5. Narrow peaks = opinionated; flat lines = uncertain.')
+
                         pairs = list(zip(results[::2], results[1::2]))
                         if len(results) % 2 == 1:
                             # Odd one out
