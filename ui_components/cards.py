@@ -90,7 +90,7 @@ def _render_sentiment(rest_id: str) -> None:
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
     )
-    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False}, key=f"radar_{rest_id}")
 
 
 # ── Main card renderer ────────────────────────────────────────────────────────
@@ -176,3 +176,5 @@ def _render_result_card(row: Dict[str, Any], score_label: str) -> None:
         rest_id = _clean_text(row.get("rest_id", ""))
         if rest_id:
             _render_sentiment(rest_id)
+
+        
