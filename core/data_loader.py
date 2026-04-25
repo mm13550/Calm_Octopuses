@@ -1,0 +1,260 @@
+﻿import json
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+import numpy as np
+import pandas as pd
+import streamlit as st
+
+import sys
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+DATA_DIR = PROJECT_ROOT / "data"
+LOOKUP_CSV = DATA_DIR / "csv" / "restaurant_lookup.csv"
+REVIEWS_CSV = DATA_DIR / "social_reviews.csv"
+IMAGES_CSV = DATA_DIR / "social_images.csv"
+MENUS_JSON = DATA_DIR / "extracted_menus" / "final_parsed_menus.json"
+BIOS_JSON = DATA_DIR / "extracted_bios" / "restaurant_bios_joinable.json"
+EMBEDDINGS_JSONL = DATA_DIR / "embeddings" / "restaurant_profiles.jsonl"
+MENU_EMBEDDINGS_JSONL = DATA_DIR / "embeddings" / "menu_embeddings.jsonl"
+REVIEW_EMBEDDINGS_JSONL = DATA_DIR / "embeddings" / "review_embeddings.jsonl"
+FOOD_EMBEDDINGS_JSONL = DATA_DIR / "embeddings" / "image_embeddings_food.jsonl"
+INTERIOR_EMBEDDINGS_JSONL = DATA_DIR / "embeddings" / "image_embeddings_interior.jsonl"
+DEFAULT_CLIP_MODEL_ID = "openai/clip-vit-base-patch32"
+
+def _clean_text(value: Any) -> str:
+    if value is None:
+        return ""
+    return " ".join(str(value).replace("\n", " ").split())
+
+def _truncate(text: str, limit: int = 220) -> str:
+    text = _clean_text(text)
+    if len(text) <= limit:
+        return text
+    return text[: limit - 3].rstrip() + "..."
+
+def _load_json_records(path: Path) -> List[Dict[str, Any]]:
+    if not path.exists():
+        return []
+
+    with path.open("r", encoding="utf-8") as handle:
+        data = json.load(handle)
+
+    if isinstance(data, list):
+        return [row for row in data if isinstance(row, dict)]
+
+    if isinstance(data, dict):
+        for key in ("records", "items", "data", "results"):
+            value = data.get(key)
+            if isinstance(value, list):
+                return [row for row in value if isinstance(row, dict)]
+
+    return []
+
+def _load_csv(path: Path) -> pd.DataFrame:
+    if not path.exists():
+        return pd.DataFrame()
+    return pd.read_csv(path, dtype=str, keep_default_na=False).fillna("")
+
+@st.cache_data(show_spinner=False)
+def load_lookup_df() -> pd.DataFrame:
+    return _load_csv(LOOKUP_CSV)
+
+@st.cache_data(show_spinner=False)
+def load_reviews_df() -> pd.DataFrame:
+    return _load_csv(REVIEWS_CSV)
+
+@st.cache_data(show_spinner=False)
+def load_images_df() -> pd.DataFrame:
+    return _load_csv(IMAGES_CSV)
+
+@st.cache_data(show_spinner=False)
+def load_menus_df() -> pd.DataFrame:
+    rows = _load_json_records(MENUS_JSON)
+    return pd.DataFrame(rows)
+
+@st.cache_data(show_spinner=False)
+def load_bios_df() -> pd.DataFrame:
+    rows = _load_json_records(BIOS_JSON)
+    if not rows:
+        return pd.DataFrame()
+
+    flattened: List[Dict[str, Any]] = []
+    for row in rows:
+        bio = row.get("bio", {})
+        if isinstance(bio, dict):
+            bio_text = " ".join(
+                _clean_text(bio.get(field)) for field in ("description", "culinary_style", "history")
+            ).strip()
+        else:
+            bio_text = _clean_text(bio)
+
+        flattened.append(
+            {
+                "rest_id": _clean_text(row.get("rest_id")),
+                "restaurant_name": _clean_text(row.get("name")),
+                "bio_text": bio_text,
+                "match_source": _clean_text(row.get("match_source")),
+            }
+        )
+
+    return pd.DataFrame(flattened)
+
+@st.cache_resource(show_spinner=False)
+def load_restaurant_embeddings() -> Dict[str, np.ndarray]:
+    if not EMBEDDINGS_JSONL.exists():
+        return {}
+
+    embeddings: Dict[str, np.ndarray] = {}
+    with EMBEDDINGS_JSONL.open("r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                data = json.loads(line)
+                rest_id = _clean_text(data.get("restaurant_id", data.get("rest_id")))
+                vector = data.get("vector")
+                if rest_id and vector:
+                    embeddings[rest_id] = np.array(vector, dtype=np.float32)
+            except json.JSONDecodeError:
+                continue
+
+    return embeddings
+
+@st.cache_resource(show_spinner=False)
+def load_finegrained_embeddings(file_path_str: str) -> Dict[str, List[np.ndarray]]:
+    file_path = Path(file_path_str)
+    if not file_path.exists():
+        return {}
+        
+    embeddings = {}
+    with file_path.open("r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line: continue
+            try:
+                data = json.loads(line)
+                rest_id = _clean_text(data.get("restaurant_id", data.get("rest_id")))
+                vector = data.get("vector")
+                if rest_id and vector:
+                    if rest_id not in embeddings:
+                        embeddings[rest_id] = []
+                    embeddings[rest_id].append(np.array(vector, dtype=np.float32))
+            except json.JSONDecodeError:
+                continue
+    return embeddings
+
+def _resolve_path(path_value: str) -> Path:
+    path = Path(_clean_text(path_value))
+    if path.is_absolute():
+        return path
+    return PROJECT_ROOT / path
+
+def _first_existing_path(paths: List[str]) -> Optional[str]:
+    for raw_path in paths:
+        candidate = _resolve_path(raw_path)
+        if candidate.exists():
+            return str(candidate)
+    return str(_resolve_path(paths[0])) if paths else None
+
+def _join_snippets(values: List[str], limit: int = 6) -> str:
+    snippets = [_clean_text(value) for value in values if _clean_text(value)]
+    return " ".join(snippets[:limit]).strip()
+
+def _extract_menu_items(menu_rows: List[Dict[str, Any]], limit: int = 6) -> List[str]:
+    items: List[str] = []
+    for row in menu_rows[:limit]:
+        dish = _clean_text(row.get("dish_name"))
+        ingredients = _clean_text(row.get("ingredients"))
+        price = _clean_text(row.get("price"))
+        parts = [part for part in [dish, ingredients, f"${price}" if price else ""] if part]
+        if parts:
+            items.append(" — ".join(parts))
+    return items
+
+def _extract_review_snippets(review_rows: List[Dict[str, Any]], limit: int = 4) -> List[str]:
+    snippets: List[str] = []
+    for row in review_rows[:limit]:
+        text = _clean_text(row.get("text"))
+        rating = _clean_text(row.get("rating"))
+        if text:
+            snippets.append(f"{text} {'(⭐ ' + rating + ')' if rating else ''}".strip())
+    return snippets
+
+@st.cache_data(show_spinner=False)
+def build_restaurant_catalog() -> pd.DataFrame:
+    # Cache buster: 1
+    lookup_df = load_lookup_df()
+    reviews_df = load_reviews_df()
+    images_df = load_images_df()
+    menus_df = load_menus_df()
+    bios_df = load_bios_df()
+
+    if lookup_df.empty:
+        return pd.DataFrame()
+
+    bio_map: Dict[str, str] = {}
+    if not bios_df.empty:
+        for row in bios_df.to_dict(orient="records"):
+            rest_id = _clean_text(row.get("rest_id"))
+            if not rest_id:
+                continue
+            bio_map[rest_id] = _clean_text(row.get("bio_text"))
+
+    records: List[Dict[str, Any]] = []
+    menu_groups = menus_df.groupby("rest_id") if not menus_df.empty and "rest_id" in menus_df.columns else None
+    review_groups = reviews_df.groupby("rest_id") if not reviews_df.empty and "rest_id" in reviews_df.columns else None
+    image_groups = images_df.groupby("rest_id") if not images_df.empty and "rest_id" in images_df.columns else None
+
+    lookup_records = lookup_df.to_dict(orient="records")
+    lookup_records.sort(key=lambda row: _clean_text(row.get("name")).lower())
+
+    for row in lookup_records:
+        rest_id = _clean_text(row.get("rest_id"))
+        if not rest_id:
+            continue
+
+        menu_rows = menu_groups.get_group(rest_id).to_dict(orient="records") if menu_groups is not None and rest_id in menu_groups.groups else []
+        review_rows = review_groups.get_group(rest_id).to_dict(orient="records") if review_groups is not None and rest_id in review_groups.groups else []
+        image_rows = image_groups.get_group(rest_id).to_dict(orient="records") if image_groups is not None and rest_id in image_groups.groups else []
+
+        image_paths = [_clean_text(image_row.get("image_path")) for image_row in image_rows if _clean_text(image_row.get("image_path"))]
+        representative_image_path = _first_existing_path(image_paths)
+
+        menu_items = _extract_menu_items(menu_rows)
+        review_snippets = _extract_review_snippets(review_rows)
+        bio_text = bio_map.get(rest_id, "")
+
+        search_text = " ".join(
+            [
+                _clean_text(row.get("name")),
+                _clean_text(row.get("borough")),
+                _clean_text(row.get("michelin_category")),
+                bio_text,
+                _join_snippets(menu_items),
+                _join_snippets(review_snippets),
+            ]
+        ).strip()
+
+        records.append(
+            {
+                "rest_id": rest_id,
+                "restaurant_name": _clean_text(row.get("name")),
+                "homepage": _clean_text(row.get("homepage")),
+                "borough": _clean_text(row.get("borough")),
+                "michelin_category": _clean_text(row.get("michelin_category")),
+                "bio_text": bio_text,
+                "menu_items": menu_items,
+                "review_snippets": review_snippets,
+                "image_paths": image_paths,
+                "representative_image_path": representative_image_path,
+                "menu_count": len(menu_rows),
+                "review_count": len(review_rows),
+                "image_count": len(image_rows),
+                "has_menu": bool(menu_rows),
+                "has_reviews": bool(review_rows),
+                "has_food_images": bool(image_rows),
+                "search_text": search_text,
+            }
+        )
+
+    return pd.DataFrame(records)
