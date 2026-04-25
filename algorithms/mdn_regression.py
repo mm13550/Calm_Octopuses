@@ -6,11 +6,17 @@ Predicts Mixture of Laplace components for user-restaurant pairs.
 import os
 import json
 import torch
+import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import EarlyStopping
+
+def get_michelin_centroid(embeddings_dict):
+    """Computes the average embedding vector across all restaurant embeddings."""
+    embs = np.array(list(embeddings_dict.values()))
+    return np.mean(embs, axis=0)
 
 class UserRestaurantDataset(Dataset):
     """
@@ -25,7 +31,7 @@ class UserRestaurantDataset(Dataset):
     Records whose target restaurant or whose entire history lack embeddings are
     silently dropped during ``__init__``.
     """
-    def __init__(self, json_path, embeddings_paths):
+    def __init__(self, json_path, embeddings_paths, metadata_paths=None):
         """
         Initialise the dataset.
 
@@ -49,6 +55,14 @@ class UserRestaurantDataset(Dataset):
             emb = torch.load(path, map_location='cpu', weights_only=False)
             self.restaurant_embeddings.update(emb)
         print(f"Total merged embeddings available: {len(self.restaurant_embeddings)}")
+        
+        self.metadata = {}
+        if metadata_paths:
+            for mpath in metadata_paths:
+                if os.path.exists(mpath):
+                    print(f"Loading metadata from {os.path.basename(mpath)}")
+                    with open(mpath, 'r') as f:
+                        self.metadata.update(json.load(f))
         
         # Filter out records where target or any historical business isn't in embeddings
         self.valid_data = []
@@ -80,13 +94,6 @@ class UserRestaurantDataset(Dataset):
     def __getitem__(self, idx):
         """
         Return a single training sample as a tuple ``(feature_vec, rating, sample_weight)``.
-
-        Returns
-        -------
-        feature_vec : torch.Tensor  shape (1025,)
-        rating : torch.Tensor       scalar float in [1, 5]
-        sample_weight : torch.Tensor  log(1 + history_length), used to up-weight
-                                      users with richer history during loss computation.
         """
         row = self.valid_data[idx]
         
@@ -94,35 +101,51 @@ class UserRestaurantDataset(Dataset):
         target_vec = self.restaurant_embeddings[row['target_id']]
         target_vec = torch.from_numpy(target_vec).float()
         
-        # 2. User Taste Embedding (512-D)
-        # Weighted mean of historical restaurant embeddings
-        hist_vecs = []
-        hist_weights = []
+        # 2. User Taste Embeddings (Dual: Like & Dislike)
+        like_vecs, like_weights = [], []
+        dislike_vecs, dislike_weights = [], []
+        
         for b_id, r in zip(row['hist_ids'], row['hist_ratings']):
             vec = torch.from_numpy(self.restaurant_embeddings[b_id]).float()
-            weight = r / 5.0 # normalize 1-5 scale
-            hist_vecs.append(vec * weight)
-            hist_weights.append(weight)
+            if r >= 3.5:
+                w = r / 5.0
+                like_vecs.append(vec * w)
+                like_weights.append(w)
+            else:
+                w = (6.0 - r) / 5.0 
+                dislike_vecs.append(vec * w)
+                dislike_weights.append(w)
+
+        if like_vecs:
+            user_like_vec = torch.stack(like_vecs).sum(dim=0) / sum(like_weights)
+            user_like_vec = user_like_vec / (torch.linalg.norm(user_like_vec) + 1e-9)
+        else:
+            user_like_vec = torch.zeros(512)
             
-        # Sum and normalize by total weight
-        user_vec = torch.stack(hist_vecs).sum(dim=0) / sum(hist_weights)
+        if dislike_vecs:
+            user_dislike_vec = torch.stack(dislike_vecs).sum(dim=0) / sum(dislike_weights)
+            user_dislike_vec = user_dislike_vec / (torch.linalg.norm(user_dislike_vec) + 1e-9)
+        else:
+            user_dislike_vec = torch.zeros(512)
         
-        # Add scalar for absolute rating average
         mean_hist_rating = sum(row['hist_ratings']) / len(row['hist_ratings'])
         scalar_feature = torch.tensor([mean_hist_rating], dtype=torch.float32)
+
+        # 3. Target Metadata (3-D)
+        meta = self.metadata.get(row['target_id'], {'stars': 4.0, 'review_count': 1, 'price': 2})
+        t_stars = torch.tensor([meta.get('stars', 4.0) / 5.0], dtype=torch.float32)
+        t_reviews = torch.tensor([torch.log1p(torch.tensor(meta.get('review_count', 1), dtype=torch.float32)) / 10.0], dtype=torch.float32)
+        t_price = torch.tensor([meta.get('price', 2) / 4.0], dtype=torch.float32)
+        scalar_features = torch.cat([scalar_feature, t_stars, t_reviews, t_price])
+
+        feature_vec = torch.cat([user_like_vec, user_dislike_vec, target_vec, scalar_features])
         
-        # 3. Concatenate (1025-D)
-        feature_vec = torch.cat([user_vec, target_vec, scalar_feature])
-        
-        # 4. Compute Sample Confidence Weight (logarithmic scaling of history size)
-        # Users with large histories produce a higher weight multiplier on the loss
         raw_count = len(row['hist_ids'])
         sample_weight = torch.log1p(torch.tensor(raw_count, dtype=torch.float32))
         
         return feature_vec, torch.tensor(row['target_rating'], dtype=torch.float32), sample_weight
 
-
-def mixture_laplace_nll_loss(mus, log_sigmas, pi_logits, y_true, sample_weights=None, sharpness_alpha=0.5, entropy_beta=0.2):
+def mixture_laplace_nll_loss(mus, log_sigmas, pi_logits, y_true, sample_weights=None, sharpness_alpha=1.2, entropy_beta=0.05):
     """
     Negative Log Likelihood of a Mixture of Laplaces.
     """
@@ -168,7 +191,7 @@ class MDNScorer(pl.LightningModule):
     Mus are bounded to [0.9, 5.1] via a sigmoid gate to prevent extreme extrapolation.
     Log-sigmas are clamped to [-3.5, 0.5] for numerical stability.
     """
-    def __init__(self, input_dim=1025, hidden_dims=[1024, 1024, 512], k=3, lr=8e-4, sharpness_alpha=0.8, entropy_beta=0.2):
+    def __init__(self, input_dim=1540, hidden_dims=[1024, 1024, 512], k=3, lr=8e-4, sharpness_alpha=1.2, entropy_beta=0.05):
         """
         Initialise MDNScorer.
 
@@ -465,7 +488,7 @@ from typing import Dict
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
-MDN_CHECKPOINT = DATA_DIR / "yelp_sandbox" / "mdn_models" / "lightning_logs" / "version_0" / "checkpoints" / "epoch=9-step=270.ckpt"
+MDN_CHECKPOINT = DATA_DIR / "yelp_sandbox" / "mdn_models" / "clip_v2" / "clip_v2_full.ckpt"
 
 @st.cache_resource(show_spinner=False)
 def load_mdn_model():
@@ -484,27 +507,30 @@ def load_mdn_model():
     model.eval()
     return model
 
+@st.cache_resource(show_spinner=False)
+def get_michelin_centroid():
+    """
+    Compute and return the mean vector (centroid) of all Michelin restaurant embeddings.
+    
+    This is used for Centroid Subtraction to amplify the discriminative signal 
+    within the tightly-clustered Michelin embedding space.
+    """
+    from core.data_loader import load_restaurant_embeddings
+    embeddings_map = load_restaurant_embeddings()
+    if not embeddings_map:
+        return None
+    all_vecs = np.stack(list(embeddings_map.values()))
+    centroid = all_vecs.mean(axis=0)
+    return torch.from_numpy(centroid).float()
+
+def _center_vec(vec: torch.Tensor, centroid: torch.Tensor) -> torch.Tensor:
+    """Subtract the centroid and re-normalise the vector."""
+    if centroid is None:
+        return vec
+    centered = vec - centroid
+    return centered / (centered.norm() + 1e-8)
+
 def _score_mdn_recommendations(catalog: pd.DataFrame, user_ratings: Dict[str, float]) -> pd.DataFrame:
-    """
-    Score every unrated restaurant in *catalog* and return them sorted by predicted rating.
-
-    Restaurants the user has already rated are excluded from results.
-    Restaurants without a CLIP embedding are skipped silently.
-
-    Parameters
-    ----------
-    catalog : pd.DataFrame
-        The full restaurant catalog from ``build_restaurant_catalog()``.
-    user_ratings : dict[str, float]
-        Mapping of ``rest_id`` → user rating (1–5) for the session's rated restaurants.
-
-    Returns
-    -------
-    pd.DataFrame
-        Subset of catalog rows with additional columns ``score`` (expected MDN mean)
-        and ``pdf_grid`` (101-point Laplace mixture PDF over the [1, 5] range),
-        sorted descending by ``score``.
-    """
     if catalog.empty or not user_ratings:
         return pd.DataFrame()
         
@@ -513,44 +539,63 @@ def _score_mdn_recommendations(catalog: pd.DataFrame, user_ratings: Dict[str, fl
         st.error("MDN checkpoint not found.")
         return pd.DataFrame()
         
-    from core.data_loader import load_restaurant_embeddings, _clean_text
     embeddings_map = load_restaurant_embeddings()
+    centroid = get_michelin_centroid()
     
-    hist_vecs = []
-    hist_weights = []
-    for rest_id, rating in user_ratings.items():
-        vec = embeddings_map.get(rest_id)
+    # Load metadata
+    meta_path = os.path.join('data', 'embeddings', 'restaurant_metadata.json')
+    metadata = {}
+    if os.path.exists(meta_path):
+        with open(meta_path, 'r') as f:
+            metadata = json.load(f)
+
+    like_vecs, like_weights = [], []
+    dislike_vecs, dislike_weights = [], []
+    for rid, rating in user_ratings.items():
+        vec = embeddings_map.get(rid)
         if vec is not None:
-            weight = float(rating) / 5.0
-            hist_vecs.append(torch.from_numpy(vec).float() * weight)
-            hist_weights.append(weight)
-            
-    if not hist_vecs:
+            w = float(rating) / 5.0
+            centered_vec = _center_vec(torch.from_numpy(vec).float(), centroid)
+            if rating >= 3.5:
+                like_vecs.append(centered_vec * w)
+                like_weights.append(w)
+            else:
+                aw = (6.0 - rating) / 5.0
+                dislike_vecs.append(centered_vec * aw)
+                dislike_weights.append(aw)
+
+    if not like_vecs and not dislike_vecs:
         return pd.DataFrame()
-        
-    user_vec = torch.stack(hist_vecs).sum(dim=0) / sum(hist_weights)
-    mean_hist_rating = sum(user_ratings.values()) / len(user_ratings)
-    scalar_feature = torch.tensor([mean_hist_rating], dtype=torch.float32)
+
+    user_like_vec = torch.stack(like_vecs).sum(dim=0) / sum(like_weights) if like_vecs else torch.zeros(512)
+    if like_vecs: user_like_vec = user_like_vec / (torch.linalg.norm(user_like_vec) + 1e-9)
     
+    user_dislike_vec = torch.stack(dislike_vecs).sum(dim=0) / sum(dislike_weights) if dislike_vecs else torch.zeros(512)
+    if dislike_vecs: user_dislike_vec = user_dislike_vec / (torch.linalg.norm(user_dislike_vec) + 1e-9)
+    
+    mean_hist_rating = sum(user_ratings.values()) / len(user_ratings)
+    scalar_feats = torch.tensor([mean_hist_rating], dtype=torch.float32)
+
     rows = []
     for row in catalog.to_dict(orient="records"):
         rest_id = _clean_text(row.get("rest_id"))
         if rest_id in user_ratings:
             continue
-            
         target_vec_np = embeddings_map.get(rest_id)
         if target_vec_np is None:
             continue
-            
-        target_vec = torch.from_numpy(target_vec_np).float()
-        feature_vec = torch.cat([user_vec, target_vec, scalar_feature]).unsqueeze(0)
         
+        target_vec = _center_vec(torch.from_numpy(target_vec_np).float(), centroid)
+        m = metadata.get(rest_id, {'stars': 4.0, 'review_count': 1, 'price': 2})
+        t_meta = torch.tensor([m.get('stars', 4.0)/5.0, torch.log1p(torch.tensor(m.get('review_count', 1)))/10.0, m.get('price', 2)/4.0], dtype=torch.float32)
+        all_scalars = torch.cat([scalar_feats, t_meta])
+        
+        feature_vec = torch.cat([user_like_vec, user_dislike_vec, target_vec, all_scalars]).unsqueeze(0)
         with torch.no_grad():
             mus, log_sigmas, pi_logits = model(feature_vec)
             pis = torch.softmax(pi_logits, dim=1)
             expected_mu = (mus * pis).sum(dim=1).item()
             
-            # Calculate PDF for HDR Visualization
             grid_y = torch.linspace(1.0, 5.0, 101)
             grid_y_expanded = grid_y.view(1, -1, 1)
             mus_exp = mus.unsqueeze(1)
@@ -559,85 +604,75 @@ def _score_mdn_recommendations(catalog: pd.DataFrame, user_ratings: Dict[str, fl
             component_pdfs = (1.0 / (2.0 * sigmas_exp)) * torch.exp(-torch.abs(grid_y_expanded - mus_exp) / sigmas_exp)
             total_pdfs = (pis_exp * component_pdfs).sum(dim=2)
             pdf_array = total_pdfs[0].cpu().numpy()
-            
         rows.append({**row, "score": expected_mu, "pdf_grid": pdf_array})
-        
-    if not rows:
-        return pd.DataFrame()
-        
-    result_df = pd.DataFrame(rows)
-    return result_df.sort_values(by="score", ascending=False)
+    return pd.DataFrame(rows).sort_values(by="score", ascending=False)
+
+
 def add_mdn_predictions(catalog: pd.DataFrame, user_ratings: Dict[str, float]) -> pd.DataFrame:
-    """
-    Annotate every row of *catalog* with a predicted or actual rating.
-
-    Unlike ``_score_mdn_recommendations``, this function **keeps** already-rated
-    restaurants in the result and marks them with an ``actual_rating`` column
-    instead of running MDN inference.  Unrated restaurants with a CLIP embedding
-    receive a ``predicted_rating`` column (MDN expected mean) and a ``pdf_grid``
-    column (101-point mixture PDF).  Unrated restaurants without an embedding are
-    returned as-is with neither column set.
-
-    Parameters
-    ----------
-    catalog : pd.DataFrame
-        Restaurant catalog rows to annotate.
-    user_ratings : dict[str, float]
-        Mapping of ``rest_id`` → user rating (1–5).
-
-    Returns
-    -------
-    pd.DataFrame
-        Annotated copy of *catalog*.
-    """
     if catalog.empty or not user_ratings:
         return catalog
-        
+    
+    embeddings_map = load_restaurant_embeddings()
+    centroid = get_michelin_centroid()
     model = load_mdn_model()
     if model is None:
         return catalog
-        
-    from core.data_loader import load_restaurant_embeddings, _clean_text
-    embeddings_map = load_restaurant_embeddings()
-    
-    hist_vecs = []
-    hist_weights = []
-    for rest_id, rating in user_ratings.items():
-        vec = embeddings_map.get(rest_id)
+
+    meta_path = os.path.join('data', 'embeddings', 'restaurant_metadata.json')
+    metadata = {}
+    if os.path.exists(meta_path):
+        with open(meta_path, 'r') as f:
+            metadata = json.load(f)
+
+    like_vecs, like_weights = [], []
+    dislike_vecs, dislike_weights = [], []
+    for rid, rating in user_ratings.items():
+        vec = embeddings_map.get(rid)
         if vec is not None:
-            weight = float(rating) / 5.0
-            hist_vecs.append(torch.from_numpy(vec).float() * weight)
-            hist_weights.append(weight)
-            
-    if not hist_vecs:
+            w = float(rating) / 5.0
+            centered_vec = _center_vec(torch.from_numpy(vec).float(), centroid)
+            if rating >= 3.5:
+                like_vecs.append(centered_vec * w)
+                like_weights.append(w)
+            else:
+                aw = (6.0 - rating) / 5.0
+                dislike_vecs.append(centered_vec * aw)
+                dislike_weights.append(aw)
+
+    if not like_vecs and not dislike_vecs:
         return catalog
-        
-    user_vec = torch.stack(hist_vecs).sum(dim=0) / sum(hist_weights)
-    mean_hist_rating = sum(user_ratings.values()) / len(user_ratings)
-    scalar_feature = torch.tensor([mean_hist_rating], dtype=torch.float32)
+
+    user_like_vec = torch.stack(like_vecs).sum(dim=0) / sum(like_weights) if like_vecs else torch.zeros(512)
+    if like_vecs: user_like_vec = user_like_vec / (torch.linalg.norm(user_like_vec) + 1e-9)
+    user_dislike_vec = torch.stack(dislike_vecs).sum(dim=0) / sum(dislike_weights) if dislike_vecs else torch.zeros(512)
+    if dislike_vecs: user_dislike_vec = user_dislike_vec / (torch.linalg.norm(user_dislike_vec) + 1e-9)
     
+    mean_hist_rating = sum(user_ratings.values()) / len(user_ratings)
+    scalar_feats = torch.tensor([mean_hist_rating], dtype=torch.float32)
+
     rows = []
     for row in catalog.to_dict(orient="records"):
-        rest_id = _clean_text(row.get("rest_id"))
-        
-        if rest_id in user_ratings:
-            rows.append({**row, "actual_rating": user_ratings[rest_id]})
+        rid = _clean_text(row.get("rest_id"))
+        if rid in user_ratings:
+            rows.append({**row, "actual_rating": user_ratings[rid]})
             continue
-            
-        target_vec_np = embeddings_map.get(rest_id)
+        
+        target_vec_np = embeddings_map.get(rid)
         if target_vec_np is None:
             rows.append(row)
             continue
-            
-        target_vec = torch.from_numpy(target_vec_np).float()
-        feature_vec = torch.cat([user_vec, target_vec, scalar_feature]).unsqueeze(0)
         
+        target_vec = _center_vec(torch.from_numpy(target_vec_np).float(), centroid)
+        m = metadata.get(rid, {'stars': 4.0, 'review_count': 1, 'price': 2})
+        t_meta = torch.tensor([m.get('stars', 4.0)/5.0, torch.log1p(torch.tensor(m.get('review_count', 1)))/10.0, m.get('price', 2)/4.0], dtype=torch.float32)
+        all_scalars = torch.cat([scalar_feats, t_meta])
+        
+        feature_vec = torch.cat([user_like_vec, user_dislike_vec, target_vec, all_scalars]).unsqueeze(0)
         with torch.no_grad():
             mus, log_sigmas, pi_logits = model(feature_vec)
             pis = torch.softmax(pi_logits, dim=1)
             expected_mu = (mus * pis).sum(dim=1).item()
             
-            # Calculate PDF for HDR Visualization
             grid_y = torch.linspace(1.0, 5.0, 101)
             grid_y_expanded = grid_y.view(1, -1, 1)
             mus_exp = mus.unsqueeze(1)
@@ -645,8 +680,7 @@ def add_mdn_predictions(catalog: pd.DataFrame, user_ratings: Dict[str, float]) -
             pis_exp = pis.unsqueeze(1)
             component_pdfs = (1.0 / (2.0 * sigmas_exp)) * torch.exp(-torch.abs(grid_y_expanded - mus_exp) / sigmas_exp)
             total_pdfs = (pis_exp * component_pdfs).sum(dim=2)
-            pdf_array = total_pdfs[0].cpu().numpy()
+            pdf_grid = total_pdfs[0].cpu().numpy()
             
-        rows.append({**row, "predicted_rating": expected_mu, "pdf_grid": pdf_array})
-        
+        rows.append({**row, "predicted_rating": expected_mu, "pdf_grid": pdf_grid})
     return pd.DataFrame(rows)

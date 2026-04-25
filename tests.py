@@ -11,14 +11,22 @@ import streamlit as st
 import pandas as pd
 from PIL import Image
 
-from algorithms.image_comparison import get_similar_images
-
 # Streamlit App Configuration
-st.set_page_config(page_title="Calm Octopuses â€” Diagnostics", layout="wide")
+st.set_page_config(page_title="Calm Octopuses — Diagnostics", layout="wide")
 
-st.title("ðŸ§ª Diagnostics")
+st.title("🧪 Diagnostics")
 
-tab1, tab2, tab3, tab4, tab5 = st.tabs(["Image Similarity Explorer", "Dual Encoder Training Logs", "Generalization Analysis", "Risk Regression Analysis", "MDN Opinionatedness Test"])
+# --- Sidebar Navigation ---
+page = st.sidebar.radio(
+    "Navigation", 
+    [
+        "Image Similarity Explorer", 
+        "Dual Encoder Training Logs", 
+        "Generalization Analysis", 
+        "Risk Regression Analysis", 
+        "MDN Opinionatedness Test"
+    ]
+)
 
 # --- Data Loading ---
 @st.cache_data
@@ -43,11 +51,12 @@ def load_data():
         
     return df
 
-df = load_data()
-
-with tab1:
+if page == "Image Similarity Explorer":
     st.header("Image Similarity Explorer")
     st.markdown("Use this tool to select an image from your dataset and instantly see the most visually similar images based on CLIP embeddings. Helpful for debugging your similarity metrics!")
+
+    from algorithms.image_comparison import get_similar_images
+    df = load_data()
 
     if df is None or df.empty:
         st.warning("No embeddings found! Run `python generate_embeddings.py` first to create the `embeddings/image_embeddings.parquet` file.")
@@ -82,7 +91,7 @@ with tab1:
             from ui_components.image_grid import render_image_grid
             render_image_grid(similar_df, top_k)
 
-with tab2:
+elif page == "Dual Encoder Training Logs":
     st.header("Dual Encoder Training Logs")
     st.markdown("Visualizing the execution trace of the Cross-Modal Autoencoder PyTorch Lightning Loop.")
     
@@ -171,7 +180,7 @@ with tab2:
 # ============================================================
 # Tab 3 â€” Embedding Analysis (CLIP restaurant profiles)
 # ============================================================
-with tab3:
+elif page == "Generalization Analysis":
     import numpy as np
     import sys as _sys
     from pathlib import Path as _Path
@@ -386,7 +395,7 @@ with tab3:
 # ============================================================
 # Tab 4 â€” Risk Regression Analysis
 # ============================================================
-with tab4:
+elif page == "Risk Regression Analysis":
     st.header("ðŸ“ˆ Risk Regression Analysis")
     st.markdown(
         """
@@ -542,7 +551,7 @@ with tab4:
 # ============================================================
 # Tab 5 â€” MDN Opinionatedness Test
 # ============================================================
-with tab5:
+elif page == "MDN Opinionatedness Test":
     import sys as _sys
     import numpy as np
     from pathlib import Path
@@ -552,7 +561,7 @@ with tab5:
         _sys.path.insert(0, str(_ROOT))
 
     from core.data_loader import build_restaurant_catalog, load_restaurant_embeddings, _clean_text
-    from algorithms.mdn_regression import load_mdn_model
+    from algorithms.mdn_regression import load_mdn_model, get_michelin_centroid, _center_vec
     import torch
 
     st.header("ðŸŽ¯ MDN Opinionatedness Test")
@@ -619,10 +628,10 @@ with tab5:
         st.subheader("Step 2 â€” Run MDN predictions")
 
         n_display = st.slider(
-            "Restaurants to predict",
-            min_value=5, max_value=min(40, len(catalog_df)),
+            "Detailed charts to show",
+            min_value=5, max_value=len(catalog_df),
             value=15,
-            help="Number of unrated restaurants to show predicted PDFs for.",
+            help="Number of restaurants to show detailed PDF charts for at the bottom.",
         )
 
         run_btn = st.button(
@@ -639,21 +648,38 @@ with tab5:
             if model is None:
                 st.error("MDN checkpoint not found at expected path.")
             else:
+                from core.data_loader import load_restaurant_embeddings, _clean_text
                 embeddings_map = load_restaurant_embeddings()
+                centroid = get_michelin_centroid()
+                import json
+                meta_path = os.path.join('data', 'embeddings', 'restaurant_metadata.json')
+                metadata = {}
+                if os.path.exists(meta_path):
+                    with open(meta_path, 'r') as f:
+                        metadata = json.load(f)
 
-                # Build user vector
-                hist_vecs, hist_weights = [], []
+                                # Build user vectors (Like & Dislike)
+                like_vecs, like_weights = [], []
+                dislike_vecs, dislike_weights = [], []
+                
                 for rid, rating in user_ratings.items():
                     vec = embeddings_map.get(rid)
                     if vec is not None:
                         w = float(rating) / 5.0
-                        hist_vecs.append(torch.from_numpy(vec).float() * w)
-                        hist_weights.append(w)
+                        centered_vec = _center_vec(torch.from_numpy(vec).float(), centroid)
+                        if rating >= 3.5:
+                            like_vecs.append(centered_vec * w)
+                            like_weights.append(w)
+                        else:
+                            aw = (6.0 - rating) / 5.0
+                            dislike_vecs.append(centered_vec * aw)
+                            dislike_weights.append(aw)
 
-                if not hist_vecs:
+                if not like_vecs and not dislike_vecs:
                     st.error("None of your rated restaurants have embeddings. Try rating different ones.")
                 else:
-                    user_vec = torch.stack(hist_vecs).sum(dim=0) / sum(hist_weights)
+                    user_like_vec = torch.stack(like_vecs).sum(dim=0) / sum(like_weights) if like_vecs else torch.zeros(512)
+                    user_dislike_vec = torch.stack(dislike_vecs).sum(dim=0) / sum(dislike_weights) if dislike_vecs else torch.zeros(512)
                     mean_hist = sum(user_ratings.values()) / len(user_ratings)
                     scalar_feat = torch.tensor([mean_hist], dtype=torch.float32)
 
@@ -667,8 +693,16 @@ with tab5:
                         if vec_np is None:
                             continue
 
-                        target_vec = torch.from_numpy(vec_np).float()
-                        feat = torch.cat([user_vec, target_vec, scalar_feat]).unsqueeze(0)
+                        # Apply Centroid Subtraction to target vector
+                        target_vec = _center_vec(torch.from_numpy(vec_np).float(), centroid)
+                                                # Target Metadata
+                        m = metadata.get(rid, {'stars': 4.0, 'review_count': 1, 'price': 2})
+                        t_stars = torch.tensor([m.get('stars', 4.0) / 5.0], dtype=torch.float32)
+                        t_reviews = torch.tensor([torch.log1p(torch.tensor(m.get('review_count', 1), dtype=torch.float32)) / 10.0], dtype=torch.float32)
+                        t_price = torch.tensor([m.get('price', 2) / 4.0], dtype=torch.float32)
+                        scalar_feats = torch.cat([scalar_feat, t_stars, t_reviews, t_price])
+                        
+                        feat = torch.cat([user_like_vec, user_dislike_vec, target_vec, scalar_feats]).unsqueeze(0)
 
                         with torch.no_grad():
                             mus, log_sigmas, pi_logits = model(feat)
@@ -700,15 +734,18 @@ with tab5:
                     if not results:
                         st.warning("No predictions available â€” all restaurants may be rated or missing embeddings.")
                     else:
+                        # Sort all results by predicted rating
                         results.sort(key=lambda r: r["predicted_rating"], reverse=True)
-                        results = results[:n_display]
+                        full_results = results
+                        # Truncate only for the detailed per-restaurant charts at the bottom
+                        results_to_plot = results[:n_display]
 
-                        # â”€â”€ Aggregate sharpness KPIs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-                        avg_sharp = float(np.mean([r["sharpness"] for r in results]))
-                        avg_pred  = float(np.mean([r["predicted_rating"] for r in results]))
+                        # â”€â”€ Aggregate sharpness KPIs (based on ALL restaurants) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+                        avg_sharp = float(np.mean([r["sharpness"] for r in full_results]))
+                        avg_pred  = float(np.mean([r["predicted_rating"] for r in full_results]))
 
                         k1, k2, k3 = st.columns(3)
-                        k1.metric("Restaurants Predicted", len(results))
+                        k1.metric("Restaurants Predicted", len(full_results))
                         k2.metric("Avg Predicted Rating", f"{avg_pred:.2f} â­")
                         k3.metric(
                             "Avg PDF Std Dev",
@@ -745,10 +782,10 @@ with tab5:
                                 segments.append((start, x_grid[-1]))
                             return segments
 
-                        # Build scatter data
+                        # Build scatter data (using ALL restaurants)
                         x_grid_hdr = np.linspace(1.0, 5.0, 101)
                         scatter_rows, rows_50, rows_95 = [], [], []
-                        for _sidx, _r in enumerate(results):
+                        for _sidx, _r in enumerate(full_results):
                             _segs50 = _compute_hdr_segments(_r['pdf'], x_grid_hdr, 0.50)
                             _segs95 = _compute_hdr_segments(_r['pdf'], x_grid_hdr, 0.95)
                             _base = {'idx': _sidx, 'name': _r['restaurant_name'],
@@ -783,12 +820,12 @@ with tab5:
 
                         st.divider()
                         st.subheader('Per-Restaurant Rating Distributions')
-                        st.caption('Each chart shows the full probability density over ratings 1-5. Narrow peaks = opinionated; flat lines = uncertain.')
+                        st.caption(f'Showing detailed probability density for the top {len(results_to_plot)} restaurants. Narrow peaks = opinionated; flat lines = uncertain.')
 
-                        pairs = list(zip(results[::2], results[1::2]))
-                        if len(results) % 2 == 1:
+                        pairs = list(zip(results_to_plot[::2], results_to_plot[1::2]))
+                        if len(results_to_plot) % 2 == 1:
                             # Odd one out
-                            leftover = results[-1]
+                            leftover = results_to_plot[-1]
                         else:
                             leftover = None
 
