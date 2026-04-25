@@ -1,9 +1,7 @@
 ﻿from __future__ import annotations
 
-import json
 import re
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List
 
 import numpy as np
 import pandas as pd
@@ -12,105 +10,18 @@ import torch
 from PIL import Image
 from transformers import CLIPModel, CLIPProcessor
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-DATA_DIR = PROJECT_ROOT / "data"
-EMBEDDINGS_JSONL = DATA_DIR / "embeddings" / "restaurant_profiles.jsonl"
-MENU_EMBEDDINGS_JSONL = DATA_DIR / "embeddings" / "menu_embeddings.jsonl"
-REVIEW_EMBEDDINGS_JSONL = DATA_DIR / "embeddings" / "review_embeddings.jsonl"
-FOOD_EMBEDDINGS_JSONL = DATA_DIR / "embeddings" / "image_embeddings_food.jsonl"
-INTERIOR_EMBEDDINGS_JSONL = DATA_DIR / "embeddings" / "image_embeddings_interior.jsonl"
-DEFAULT_CLIP_MODEL_ID = "openai/clip-vit-base-patch32"
-
-
-def _clean_text(value: Any) -> str:
-    if value is None:
-        return ""
-    return " ".join(str(value).replace("\n", " ").split())
-
-
-def _resolve_path(path_value: str) -> Path:
-    path = Path(_clean_text(path_value))
-    if path.is_absolute():
-        return path
-    return PROJECT_ROOT / path
-
-
-def _join_snippets(values: List[str], limit: int = 6) -> str:
-    snippets = [_clean_text(value) for value in values if _clean_text(value)]
-    return " ".join(snippets[:limit]).strip()
-
-
-@st.cache_resource(show_spinner=False)
-def load_restaurant_embeddings() -> Dict[str, np.ndarray]:
-    if not EMBEDDINGS_JSONL.exists():
-        return {}
-
-    embeddings: Dict[str, np.ndarray] = {}
-    with EMBEDDINGS_JSONL.open("r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                data = json.loads(line)
-                rest_id = _clean_text(data.get("restaurant_id", data.get("rest_id")))
-                vector = data.get("vector")
-                if rest_id and vector:
-                    embeddings[rest_id] = np.array(vector, dtype=np.float32)
-            except json.JSONDecodeError:
-                continue
-
-    return embeddings
-
-
-@st.cache_resource(show_spinner=False)
-def load_finegrained_embeddings(file_path_str: str) -> Dict[str, List[np.ndarray]]:
-    file_path = Path(file_path_str)
-    if not file_path.exists():
-        return {}
-        
-    embeddings = {}
-    with file_path.open("r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if not line: continue
-            try:
-                data = json.loads(line)
-                rest_id = _clean_text(data.get("restaurant_id", data.get("rest_id")))
-                vector = data.get("vector")
-                if rest_id and vector:
-                    if rest_id not in embeddings:
-                        embeddings[rest_id] = []
-                    embeddings[rest_id].append(np.array(vector, dtype=np.float32))
-            except json.JSONDecodeError:
-                continue
-    return embeddings
-
-
-@st.cache_resource(show_spinner=False)
-def load_image_embeddings(file_path_str: str) -> Dict[str, List[Tuple[np.ndarray, str]]]:
-    file_path = Path(file_path_str)
-    if not file_path.exists():
-        return {}
-        
-    embeddings = {}
-    with file_path.open("r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if not line: continue
-            try:
-                data = json.loads(line)
-                rest_id = _clean_text(data.get("restaurant_id", data.get("rest_id")))
-                vector = data.get("vector")
-                image_path = _clean_text(data.get("image_path"))
-                if rest_id and vector and image_path:
-                    if rest_id not in embeddings:
-                        embeddings[rest_id] = []
-                    embeddings[rest_id].append((np.array(vector, dtype=np.float32), image_path))
-            except json.JSONDecodeError:
-                continue
-    return embeddings
-
+from core.data_loader import (
+    _clean_text,
+    _resolve_path,
+    _join_snippets,
+    load_restaurant_embeddings,
+    load_finegrained_embeddings,
+    DEFAULT_CLIP_MODEL_ID,
+    MENU_EMBEDDINGS_JSONL,
+    REVIEW_EMBEDDINGS_JSONL,
+    FOOD_EMBEDDINGS_JSONL,
+    INTERIOR_EMBEDDINGS_JSONL
+)
 
 @st.cache_resource(show_spinner=False)
 def load_clip_model():
@@ -120,7 +31,6 @@ def load_clip_model():
     model.eval()
     return processor, model, device
 
-
 def _cosine_similarity(vec_a: np.ndarray, vec_b: np.ndarray) -> float:
     if vec_a.size == 0 or vec_b.size == 0:
         return 0.0
@@ -128,7 +38,6 @@ def _cosine_similarity(vec_a: np.ndarray, vec_b: np.ndarray) -> float:
     if denom == 0:
         return 0.0
     return float(np.dot(vec_a, vec_b) / denom)
-
 
 @st.cache_data(show_spinner=False)
 def embed_text(text: str) -> tuple:
@@ -159,7 +68,6 @@ def embed_text(text: str) -> tuple:
 
     return tuple(float(value) for value in outputs[0].detach().cpu().tolist())
 
-
 @st.cache_data(show_spinner=False)
 def embed_image(image_path: str) -> tuple:
     path = _resolve_path(image_path)
@@ -188,7 +96,6 @@ def embed_image(image_path: str) -> tuple:
 
     return tuple(float(value) for value in features[0].detach().cpu().tolist())
 
-
 def _keyword_overlap(text: str, query_terms: set) -> float:
     if not text or not query_terms:
         return 0.0
@@ -197,7 +104,6 @@ def _keyword_overlap(text: str, query_terms: set) -> float:
         return 0.0
     matches = len(tokens & query_terms)
     return float(matches) / float(max(len(query_terms), 1))
-
 
 def score_text_results(catalog: pd.DataFrame, query: str, scope: str) -> pd.DataFrame:
     if catalog.empty or not _clean_text(query):
@@ -264,7 +170,6 @@ def score_text_results(catalog: pd.DataFrame, query: str, scope: str) -> pd.Data
 
     result_df = pd.DataFrame(rows)
     return result_df.sort_values(by="score", ascending=False)
-
 
 def score_image_results(catalog: pd.DataFrame, image_path: str) -> pd.DataFrame:
     if catalog.empty or not _clean_text(image_path):
