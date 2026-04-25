@@ -1,3 +1,15 @@
+﻿"""
+pipelines/merge_menus.py
+========================
+Merges multiple partial menu JSON files into a single deduplicated
+``data/extracted_menus/final_parsed_menus.json``.
+
+Run this after any batch of ``menu_crawler.py`` runs to consolidate results.
+
+Usage::
+
+    python pipelines/merge_menus.py
+"""
 import os
 import json
 import pandas as pd
@@ -68,3 +80,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

@@ -46,6 +46,7 @@ def find_best_checkpoint() -> str | None:
         return None
 
     def _val_loss(path: str) -> float:
+        """Extract the numeric val_loss from a checkpoint filename like ``best_model-epoch=N-val_loss=0.12.ckpt``."""
         try:
             for part in os.path.basename(path).replace('.ckpt', '').split('-'):
                 if part.startswith('val_loss='):

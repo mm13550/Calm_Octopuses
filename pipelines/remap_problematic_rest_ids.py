@@ -1,3 +1,13 @@
+﻿"""
+pipelines/remap_problematic_rest_ids.py
+========================================
+Applies a CSV-defined mapping of old → new rest_ids to all JSON and JSONL
+artifact files, correcting IDs that were incorrectly assigned during scraping.
+
+Usage::
+
+    python pipelines/remap_problematic_rest_ids.py --mapping data/id_remapping.csv
+"""
 #!/usr/bin/env python3
 from __future__ import annotations
 
@@ -186,3 +196,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

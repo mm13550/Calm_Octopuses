@@ -1,3 +1,13 @@
+﻿"""
+pipelines/dedupe_restaurant_summaries.py
+=========================================
+Removes duplicate records from ``data/embeddings/restaurant_summary_latest.jsonl``
+keeping the most recent entry per ``rest_id``.
+
+Usage::
+
+    python pipelines/dedupe_restaurant_summaries.py
+"""
 #!/usr/bin/env python3
 from __future__ import annotations
 
@@ -69,3 +79,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

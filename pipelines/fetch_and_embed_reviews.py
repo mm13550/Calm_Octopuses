@@ -1,3 +1,15 @@
+﻿"""
+pipelines/fetch_and_embed_reviews.py
+=====================================
+Fetches review text from external sources and immediately generates CLIP
+text embeddings, writing results to ``data/embeddings/review_embeddings.jsonl``.
+
+Designed for incremental runs: already-embedded reviews are skipped.
+
+Usage::
+
+    python pipelines/fetch_and_embed_reviews.py
+"""
 """
 Google Places Review Fetcher & Embedder Pipeline
 
@@ -198,3 +210,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

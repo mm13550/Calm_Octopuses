@@ -1,3 +1,16 @@
+﻿"""
+pipelines/dedupe_image_records.py
+==================================
+Removes duplicate image entries from ``data/social_images.csv`` and the
+corresponding ``data/embeddings/image_embeddings_*.jsonl`` files.
+
+Deduplication is based on image path and perceptual hash; the first occurrence
+per restaurant is kept.
+
+Usage::
+
+    python pipelines/dedupe_image_records.py
+"""
 from __future__ import annotations
 
 import argparse
@@ -141,3 +154,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

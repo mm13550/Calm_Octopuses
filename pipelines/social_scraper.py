@@ -1,3 +1,19 @@
+﻿"""
+pipelines/social_scraper.py
+============================
+Scrapes Yelp and Google Places data (reviews, images, metadata) for each
+Michelin-listed restaurant in the lookup table.
+
+Coordinates lookups via SerpAPI (Google) and Apify (Yelp), writes results to
+``data/social_reviews.csv`` and ``data/social_images.csv``, and saves raw
+social images to ``data/images/``.
+
+Requires: ``SERPAPI_KEY`` and ``APIFY_TOKEN`` environment variables.
+
+Usage::
+
+    python pipelines/social_scraper.py [--limit N] [--resume]
+"""
 from __future__ import annotations
 
 import argparse
@@ -694,3 +710,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

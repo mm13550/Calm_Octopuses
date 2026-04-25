@@ -13,7 +13,31 @@ import pytorch_lightning as pl
 from pytorch_lightning.callbacks import EarlyStopping
 
 class UserRestaurantDataset(Dataset):
+    """
+    PyTorch Dataset that pairs a user's rating history with an unseen target restaurant.
+
+    Each item is a feature vector built from:
+    - A 512-D *user taste vector*: rating-weighted mean of the user's historical
+      restaurant CLIP embeddings.
+    - A 512-D *target vector*: the CLIP embedding of the restaurant to be predicted.
+    - A 1-D *scalar*: the user's mean historical rating (absolute preference signal).
+
+    Records whose target restaurant or whose entire history lack embeddings are
+    silently dropped during ``__init__``.
+    """
     def __init__(self, json_path, embeddings_paths):
+        """
+        Initialise the dataset.
+
+        Parameters
+        ----------
+        json_path : str
+            Path to the regression JSON file (list of user-rating dicts).
+        embeddings_paths : list[str]
+            One or more ``.pt`` files containing ``{business_id: np.ndarray}``
+            restaurant embedding dicts.  Multiple files are merged so that train
+            and val restaurant embeddings are both available at once.
+        """
         super().__init__()
         print(f"Loading dataset from {os.path.basename(json_path)}")
         with open(json_path, 'r') as f:
@@ -50,9 +74,20 @@ class UserRestaurantDataset(Dataset):
         print(f"Filtered {len(self.data)} -> {len(self.valid_data)} valid items with embeddings.")
 
     def __len__(self):
+        """Return the number of valid (user, target-restaurant) pairs in the dataset."""
         return len(self.valid_data)
         
     def __getitem__(self, idx):
+        """
+        Return a single training sample as a tuple ``(feature_vec, rating, sample_weight)``.
+
+        Returns
+        -------
+        feature_vec : torch.Tensor  shape (1025,)
+        rating : torch.Tensor       scalar float in [1, 5]
+        sample_weight : torch.Tensor  log(1 + history_length), used to up-weight
+                                      users with richer history during loss computation.
+        """
         row = self.valid_data[idx]
         
         # 1. Target Embedding (512-D)
@@ -126,7 +161,35 @@ def mixture_laplace_nll_loss(mus, log_sigmas, pi_logits, y_true, sample_weights=
 
 
 class MDNScorer(pl.LightningModule):
+    """
+    Mixture Density Network that outputs a Laplace mixture over the [1, 5] rating range.
+
+    Architecture: MLP backbone → (mu, log_sigma, pi_logit) heads for K components.
+    Mus are bounded to [0.9, 5.1] via a sigmoid gate to prevent extreme extrapolation.
+    Log-sigmas are clamped to [-3.5, 0.5] for numerical stability.
+    """
     def __init__(self, input_dim=1025, hidden_dims=[1024, 1024, 512], k=3, lr=8e-4, sharpness_alpha=0.8, entropy_beta=0.2):
+        """
+        Initialise MDNScorer.
+
+        Parameters
+        ----------
+        input_dim : int
+            Dimensionality of the concatenated input feature vector
+            (user_vec + target_vec + scalar = 512 + 512 + 1 = 1025 by default).
+        hidden_dims : list[int]
+            Sizes of successive hidden layers.  Each layer is followed by
+            BatchNorm1d, ReLU, and Dropout(0.2).
+        k : int
+            Number of Laplace mixture components.
+        lr : float
+            Adam learning rate.
+        sharpness_alpha : float
+            Weight of the sharpness (width) penalty in the composite loss.
+        entropy_beta : float
+            Weight of the entropy penalty; discourages the model from placing
+            all mass in a single mixture component (connectivity regulariser).
+        """
         super().__init__()
         self.save_hyperparameters()
         self.k = k
@@ -159,6 +222,19 @@ class MDNScorer(pl.LightningModule):
         self.mlp = nn.Sequential(*layers)
         
     def forward(self, x):
+        """
+        Run the forward pass.
+
+        Parameters
+        ----------
+        x : torch.Tensor  shape (batch, input_dim)
+
+        Returns
+        -------
+        mus : torch.Tensor         shape (batch, k) — mixture means in [0.9, 5.1]
+        log_sigmas : torch.Tensor  shape (batch, k) — clamped log-scale parameters
+        pi_logits : torch.Tensor   shape (batch, k) — unnormalised mixture weights
+        """
         features = self.mlp(x)
         out = self.final_layer(features)
         
@@ -176,6 +252,7 @@ class MDNScorer(pl.LightningModule):
         return mus, log_sigmas, pi_logits
         
     def training_step(self, batch, batch_idx):
+        """Compute the weighted MDN loss for one training mini-batch and log it."""
         x, y, w = batch
         mus, log_sigmas, pi_logits = self(x)
         loss = mixture_laplace_nll_loss(
@@ -188,6 +265,7 @@ class MDNScorer(pl.LightningModule):
         return loss
         
     def validation_step(self, batch, batch_idx):
+        """Compute validation MDN loss and MAE; log both for early-stopping and monitoring."""
         x, y, w = batch
         mus, log_sigmas, pi_logits = self(x)
         loss = mixture_laplace_nll_loss(
@@ -206,6 +284,7 @@ class MDNScorer(pl.LightningModule):
         return loss
 
     def configure_optimizers(self):
+        """Return the Adam optimiser with the learning rate defined at construction."""
         return torch.optim.Adam(self.parameters(), lr=self.hparams.lr)
 
 
@@ -251,6 +330,12 @@ def evaluate_regression(train_json, test_json, train_emb, test_emb, max_epochs=2
     model.eval()
     
     def _extract_results(dl):
+        """
+        Run inference on a DataLoader and return a DataFrame of per-sample results.
+
+        Each row contains the actual rating, the MDN expected mean prediction,
+        the 50% and 95% Highest Density Region segments, and a boolean coverage flag.
+        """
         import numpy as np
         rows = []
         
@@ -287,6 +372,19 @@ def evaluate_regression(train_json, test_json, train_emb, test_emb, max_epochs=2
                     
                     # --- Find HDR segments ---
                     def get_segments(target_mass):
+                        """
+                        Find contiguous HDR segments on the 101-point rating grid.
+
+                        Parameters
+                        ----------
+                        target_mass : float
+                            Desired probability mass (e.g. 0.50 for 50% HDR).
+
+                        Returns
+                        -------
+                        list[tuple[float, float]]
+                            List of (low, high) rating boundary pairs.
+                        """
                         # Force 100% confidence in [1, 5] range by normalizing the truncated PDF
                         grid_mass = (sample_pdf_grid * dy).sum()
                         if grid_mass > 0:
@@ -371,6 +469,15 @@ MDN_CHECKPOINT = DATA_DIR / "yelp_sandbox" / "mdn_models" / "lightning_logs" / "
 
 @st.cache_resource(show_spinner=False)
 def load_mdn_model():
+    """
+    Load the trained MDNScorer from disk and return it in eval mode.
+
+    The checkpoint path is resolved relative to the project ``data/`` directory.
+    Returns ``None`` if the checkpoint file does not exist, allowing callers
+    to degrade gracefully (no crash, just no predictions).
+
+    The result is cached by Streamlit so the model is only loaded once per session.
+    """
     if not MDN_CHECKPOINT.exists():
         return None
     model = MDNScorer.load_from_checkpoint(str(MDN_CHECKPOINT), map_location="cpu")
@@ -378,6 +485,26 @@ def load_mdn_model():
     return model
 
 def _score_mdn_recommendations(catalog: pd.DataFrame, user_ratings: Dict[str, float]) -> pd.DataFrame:
+    """
+    Score every unrated restaurant in *catalog* and return them sorted by predicted rating.
+
+    Restaurants the user has already rated are excluded from results.
+    Restaurants without a CLIP embedding are skipped silently.
+
+    Parameters
+    ----------
+    catalog : pd.DataFrame
+        The full restaurant catalog from ``build_restaurant_catalog()``.
+    user_ratings : dict[str, float]
+        Mapping of ``rest_id`` → user rating (1–5) for the session's rated restaurants.
+
+    Returns
+    -------
+    pd.DataFrame
+        Subset of catalog rows with additional columns ``score`` (expected MDN mean)
+        and ``pdf_grid`` (101-point Laplace mixture PDF over the [1, 5] range),
+        sorted descending by ``score``.
+    """
     if catalog.empty or not user_ratings:
         return pd.DataFrame()
         
@@ -441,6 +568,28 @@ def _score_mdn_recommendations(catalog: pd.DataFrame, user_ratings: Dict[str, fl
     result_df = pd.DataFrame(rows)
     return result_df.sort_values(by="score", ascending=False)
 def add_mdn_predictions(catalog: pd.DataFrame, user_ratings: Dict[str, float]) -> pd.DataFrame:
+    """
+    Annotate every row of *catalog* with a predicted or actual rating.
+
+    Unlike ``_score_mdn_recommendations``, this function **keeps** already-rated
+    restaurants in the result and marks them with an ``actual_rating`` column
+    instead of running MDN inference.  Unrated restaurants with a CLIP embedding
+    receive a ``predicted_rating`` column (MDN expected mean) and a ``pdf_grid``
+    column (101-point mixture PDF).  Unrated restaurants without an embedding are
+    returned as-is with neither column set.
+
+    Parameters
+    ----------
+    catalog : pd.DataFrame
+        Restaurant catalog rows to annotate.
+    user_ratings : dict[str, float]
+        Mapping of ``rest_id`` → user rating (1–5).
+
+    Returns
+    -------
+    pd.DataFrame
+        Annotated copy of *catalog*.
+    """
     if catalog.empty or not user_ratings:
         return catalog
         

@@ -39,6 +39,9 @@ def get_device():
     return torch.device('cpu')
 
 def main():
+    """
+        Run the Yelp CLIP embedding generation pipeline.\n\n    Streams through `train.json` (Yelp photo labels), loads matching images,\n    pairs them with a random review from `yelp_relations.db`, encodes both\n    through CLIP, and saves the resulting tensors to\n    `toy_embeddings/toy_{train|val}_embeddings.pt`.
+    """
     device = get_device()
     print(f"--- Booting PyTorch Embedding Extractor (Device: {device}) ---")
 

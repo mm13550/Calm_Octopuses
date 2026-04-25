@@ -1,8 +1,22 @@
-"""Streamlit frontend for the Calm Octopuses raw data MVP.
+"""
+frontend.py
+===========
+Main Streamlit entry point for the Calm Octopuses restaurant recommendation UI.
 
 This entrypoint stays lightweight: it reads the raw data files already present
 in the repo, lets users search by text or image, and renders restaurant-level
 cards keyed by rest_id.
+
+Tabs
+----
+Search          CLIP semantic search over the full restaurant catalog.
+Dish Search     Exact-match search over individual menu items.
+Explore         Browse and rate restaurants; get MDN-personalised recommendations.
+Data Overview   Coverage metrics and source file health-check.
+
+Run with::
+
+    streamlit run frontend.py
 """
 
 from __future__ import annotations
@@ -34,6 +48,13 @@ from ui_components.cards import _render_result_card
 from ui_components.overview import _render_data_overview
 
 def main() -> None:
+    """
+    Build and render the full Calm Octopuses Streamlit frontend.
+
+    Called once per page load by Streamlit's script runner.  Sets up
+    session state, builds the tab layout, and delegates to the relevant
+    retrieval and UI component functions for each tab.
+    """
     st.set_page_config(page_title="Calm Octopuses Frontend", layout="wide")
     st.title("Calm Octopuses")
     st.caption("Raw-data Streamlit frontend for the current vector DB handoff.")

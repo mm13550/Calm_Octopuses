@@ -1,3 +1,18 @@
+﻿"""
+pipelines/build_restaurant_profiles.py
+=======================================
+Merges per-modality CLIP embeddings (menu text, review text, images) into a
+single 512-D restaurant profile vector stored in
+``data/embeddings/restaurant_profiles.jsonl``.
+
+Each restaurant profile is the weighted mean of its available modality vectors,
+re-normalised to unit length.  The resulting JSONL file is the primary embedding
+source consumed by ``core/data_loader.py`` and the MDN inference pipeline.
+
+Usage::
+
+    python pipelines/build_restaurant_profiles.py
+"""
 from __future__ import annotations
 
 import argparse

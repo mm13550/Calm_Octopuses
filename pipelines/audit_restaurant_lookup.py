@@ -1,3 +1,16 @@
+﻿"""
+pipelines/audit_restaurant_lookup.py
+=====================================
+Audits ``data/csv/restaurant_lookup.csv`` and ``data/extracted_menus/``
+for data quality issues: missing fields, duplicate rest_ids, domain mismatches,
+and restaurants with no menu entries.
+
+Writes a findings report to ``data/audit/audit_findings.json``.
+
+Usage::
+
+    python pipelines/audit_restaurant_lookup.py
+"""
 #!/usr/bin/env python3
 from __future__ import annotations
 
@@ -207,3 +220,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

@@ -1,5 +1,23 @@
 from __future__ import annotations
 
+"""
+pipelines/generate_embeddings_michelin.py
+==========================================
+Generates 512-D CLIP text embeddings for NYC Michelin restaurant menus.
+
+Reads ``data/extracted_menus/final_parsed_menus.json``, builds a rich text
+representation for each dish (name + ingredients + style tags + price), encodes
+it through ``openai/clip-vit-base-patch32``, and writes the resulting L2-normalised
+vectors to:
+
+- ``data/embeddings/menu_embeddings_latest.jsonl``   (per-item CLIP vectors)
+- ``data/embeddings/restaurant_summary_latest.jsonl`` (mean-pooled per-restaurant)
+
+Usage::
+
+    python pipelines/generate_embeddings_michelin.py [--limit N] [--model-id MODEL]
+"""
+
 import argparse
 import hashlib
 import json

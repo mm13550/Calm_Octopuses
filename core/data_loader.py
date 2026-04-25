@@ -1,4 +1,25 @@
-﻿import json
+"""
+core/data_loader.py
+===================
+Centralised, cache-aware data loading for the Calm Octopuses application.
+
+All functions that read from disk are decorated with ``@st.cache_data`` or
+``@st.cache_resource`` so they are executed at most once per Streamlit session.
+This module is the single source of truth for all path constants and is imported
+by both ``frontend.py`` and ``tests.py`` to guarantee consistent file resolution.
+
+Key constants
+-------------
+LOOKUP_CSV, REVIEWS_CSV, IMAGES_CSV, MENUS_JSON, BIOS_JSON
+    Raw data files that form the restaurant catalog.
+EMBEDDINGS_JSONL
+    512-D CLIP restaurant profile vectors (mean-pooled from menu/review/image CLIP).
+MENU_EMBEDDINGS_JSONL, REVIEW_EMBEDDINGS_JSONL
+    Fine-grained per-dish and per-review CLIP text vectors for re-ranking.
+FOOD_EMBEDDINGS_JSONL, INTERIOR_EMBEDDINGS_JSONL
+    Image-modality CLIP vectors used by the visual similarity search.
+"""
+import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 import numpy as np
@@ -21,17 +42,26 @@ INTERIOR_EMBEDDINGS_JSONL = DATA_DIR / "embeddings" / "image_embeddings_interior
 DEFAULT_CLIP_MODEL_ID = "openai/clip-vit-base-patch32"
 
 def _clean_text(value: Any) -> str:
+    """Normalise a raw field value to a single-line, whitespace-collapsed string."""
     if value is None:
         return ""
     return " ".join(str(value).replace("\n", " ").split())
 
 def _truncate(text: str, limit: int = 220) -> str:
+    """Return *text* truncated to *limit* characters, adding an ellipsis if necessary."""
     text = _clean_text(text)
     if len(text) <= limit:
         return text
     return text[: limit - 3].rstrip() + "..."
 
 def _load_json_records(path: Path) -> List[Dict[str, Any]]:
+    """
+    Load a JSON file and return its contents as a flat list of dicts.
+
+    Accepts both top-level arrays and objects whose values are arrays
+    under common keys (``records``, ``items``, ``data``, ``results``).
+    Returns an empty list if the file does not exist.
+    """
     if not path.exists():
         return []
 
@@ -50,29 +80,35 @@ def _load_json_records(path: Path) -> List[Dict[str, Any]]:
     return []
 
 def _load_csv(path: Path) -> pd.DataFrame:
+    """Load a CSV into a string-typed DataFrame; return an empty DataFrame if the file is missing."""
     if not path.exists():
         return pd.DataFrame()
     return pd.read_csv(path, dtype=str, keep_default_na=False).fillna("")
 
 @st.cache_data(show_spinner=False)
 def load_lookup_df() -> pd.DataFrame:
+    """Return the restaurant lookup table (``restaurant_lookup.csv``) as a cached DataFrame."""
     return _load_csv(LOOKUP_CSV)
 
 @st.cache_data(show_spinner=False)
 def load_reviews_df() -> pd.DataFrame:
+    """Return the social reviews CSV as a cached DataFrame."""
     return _load_csv(REVIEWS_CSV)
 
 @st.cache_data(show_spinner=False)
 def load_images_df() -> pd.DataFrame:
+    """Return the social images CSV as a cached DataFrame."""
     return _load_csv(IMAGES_CSV)
 
 @st.cache_data(show_spinner=False)
 def load_menus_df() -> pd.DataFrame:
+    """Return the parsed menu records as a cached DataFrame."""
     rows = _load_json_records(MENUS_JSON)
     return pd.DataFrame(rows)
 
 @st.cache_data(show_spinner=False)
 def load_bios_df() -> pd.DataFrame:
+    """Return the restaurant biography records as a cached DataFrame."""
     rows = _load_json_records(BIOS_JSON)
     if not rows:
         return pd.DataFrame()
@@ -100,6 +136,19 @@ def load_bios_df() -> pd.DataFrame:
 
 @st.cache_resource(show_spinner=False)
 def load_restaurant_embeddings() -> Dict[str, np.ndarray]:
+    """
+    Load the 512-D CLIP restaurant profile embeddings from disk.
+
+    Reads ``data/embeddings/restaurant_profiles.jsonl``.  Each line is a JSON
+    object with ``restaurant_id`` (or ``rest_id``) and ``vector`` keys.
+    The result is stored via ``@st.cache_resource`` so the large numpy dict
+    is kept in memory and never re-hashed between Streamlit reruns.
+
+    Returns
+    -------
+    dict[str, np.ndarray]
+        Mapping of ``rest_id`` to a float32 array of shape (512,).
+    """
     if not EMBEDDINGS_JSONL.exists():
         return {}
 
@@ -122,6 +171,24 @@ def load_restaurant_embeddings() -> Dict[str, np.ndarray]:
 
 @st.cache_resource(show_spinner=False)
 def load_finegrained_embeddings(file_path_str: str) -> Dict[str, List[np.ndarray]]:
+    """
+    Load per-item CLIP embeddings from a JSONL file (menu or review).
+
+    Unlike ``load_restaurant_embeddings``, a single restaurant can have multiple
+    vectors (one per dish or review).  The result is a dict mapping each
+    ``rest_id`` to a list of float32 arrays.
+
+    Parameters
+    ----------
+    file_path_str : str
+        Absolute path to the JSONL file.  Pass ``str(MENU_EMBEDDINGS_JSONL)``
+        or ``str(REVIEW_EMBEDDINGS_JSONL)`` from the module constants.
+
+    Returns
+    -------
+    dict[str, list[np.ndarray]]
+        Mapping of ``rest_id`` to a list of shape-(512,) float32 arrays.
+    """
     file_path = Path(file_path_str)
     if not file_path.exists():
         return {}
@@ -144,12 +211,19 @@ def load_finegrained_embeddings(file_path_str: str) -> Dict[str, List[np.ndarray
     return embeddings
 
 def _resolve_path(path_value: str) -> Path:
+    """Resolve *path_value* to an absolute ``Path``, anchoring relative paths at the project root."""
     path = Path(_clean_text(path_value))
     if path.is_absolute():
         return path
     return PROJECT_ROOT / path
 
 def _first_existing_path(paths: List[str]) -> Optional[str]:
+    """
+    Return the first path in *paths* that exists on disk, or the first path as a fallback.
+
+    Used to locate the best representative image for a restaurant when multiple
+    candidate paths are stored in the catalog.
+    """
     for raw_path in paths:
         candidate = _resolve_path(raw_path)
         if candidate.exists():
@@ -157,10 +231,14 @@ def _first_existing_path(paths: List[str]) -> Optional[str]:
     return str(_resolve_path(paths[0])) if paths else None
 
 def _join_snippets(values: List[str], limit: int = 6) -> str:
+    """Join up to *limit* cleaned string values with a single space for search indexing."""
     snippets = [_clean_text(value) for value in values if _clean_text(value)]
     return " ".join(snippets[:limit]).strip()
 
 def _extract_menu_items(menu_rows: List[Dict[str, Any]], limit: int = 6) -> List[str]:
+    """
+    Format up to *limit* menu rows into human-readable ``"dish — ingredients — $price"`` strings.
+    """
     items: List[str] = []
     for row in menu_rows[:limit]:
         dish = _clean_text(row.get("dish_name"))
@@ -172,6 +250,7 @@ def _extract_menu_items(menu_rows: List[Dict[str, Any]], limit: int = 6) -> List
     return items
 
 def _extract_review_snippets(review_rows: List[Dict[str, Any]], limit: int = 4) -> List[str]:
+    """Extract up to *limit* review text snippets, annotating each with its star rating."""
     snippets: List[str] = []
     for row in review_rows[:limit]:
         text = _clean_text(row.get("text"))
@@ -182,6 +261,16 @@ def _extract_review_snippets(review_rows: List[Dict[str, Any]], limit: int = 4) 
 
 @st.cache_data(show_spinner=False)
 def build_restaurant_catalog() -> pd.DataFrame:
+    """
+    Build and return the fully joined restaurant catalog as a cached DataFrame.
+
+    Joins the lookup table with menus, reviews, images, and bios to produce
+    a single wide DataFrame with one row per restaurant.  Pre-computed fields
+    include ``search_text`` (for CLIP query matching), ``menu_items``,
+    ``review_snippets``, ``image_paths``, and boolean coverage flags.
+
+    Returns an empty DataFrame if the lookup CSV is missing.
+    """
     # Cache buster: 1
     lookup_df = load_lookup_df()
     reviews_df = load_reviews_df()

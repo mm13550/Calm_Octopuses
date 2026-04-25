@@ -1,8 +1,39 @@
+"""
+ui_components/cards.py
+======================
+Streamlit UI component for rendering a single restaurant result card.
+
+Provides ``_render_result_card``, a reusable card that displays restaurant
+metadata, image, coverage metrics, bio, menu highlights, and review snippets.
+The rating label is automatically switched between "Your Rating" (actual) and
+"Predicted Rating" (MDN output) depending on the row's data.
+"""
+import pandas as pd
 import streamlit as st
 from typing import Dict, Any
 from core.data_loader import _clean_text, _resolve_path, _truncate
 
+
 def _render_result_card(row: Dict[str, Any], score_label: str) -> None:
+    """
+    Render a styled restaurant result card in the current Streamlit column.
+
+    Displays the restaurant name, borough, Michelin category, and a rating
+    metric that reads "Your Rating" (actual star value) when the user has
+    already rated the restaurant, or "Predicted Rating" (MDN expected mean)
+    otherwise.
+
+    Parameters
+    ----------
+    row : dict
+        A single catalog row dict.  Recognised keys: ``restaurant_name``,
+        ``rest_id``, ``borough``, ``michelin_category``,
+        ``representative_image_path``, ``homepage``, ``menu_count``,
+        ``review_count``, ``image_count``, ``bio_text``, ``menu_items``,
+        ``review_snippets``, ``score``, ``predicted_rating``, ``actual_rating``.
+    score_label : str
+        Label text for the primary score metric (e.g. ``"Match Score"``).
+    """
     with st.container(border=True):
         left, right = st.columns([1, 2])
 
@@ -20,12 +51,12 @@ def _render_result_card(row: Dict[str, Any], score_label: str) -> None:
                 f"{_clean_text(row.get('rest_id'))} • {_clean_text(row.get('borough')) or 'N/A'} • "
                 f"{_clean_text(row.get('michelin_category')) or 'N/A'}"
             )
-            import pandas as pd
+
             metrics = st.columns(2)
             metrics[0].metric(score_label, f"{float(row.get('score', 0.0)):.3f}")
             actual_rating = row.get("actual_rating")
             predicted_rating = row.get("predicted_rating")
-            
+
             if pd.notna(actual_rating):
                 metrics[1].metric("Your Rating", f"{float(actual_rating):.1f} ⭐")
             elif pd.notna(predicted_rating):

@@ -1,3 +1,13 @@
+﻿"""
+pipelines/refresh_review_profile_artifacts.py
+==============================================
+Rebuilds ``data/social_reviews.csv`` rest_id assignments from the canonical
+lookup table to fix any stale or incorrect IDs written during an earlier scrape.
+
+Usage::
+
+    python pipelines/refresh_review_profile_artifacts.py
+"""
 from __future__ import annotations
 
 import argparse
@@ -112,3 +122,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

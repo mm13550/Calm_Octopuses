@@ -1,4 +1,13 @@
-﻿import pandas as pd
+"""
+ui_components/overview.py
+=========================
+Streamlit UI component for the data coverage overview panel.
+
+Renders row counts and per-field coverage statistics for the current
+restaurant catalog, giving operators a quick health-check of how much
+of the dataset has menus, reviews, images, and bios.
+"""
+import pandas as pd
 import streamlit as st
 from core.data_loader import (
     load_lookup_df, 
@@ -14,6 +23,19 @@ from core.data_loader import (
 )
 
 def _render_data_overview(catalog: pd.DataFrame) -> None:
+    """
+    Render the data coverage overview panel into the current Streamlit context.
+
+    Displays five top-level row-count metrics (restaurants, reviews, images,
+    menu rows, bios) followed by a table of source file paths and a coverage
+    breakdown showing how many restaurants have each data type.
+
+    Parameters
+    ----------
+    catalog : pd.DataFrame
+        The fully joined restaurant catalog from ``build_restaurant_catalog()``.
+        Only used for the coverage breakdown; if empty the breakdown is skipped.
+    """
     lookup_df = load_lookup_df()
     reviews_df = load_reviews_df()
     images_df = load_images_df()

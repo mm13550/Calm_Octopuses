@@ -1,3 +1,14 @@
+﻿"""
+pipelines/rerun_likely_problematic_restaurants.py
+==================================================
+Identifies restaurants likely to have data quality issues (zero menus, missing
+images, low review counts, or known mapping errors) and re-runs the relevant
+pipeline scripts for each candidate.
+
+Usage::
+
+    python pipelines/rerun_likely_problematic_restaurants.py [--dry-run]
+"""
 from __future__ import annotations
 
 import argparse
@@ -264,3 +275,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

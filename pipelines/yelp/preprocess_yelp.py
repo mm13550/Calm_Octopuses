@@ -233,6 +233,9 @@ def export_regression_histories(conn):
         print(" [WARNING] Found no users strictly matching history specifications.")
 
 def main():
+    """
+        Run the Yelp out-of-core preprocessing pipeline.\n\n    Streams the multi-gigabyte Yelp JSON files into `yelp_relations.db`,\n    creating `businesses`, `reviews`, and `photos` tables.\n    Marks restaurants in the Michelin validation cohort with `is_val_target=1`.
+    """
     conn = init_db()
     stream_businesses(conn)
     stream_reviews(conn)

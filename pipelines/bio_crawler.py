@@ -1,3 +1,16 @@
+﻿"""
+pipelines/bio_crawler.py
+========================
+Crawls external sources (e.g. restaurant homepages, Google) to retrieve
+and store biographical text for each Michelin-listed restaurant.
+
+Reads ``data/csv/restaurant_lookup.csv`` for the list of targets and writes
+extracted bios to ``data/extracted_bios/restaurant_bios_joinable.json``.
+
+Usage::
+
+    python pipelines/bio_crawler.py
+"""
 import os
 import sys
 import json
@@ -169,3 +182,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

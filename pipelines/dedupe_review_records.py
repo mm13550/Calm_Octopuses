@@ -1,3 +1,16 @@
+﻿"""
+pipelines/dedupe_review_records.py
+====================================
+Removes duplicate review entries from ``data/social_reviews.csv`` and the
+corresponding ``data/embeddings/review_embeddings.jsonl`` file.
+
+Deduplication is based on (rest_id, review_text) pairs; the first occurrence
+is kept.
+
+Usage::
+
+    python pipelines/dedupe_review_records.py
+"""
 from __future__ import annotations
 
 import argparse
@@ -134,3 +147,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

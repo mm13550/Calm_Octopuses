@@ -1,3 +1,16 @@
+﻿"""
+pipelines/image_scrapper.py
+============================
+Downloads food and interior images from Yelp and Google Places for each
+restaurant in ``data/csv/restaurant_lookup.csv``.
+
+Images are saved to the ``data/images/`` directory and their paths are
+recorded in ``data/social_images.csv``.
+
+Usage::
+
+    python pipelines/image_scrapper.py [--limit N]
+"""
 import argparse
 import csv
 import os

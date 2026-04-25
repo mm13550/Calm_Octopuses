@@ -1,3 +1,18 @@
+﻿"""
+pipelines/generate_embeddings_images.py
+========================================
+Generates 512-D CLIP image embeddings for all food and interior images in
+``data/social_images.csv``.
+
+Each row in the images CSV that has a valid image path is passed through
+``openai/clip-vit-base-patch32`` and the resulting L2-normalised vector is
+appended to the appropriate JSONL file
+(``data/embeddings/image_embeddings_food.jsonl`` or ``image_embeddings_interior.jsonl``).
+
+Usage::
+
+    python pipelines/generate_embeddings_images.py [--batch-size 64]
+"""
 from __future__ import annotations
 
 import argparse

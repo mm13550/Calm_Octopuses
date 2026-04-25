@@ -59,6 +59,9 @@ def aggregate_embeddings(data: list) -> dict:
     return final_dict
 
 def main():
+    """
+        Run the restaurant embedding aggregation pipeline.\n\n    Loads raw CLIP paired embeddings from `toy_train_embeddings.pt` and\n    `toy_val_embeddings.pt`, aggregates each business's vectors into a single\n    512-D mean-pooled unit vector, and saves the result as\n    `toy_restaurant_embeddings_{train|val}.pt`.
+    """
     print("--- Aggregating Restaurant Embeddings ---")
     
 

@@ -1,3 +1,16 @@
+﻿"""
+pipelines/retry_zero_dishes.py
+===============================
+Re-runs ``menu_crawler.py`` for restaurants whose menu records contain
+zero dishes (indicating a failed or empty crawl).
+
+Reads the current ``final_parsed_menus.json``, identifies zero-dish entries,
+and triggers targeted re-crawls to improve menu coverage.
+
+Usage::
+
+    python pipelines/retry_zero_dishes.py
+"""
 import os
 import json
 import pandas as pd
@@ -79,3 +92,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

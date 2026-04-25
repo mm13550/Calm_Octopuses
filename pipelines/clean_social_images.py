@@ -1,3 +1,16 @@
+﻿"""
+pipelines/clean_social_images.py
+=================================
+Quality-filters ``data/social_images.csv`` using a zero-shot CLIP classifier
+to remove non-food, non-interior images (e.g. screenshots, menus, logos).
+
+Images below the quality threshold are marked for removal; the updated CSV
+is written back in-place.
+
+Usage::
+
+    python pipelines/clean_social_images.py
+"""
 from __future__ import annotations
 
 import argparse

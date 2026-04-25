@@ -1,3 +1,15 @@
+﻿"""
+pipelines/clean_restaurant_profiles.py
+=======================================
+Deduplicates and sorts ``data/embeddings/restaurant_profiles.jsonl``.
+
+Removes entries with missing or near-duplicate vectors (cosine similarity
+above a configurable threshold) and re-writes the file in-place.
+
+Usage::
+
+    python pipelines/clean_restaurant_profiles.py
+"""
 from __future__ import annotations
 
 import argparse
@@ -119,3 +131,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

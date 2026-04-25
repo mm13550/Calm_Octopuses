@@ -1,3 +1,17 @@
+﻿"""
+pipelines/apply_social_rest_id_mapping.py
+==========================================
+Applies a YAML-defined set of rest_id rewrite rules to ``social_reviews.csv``
+and ``social_images.csv``.
+
+Use this when a restaurant's canonical ``rest_id`` changes (e.g. after a
+duplicate-merge or data audit) to propagate the new ID through all artifact files
+without re-running the full scrape pipeline.
+
+Usage::
+
+    python pipelines/apply_social_rest_id_mapping.py --rules data/mapping_rules.yaml
+"""
 from __future__ import annotations
 
 import argparse
@@ -284,3 +298,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

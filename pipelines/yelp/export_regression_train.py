@@ -24,6 +24,9 @@ REGRESSION_TRAIN_OUT = os.path.join(DATA_DIR, 'regression_train_set.json')
 REGRESSION_VAL_IN    = os.path.join(DATA_DIR, 'regression_val_set.json')
 
 def main():
+    """
+        Build and export the regression training dataset from `yelp_relations.db`.\n\n    Prioritises users found in `regression_val_set.json` (domain adaptation),\n    then fills up to 8 000 total profiles from generic Yelp users.\n    Writes results to `data/yelp_sandbox/regression_train_set.json`.
+    """
     if not os.path.exists(DB_PATH):
         print("SQLite DB not found! Please run preprocess_yelp.py first.")
         return

@@ -1,3 +1,16 @@
+﻿"""
+pipelines/refresh_social_derived_artifacts.py
+==============================================
+Refreshes all derived artefacts (merged JSONL files, filtered CSVs, mode counts)
+that depend on the raw social scrape outputs.
+
+Useful after a re-scrape or mapping-rule change to ensure all downstream files
+are consistent without re-running the full pipeline from scratch.
+
+Usage::
+
+    python pipelines/refresh_social_derived_artifacts.py [--dry-run]
+"""
 from __future__ import annotations
 
 import argparse
@@ -277,3 +290,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

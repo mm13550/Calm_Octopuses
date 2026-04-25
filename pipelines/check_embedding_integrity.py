@@ -1,3 +1,16 @@
+﻿"""
+pipelines/check_embedding_integrity.py
+=======================================
+Validates embedding JSONL files and raw social data (images, reviews) against
+the restaurant lookup for coverage and structural integrity.
+
+Reports missing restaurants, malformed vectors, duplicate records, and
+embedding dimension mismatches to stdout.
+
+Usage::
+
+    python pipelines/check_embedding_integrity.py
+"""
 from __future__ import annotations
 
 import argparse
@@ -347,3 +360,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

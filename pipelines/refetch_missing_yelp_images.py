@@ -1,3 +1,17 @@
+﻿"""
+pipelines/refetch_missing_yelp_images.py
+=========================================
+Re-fetches Yelp photo URLs for restaurants whose images were not downloaded
+during the initial social scrape.
+
+Reads the expected image index from ``data/social_images.csv``, identifies
+missing files on disk, fetches the photos from Yelp, and saves them to the
+correct paths.
+
+Usage::
+
+    python pipelines/refetch_missing_yelp_images.py
+"""
 import os
 from pathlib import Path
 
@@ -143,3 +157,4 @@ if __name__ == "__main__":
         raise SystemExit("Usage: python pipelines/refetch_missing_yelp_images.py <rest_id>")
 
     main(sys.argv[1])
+
