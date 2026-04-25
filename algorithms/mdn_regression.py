@@ -470,6 +470,10 @@ def add_mdn_predictions(catalog: pd.DataFrame, user_ratings: Dict[str, float]) -
     rows = []
     for row in catalog.to_dict(orient="records"):
         rest_id = _clean_text(row.get("rest_id"))
+        
+        if rest_id in user_ratings:
+            rows.append({**row, "actual_rating": user_ratings[rest_id]})
+            continue
             
         target_vec_np = embeddings_map.get(rest_id)
         if target_vec_np is None:

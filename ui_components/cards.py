@@ -22,7 +22,9 @@ def _render_result_card(row: Dict[str, Any], score_label: str) -> None:
             )
             metrics = st.columns(2)
             metrics[0].metric(score_label, f"{float(row.get('score', 0.0)):.3f}")
-            if "predicted_rating" in row:
+            if "actual_rating" in row:
+                metrics[1].metric("Your Rating", f"{float(row.get('actual_rating', 0.0)):.1f} ⭐")
+            elif "predicted_rating" in row:
                 metrics[1].metric("Predicted Rating", f"{float(row.get('predicted_rating', 0.0)):.1f} ⭐")
 
             homepage = _clean_text(row.get("homepage"))
