@@ -164,7 +164,7 @@ class UserRestaurantDataset(Dataset):
         
         return feature_vec, torch.tensor(row['target_rating'], dtype=torch.float32), sample_weight
 
-def mixture_laplace_nll_loss(mus, log_sigmas, pi_logits, y_true, sample_weights=None, sharpness_alpha=1.2, entropy_beta=0.05):
+def mixture_laplace_nll_loss(mus, log_sigmas, pi_logits, y_true, sample_weights=None, sharpness_alpha=0.8, entropy_beta=0.05, coverage_gamma=0.5):
     """
     Negative Log Likelihood of a Mixture of Laplaces.
     """
@@ -175,7 +175,7 @@ def mixture_laplace_nll_loss(mus, log_sigmas, pi_logits, y_true, sample_weights=
     pis = torch.exp(log_pi)
     
     # Stabilized Bounded scale
-    log_sigmas = torch.clamp(log_sigmas, min=-3.5, max=-1.0)
+    log_sigmas = torch.clamp(log_sigmas, min=-3.5, max=-0.7)
     sigmas = torch.exp(log_sigmas)
     
     # Laplace PDF components: 1/(2*b) * exp(-|y-mu| / b)
@@ -193,11 +193,20 @@ def mixture_laplace_nll_loss(mus, log_sigmas, pi_logits, y_true, sample_weights=
     # --- Regularization 2: Entropy (Connectivity Penalty) ---
     entropy = -(pis * log_pi).sum(dim=1).mean()
     
+    # --- Regularization 3: Coverage (Soft 95% HDR Penalty) ---
+    # Closed-form Laplace CDF: F(y|mu,b) = 0.5 + 0.5*sign(y-mu)*(1 - exp(-|y-mu|/b))
+    # Mixture CDF at y_true: sum_k pi_k * F_k(y_true) -> (batch,)
+    diff = y_true - mus  # (batch, K)
+    laplace_cdf = 0.5 + 0.5 * torch.sign(diff) * (1.0 - torch.exp(-torch.abs(diff) / (sigmas + 1e-7)))
+    mix_cdf = (pis * laplace_cdf).sum(dim=1)  # (batch,)
+    # Hinge penalty: fire only when y_true is outside the central 95% mass
+    coverage_penalty = (F.relu(0.025 - mix_cdf) + F.relu(mix_cdf - 0.975)).mean()
+    
     # Apply sample weights
     if sample_weights is not None:
-        total_loss = torch.mean((-total_log_likelihood) * sample_weights) + sharpness_alpha * width_penalty + entropy_beta * entropy
+        total_loss = torch.mean((-total_log_likelihood) * sample_weights) + sharpness_alpha * width_penalty + entropy_beta * entropy + coverage_gamma * coverage_penalty
     else:
-        total_loss = nll_loss + sharpness_alpha * width_penalty + entropy_beta * entropy
+        total_loss = nll_loss + sharpness_alpha * width_penalty + entropy_beta * entropy + coverage_gamma * coverage_penalty
         
     return total_loss
 
@@ -210,7 +219,7 @@ class MDNScorer(pl.LightningModule):
     Mus are bounded to [0.9, 5.1] via a sigmoid gate to prevent extreme extrapolation.
     Log-sigmas are clamped to [-3.5, 0.5] for numerical stability.
     """
-    def __init__(self, input_dim=1540, hidden_dims=[512, 1024, 1024, 512], k=3, lr=8e-4, sharpness_alpha=1.5, entropy_beta=0.02):
+    def __init__(self, input_dim=1540, hidden_dims=[512, 1024, 1024, 512], k=3, lr=8e-4, sharpness_alpha=0.8, entropy_beta=0.02, coverage_gamma=0.5):
         """
         Initialise MDNScorer.
 
@@ -237,6 +246,7 @@ class MDNScorer(pl.LightningModule):
         self.k = k
         self.sharpness_alpha = sharpness_alpha
         self.entropy_beta = entropy_beta
+        self.coverage_gamma = coverage_gamma
         
         layers = []
         prev_dim = input_dim + 2
@@ -308,7 +318,7 @@ class MDNScorer(pl.LightningModule):
         mus = 0.9 + 4.2 * torch.sigmoid(mus_raw)
         
         # Low-temperature: tighter clamp on log_sigma forces sharper distributions
-        log_sigmas = torch.clamp(log_sigmas_raw, min=-3.5, max=-1.5)
+        log_sigmas = torch.clamp(log_sigmas_raw, min=-3.5, max=-0.7)
         
         return mus, log_sigmas, pi_logits
         
@@ -317,10 +327,11 @@ class MDNScorer(pl.LightningModule):
         x, y, w = batch
         mus, log_sigmas, pi_logits = self(x)
         loss = mixture_laplace_nll_loss(
-            mus, log_sigmas, pi_logits, y, 
+            mus, log_sigmas, pi_logits, y,
             sample_weights=w,
             sharpness_alpha=self.sharpness_alpha,
-            entropy_beta=self.entropy_beta
+            entropy_beta=self.entropy_beta,
+            coverage_gamma=self.coverage_gamma
         )
         self.log("train_loss", loss, prog_bar=True)
         return loss
@@ -330,10 +341,11 @@ class MDNScorer(pl.LightningModule):
         x, y, w = batch
         mus, log_sigmas, pi_logits = self(x)
         loss = mixture_laplace_nll_loss(
-            mus, log_sigmas, pi_logits, y, 
+            mus, log_sigmas, pi_logits, y,
             sample_weights=w,
             sharpness_alpha=self.sharpness_alpha,
-            entropy_beta=self.entropy_beta
+            entropy_beta=self.entropy_beta,
+            coverage_gamma=self.coverage_gamma
         )
         self.log("val_loss", loss, prog_bar=True)
         
