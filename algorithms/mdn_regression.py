@@ -111,9 +111,12 @@ class UserRestaurantDataset(Dataset):
         """
         row = self.valid_data[idx]
         
-        # 1. Target Embedding (512-D)
-        target_vec = self.restaurant_embeddings[row['target_id']]
-        target_vec = torch.from_numpy(target_vec).float()
+        # 1. Target Embedding (512-D) — centroid subtraction + L2-norm
+        target_raw = self.restaurant_embeddings[row['target_id']]
+        target_vec = torch.from_numpy(target_raw).float()
+        if self.centroid is not None:
+            target_vec = target_vec - self.centroid
+        target_vec = target_vec / (torch.linalg.norm(target_vec) + 1e-9)
         
         # 2. User Taste Embeddings (Dual: Like & Dislike)
         like_vecs, like_weights = [], []
@@ -207,7 +210,7 @@ class MDNScorer(pl.LightningModule):
     Mus are bounded to [0.9, 5.1] via a sigmoid gate to prevent extreme extrapolation.
     Log-sigmas are clamped to [-3.5, 0.5] for numerical stability.
     """
-    def __init__(self, input_dim=1540, hidden_dims=[512, 1024, 1024, 512], k=3, lr=8e-4, sharpness_alpha=1.2, entropy_beta=0.05):
+    def __init__(self, input_dim=1540, hidden_dims=[512, 1024, 1024, 512], k=3, lr=8e-4, sharpness_alpha=1.5, entropy_beta=0.02):
         """
         Initialise MDNScorer.
 
@@ -263,19 +266,31 @@ class MDNScorer(pl.LightningModule):
     def forward(self, x):
         # x shape: [batch, 1540]
         # Structure: [512 Like, 512 Dislike, 512 Target, 4 Scalars]
+        #
+        # Dropout policy (REGRESSION_TUNING.md):
+        #   - Restaurant features (target): NO dropout — always present
+        #   - Interaction features (sim_like, sim_dis): NO dropout — always present
+        #   - User features (u_like, u_dis): 25% dropout together
+        #   - Metadata scalars: 25% dropout
         
         u_like = x[:, 0:512]
         u_dis  = x[:, 512:1024]
-        target = x[:, 1024:1536]
+        target = x[:, 1024:1536]   # Never dropped
         meta   = x[:, 1536:1540]
         
-        # 1. Interaction Features (Dot Products)
-        sim_like = (u_like * target).sum(dim=1, keepdim=True)
-        sim_dis  = (u_dis * target).sum(dim=1, keepdim=True)
+        # 1. Interaction features — computed before dropout so sims always reflect
+        #    the true cosine similarity between user history and the restaurant
+        sim_like = (u_like * target).sum(dim=1, keepdim=True)  # Never dropped
+        sim_dis  = (u_dis  * target).sum(dim=1, keepdim=True)  # Never dropped
         
-        # 2. Moderate Regularization (15% Dropout)
         if self.training:
-            meta_mask = (torch.rand(x.shape[0], 1, device=x.device) > 0.15).float()
+            # 2a. User feature dropout: zero out BOTH towers together 25% of the time
+            user_mask = (torch.rand(x.shape[0], 1, device=x.device) > 0.25).float()
+            u_like = u_like * user_mask
+            u_dis  = u_dis  * user_mask
+            
+            # 2b. Metadata dropout: zero out all 4 scalars 25% of the time
+            meta_mask = (torch.rand(x.shape[0], 1, device=x.device) > 0.25).float()
             meta = meta * meta_mask
             
         # 3. Concatenate all signals (Total: 1542 dims)
@@ -285,15 +300,15 @@ class MDNScorer(pl.LightningModule):
         out = self.final_layer(features)
         
         # Split into (batch, K) components
-        mus_raw     = out[:, :self.k]
+        mus_raw        = out[:, :self.k]
         log_sigmas_raw = out[:, self.k : 2*self.k]
-        pi_logits   = out[:, 2*self.k:]
+        pi_logits      = out[:, 2*self.k:]
         
-        # Bounded with breathing room to allow robust edge optimization while preventing unconstrained drift
+        # Bounded means with breathing room
         mus = 0.9 + 4.2 * torch.sigmoid(mus_raw)
         
-        # Stabilized Bounded Scale
-        log_sigmas = torch.clamp(log_sigmas_raw, min=-3.5, max=0.5)
+        # Low-temperature: tighter clamp on log_sigma forces sharper distributions
+        log_sigmas = torch.clamp(log_sigmas_raw, min=-3.5, max=-1.5)
         
         return mus, log_sigmas, pi_logits
         
