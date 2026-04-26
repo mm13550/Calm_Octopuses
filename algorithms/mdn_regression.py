@@ -11,6 +11,18 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
 import pytorch_lightning as pl
+_EMBEDDINGS_CACHE = {}
+
+def _load_cached_embeddings(paths):
+    global _EMBEDDINGS_CACHE
+    merged = {}
+    for p in paths:
+        if p not in _EMBEDDINGS_CACHE:
+            print(f"Loading embeddings from {os.path.basename(p)}...")
+            _EMBEDDINGS_CACHE[p] = torch.load(p, map_location='cpu', weights_only=False)
+        merged.update(_EMBEDDINGS_CACHE[p])
+    return merged
+
 from pytorch_lightning.callbacks import EarlyStopping
 
 def get_michelin_centroid(embeddings_dict):
@@ -49,11 +61,7 @@ class UserRestaurantDataset(Dataset):
         with open(json_path, 'r') as f:
             self.data = json.load(f)
             
-        self.restaurant_embeddings = {}
-        for path in embeddings_paths:
-            print(f"Loading embeddings from {os.path.basename(path)}")
-            emb = torch.load(path, map_location='cpu', weights_only=False)
-            self.restaurant_embeddings.update(emb)
+        self.restaurant_embeddings = _load_cached_embeddings(embeddings_paths)
         print(f"Total merged embeddings available: {len(self.restaurant_embeddings)}")
         
         self.metadata = {}
@@ -66,6 +74,12 @@ class UserRestaurantDataset(Dataset):
         
         # Filter out records where target or any historical business isn't in embeddings
         self.valid_data = []
+        # Compute local training centroid for alignment
+        if self.restaurant_embeddings:
+            all_vecs = np.stack(list(self.restaurant_embeddings.values()))
+            self.centroid = torch.from_numpy(all_vecs.mean(axis=0)).float()
+        else:
+            self.centroid = None
         for row in self.data:
             target_id = row['target_michelin_business']
             if target_id not in self.restaurant_embeddings:
@@ -106,7 +120,9 @@ class UserRestaurantDataset(Dataset):
         dislike_vecs, dislike_weights = [], []
         
         for b_id, r in zip(row['hist_ids'], row['hist_ratings']):
-            vec = torch.from_numpy(self.restaurant_embeddings[b_id]).float()
+            raw_vec = torch.from_numpy(self.restaurant_embeddings[b_id]).float()
+            vec = raw_vec - self.centroid if self.centroid is not None else raw_vec
+            vec = vec / (torch.linalg.norm(vec) + 1e-9)
             if r >= 3.5:
                 w = r / 5.0
                 like_vecs.append(vec * w)
@@ -191,7 +207,7 @@ class MDNScorer(pl.LightningModule):
     Mus are bounded to [0.9, 5.1] via a sigmoid gate to prevent extreme extrapolation.
     Log-sigmas are clamped to [-3.5, 0.5] for numerical stability.
     """
-    def __init__(self, input_dim=1540, hidden_dims=[1024, 1024, 512], k=3, lr=8e-4, sharpness_alpha=1.2, entropy_beta=0.05):
+    def __init__(self, input_dim=1540, hidden_dims=[512, 1024, 1024, 512], k=3, lr=8e-4, sharpness_alpha=1.2, entropy_beta=0.05):
         """
         Initialise MDNScorer.
 
@@ -220,7 +236,7 @@ class MDNScorer(pl.LightningModule):
         self.entropy_beta = entropy_beta
         
         layers = []
-        prev_dim = input_dim
+        prev_dim = input_dim + 2
         for h_dim in hidden_dims:
             layers.append(nn.Linear(prev_dim, h_dim))
             layers.append(nn.BatchNorm1d(h_dim))
@@ -236,7 +252,7 @@ class MDNScorer(pl.LightningModule):
             self.final_layer.bias.fill_(0)
             for i in range(k):
                 # Spread mus: k=0 -> 2, k=1 -> 3.5, k=2 -> 4.8 (logits)
-                self.final_layer.bias[i] = -1.0 + (i * 1.5) 
+                self.final_layer.bias[i] = -2.0 + (i * 2.0) 
                 # Nuclear Sharp Initialization: log(0.08) approx -2.5
                 self.final_layer.bias[k + i] = -2.5
                 # Mixing weights: starts uniform
@@ -245,20 +261,27 @@ class MDNScorer(pl.LightningModule):
         self.mlp = nn.Sequential(*layers)
         
     def forward(self, x):
-        """
-        Run the forward pass.
-
-        Parameters
-        ----------
-        x : torch.Tensor  shape (batch, input_dim)
-
-        Returns
-        -------
-        mus : torch.Tensor         shape (batch, k) — mixture means in [0.9, 5.1]
-        log_sigmas : torch.Tensor  shape (batch, k) — clamped log-scale parameters
-        pi_logits : torch.Tensor   shape (batch, k) — unnormalised mixture weights
-        """
-        features = self.mlp(x)
+        # x shape: [batch, 1540]
+        # Structure: [512 Like, 512 Dislike, 512 Target, 4 Scalars]
+        
+        u_like = x[:, 0:512]
+        u_dis  = x[:, 512:1024]
+        target = x[:, 1024:1536]
+        meta   = x[:, 1536:1540]
+        
+        # 1. Interaction Features (Dot Products)
+        sim_like = (u_like * target).sum(dim=1, keepdim=True)
+        sim_dis  = (u_dis * target).sum(dim=1, keepdim=True)
+        
+        # 2. Moderate Regularization (15% Dropout)
+        if self.training:
+            meta_mask = (torch.rand(x.shape[0], 1, device=x.device) > 0.15).float()
+            meta = meta * meta_mask
+            
+        # 3. Concatenate all signals (Total: 1542 dims)
+        x_new = torch.cat([u_like, u_dis, target, meta, sim_like, sim_dis], dim=1)
+            
+        features = self.mlp(x_new)
         out = self.final_layer(features)
         
         # Split into (batch, K) components
@@ -334,12 +357,12 @@ def evaluate_regression(train_json, test_json, train_emb, test_emb, max_epochs=2
         train_ds, [t_size, v_size], generator=torch.Generator().manual_seed(42)
     )
     
-    train_loader = DataLoader(train_sub, batch_size=128, shuffle=True)
-    val_loader   = DataLoader(val_sub, batch_size=128)
-    test_loader  = DataLoader(test_ds, batch_size=256)
+    train_loader = DataLoader(train_sub, batch_size=128, shuffle=True, num_workers=0)
+    val_loader   = DataLoader(val_sub, batch_size=128, num_workers=0)
+    test_loader  = DataLoader(test_ds, batch_size=256, num_workers=0)
     
     model = MDNScorer()
-    trainer = pl.Trainer(
+    trainer = pl.Trainer(accelerator="cpu", devices=1, enable_progress_bar=True, num_sanity_val_steps=0, 
         max_epochs=max_epochs,
         callbacks=[EarlyStopping(monitor="val_loss", patience=3, mode="min")],
         enable_checkpointing=False,

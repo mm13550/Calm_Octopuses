@@ -679,7 +679,11 @@ elif page == "MDN Opinionatedness Test":
                     st.error("None of your rated restaurants have embeddings. Try rating different ones.")
                 else:
                     user_like_vec = torch.stack(like_vecs).sum(dim=0) / sum(like_weights) if like_vecs else torch.zeros(512)
+                    if like_vecs:
+                        user_like_vec = user_like_vec / (torch.linalg.norm(user_like_vec) + 1e-9)
                     user_dislike_vec = torch.stack(dislike_vecs).sum(dim=0) / sum(dislike_weights) if dislike_vecs else torch.zeros(512)
+                    if dislike_vecs:
+                        user_dislike_vec = user_dislike_vec / (torch.linalg.norm(user_dislike_vec) + 1e-9)
                     mean_hist = sum(user_ratings.values()) / len(user_ratings)
                     scalar_feat = torch.tensor([mean_hist], dtype=torch.float32)
 
