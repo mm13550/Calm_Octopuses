@@ -8,6 +8,8 @@ metadata, image, coverage metrics, bio, menu highlights, and review snippets.
 The rating label is automatically switched between "Your Rating" (actual) and
 "Predicted Rating" (MDN output) depending on the row's data.
 """
+from html import escape
+
 import pandas as pd
 import streamlit as st
 import plotly.graph_objects as go
@@ -40,6 +42,13 @@ def _menu_item_key(value: Any) -> str:
     if not cleaned_value:
         return ""
     return cleaned_value.split(" — ", 1)[0].lower()
+
+
+def _badge_html(text: str, variant: str = "soft") -> str:
+    cleaned_text = _clean_text(text)
+    if not cleaned_text:
+        return ""
+    return f'<span class="co-inline-badge co-inline-badge--{variant}">{escape(cleaned_text)}</span>'
 
 
 ASP_COLS  = ["asp_food_quality", "asp_service", "asp_ambiance", "asp_value", "asp_wait_time"]
@@ -82,14 +91,26 @@ def _render_sentiment(rest_id: str, element_key: str | None = None) -> None:
         r=r_vals,
         theta=theta,
         fill="toself",
-        fillcolor="rgba(255, 75, 75, 0.15)",
-        line=dict(color="#FF4B4B", width=2),
+        fillcolor="rgba(239, 106, 71, 0.14)",
+        line=dict(color="#ef6a47", width=2.5),
         name="Sentiment",
     ))
     fig.update_layout(
+        font=dict(color="#5f6d78"),
         polar=dict(
-            radialaxis=dict(visible=True, range=[0, 5], tickfont=dict(size=9)),
-            angularaxis=dict(tickfont=dict(size=11)),
+            bgcolor="rgba(0,0,0,0)",
+            radialaxis=dict(
+                visible=True,
+                range=[0, 5],
+                tickfont=dict(size=10, color="#8a959e"),
+                gridcolor="rgba(31, 35, 40, 0.16)",
+                linecolor="rgba(31, 35, 40, 0.14)",
+            ),
+            angularaxis=dict(
+                tickfont=dict(size=12, color="#8a959e"),
+                gridcolor="rgba(31, 35, 40, 0.16)",
+                linecolor="rgba(31, 35, 40, 0.14)",
+            ),
         ),
         showlegend=False,
         margin=dict(l=40, r=40, t=30, b=20),
@@ -98,7 +119,7 @@ def _render_sentiment(rest_id: str, element_key: str | None = None) -> None:
         plot_bgcolor="rgba(0,0,0,0)",
     )
     chart_key = f"radar_{element_key or rest_id}"
-    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False}, key=chart_key)
+    st.plotly_chart(fig, width="stretch", config={"displayModeBar": False}, key=chart_key)
 
 
 # ── Main card renderer ────────────────────────────────────────────────────────
@@ -132,15 +153,31 @@ def _render_result_card(row: Dict[str, Any], score_label: str, render_key: str |
             image_path = _clean_text(row.get("representative_image_path"))
             resolved = _resolve_path(image_path) if image_path else None
             if resolved and resolved.exists():
-                st.image(str(resolved), use_container_width=True)
+                st.image(str(resolved), width="stretch")
             else:
                 st.info("No representative image available.")
 
         with right:
-            st.markdown(f"### {_clean_text(row.get('restaurant_name'))}")
-            st.caption(
-                f"{_clean_text(row.get('rest_id'))} • {_clean_text(row.get('borough')) or 'N/A'} • "
-                f"{_clean_text(row.get('michelin_category')) or 'N/A'}"
+            restaurant_name = _clean_text(row.get("restaurant_name")) or "Unnamed restaurant"
+            borough = _clean_text(row.get("borough"))
+            michelin_category = _clean_text(row.get("michelin_category"))
+            rest_id_label = _clean_text(row.get("rest_id"))
+            badge_parts = []
+            if borough:
+                badge_parts.append(_badge_html(borough, "soft"))
+            if michelin_category:
+                badge_parts.append(_badge_html(michelin_category, "accent"))
+
+            st.markdown(
+                f"""
+                <div class="co-result-meta">
+                    <p class="co-card-kicker">Restaurant Card</p>
+                    <h3 class="co-card-title">{escape(restaurant_name)}</h3>
+                    <div class="co-badge-row">{''.join(badge_parts)}</div>
+                    <p class="co-card-id">Catalog ID · {escape(rest_id_label)}</p>
+                </div>
+                """,
+                unsafe_allow_html=True,
             )
 
             metrics = st.columns(2)
@@ -155,7 +192,11 @@ def _render_result_card(row: Dict[str, Any], score_label: str, render_key: str |
 
             homepage = _clean_text(row.get("homepage"))
             if homepage:
-                st.markdown(f"[Homepage]({homepage})")
+                safe_homepage = escape(homepage, quote=True)
+                st.markdown(
+                    f'<a class="co-link-pill" href="{safe_homepage}" target="_blank">Visit homepage</a>',
+                    unsafe_allow_html=True,
+                )
 
             counts = st.columns(4)
             counts[0].metric("Menus", int(row.get("menu_count", 0)))
@@ -191,7 +232,10 @@ def _render_result_card(row: Dict[str, Any], score_label: str, render_key: str |
                     item_key = _menu_item_key(item)
                     if not item_key or item_key in seen_highlights:
                         continue
-                    st.write(f"- Matched dish: {_truncate(item, 160)}")
+                    st.markdown(
+                        f"<div class='co-menu-match'><strong>Matched dish</strong> · {escape(_truncate(item, 160))}</div>",
+                        unsafe_allow_html=True,
+                    )
                     seen_highlights.add(item_key)
 
                 for item in remaining_menu_items[:3]:

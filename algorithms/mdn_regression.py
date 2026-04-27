@@ -535,6 +535,7 @@ import pandas as pd
 import streamlit as st
 from pathlib import Path
 from typing import Dict
+from core.data_loader import _clean_text, load_restaurant_embeddings
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
@@ -580,14 +581,102 @@ def _center_vec(vec: torch.Tensor, centroid: torch.Tensor) -> torch.Tensor:
     centered = vec - centroid
     return centered / (centered.norm() + 1e-8)
 
+
+def _build_user_preference_profile(user_ratings: Dict[str, float], embeddings_map, centroid):
+    """Build normalized like/dislike preference vectors from explicit ratings."""
+    like_vecs, like_weights = [], []
+    dislike_vecs, dislike_weights = [], []
+
+    for rid, rating in user_ratings.items():
+        vec = embeddings_map.get(rid)
+        if vec is None:
+            continue
+
+        centered_vec = _center_vec(torch.from_numpy(vec).float(), centroid)
+        if rating >= 3.5:
+            weight = float(rating) / 5.0
+            like_vecs.append(centered_vec * weight)
+            like_weights.append(weight)
+        else:
+            weight = (6.0 - float(rating)) / 5.0
+            dislike_vecs.append(centered_vec * weight)
+            dislike_weights.append(weight)
+
+    if not like_vecs and not dislike_vecs:
+        return None
+
+    user_like_vec = torch.stack(like_vecs).sum(dim=0) / sum(like_weights) if like_vecs else torch.zeros(512)
+    if like_vecs:
+        user_like_vec = user_like_vec / (torch.linalg.norm(user_like_vec) + 1e-9)
+
+    user_dislike_vec = torch.stack(dislike_vecs).sum(dim=0) / sum(dislike_weights) if dislike_vecs else torch.zeros(512)
+    if dislike_vecs:
+        user_dislike_vec = user_dislike_vec / (torch.linalg.norm(user_dislike_vec) + 1e-9)
+
+    mean_hist_rating = sum(user_ratings.values()) / len(user_ratings)
+    return user_like_vec, user_dislike_vec, mean_hist_rating
+
+
+def _score_embedding_fallback_recommendations(catalog: pd.DataFrame, user_ratings: Dict[str, float]) -> pd.DataFrame:
+    """Fallback recommender when the MDN checkpoint is unavailable."""
+    if catalog.empty or not user_ratings:
+        return pd.DataFrame()
+
+    from core.data_loader import load_restaurant_embeddings
+
+    embeddings_map = load_restaurant_embeddings()
+    centroid = get_michelin_centroid()
+    profile = _build_user_preference_profile(user_ratings, embeddings_map, centroid)
+    if profile is None:
+        return pd.DataFrame()
+
+    user_like_vec, user_dislike_vec, mean_hist_rating = profile
+    preference_vec = user_like_vec - (0.35 * user_dislike_vec)
+    if torch.linalg.norm(preference_vec) < 1e-8:
+        preference_vec = user_like_vec if torch.linalg.norm(user_like_vec) > 1e-8 else -user_dislike_vec
+    preference_vec = preference_vec / (torch.linalg.norm(preference_vec) + 1e-9)
+
+    rows = []
+    for row in catalog.to_dict(orient="records"):
+        rest_id = _clean_text(row.get("rest_id"))
+        if rest_id in user_ratings:
+            continue
+
+        target_vec_np = embeddings_map.get(rest_id)
+        if target_vec_np is None:
+            continue
+
+        target_vec = _center_vec(torch.from_numpy(target_vec_np).float(), centroid)
+        similarity = F.cosine_similarity(preference_vec.unsqueeze(0), target_vec.unsqueeze(0)).item()
+        dislike_similarity = 0.0
+        if torch.linalg.norm(user_dislike_vec) > 1e-8:
+            dislike_similarity = F.cosine_similarity(user_dislike_vec.unsqueeze(0), target_vec.unsqueeze(0)).item()
+
+        score = 3.0 + (1.35 * similarity) + (0.15 * (mean_hist_rating - 3.0)) - (0.35 * max(dislike_similarity, 0.0))
+        score = float(max(1.0, min(5.0, score)))
+
+        rows.append(
+            {
+                **row,
+                "score": score,
+                "similarity_score": similarity,
+                "recommendation_mode": "embedding_fallback",
+            }
+        )
+
+    if not rows:
+        return pd.DataFrame()
+
+    return pd.DataFrame(rows).sort_values(by="score", ascending=False)
+
 def _score_mdn_recommendations(catalog: pd.DataFrame, user_ratings: Dict[str, float]) -> pd.DataFrame:
     if catalog.empty or not user_ratings:
         return pd.DataFrame()
         
     model = load_mdn_model()
     if model is None:
-        st.error("MDN checkpoint not found.")
-        return pd.DataFrame()
+        st.info("MDN checkpoint is missing, so recommendations are using an embedding-based fallback.")
+        return _score_embedding_fallback_recommendations(catalog, user_ratings)
         
     embeddings_map = load_restaurant_embeddings()
     centroid = get_michelin_centroid()
@@ -599,31 +688,10 @@ def _score_mdn_recommendations(catalog: pd.DataFrame, user_ratings: Dict[str, fl
         with open(meta_path, 'r') as f:
             metadata = json.load(f)
 
-    like_vecs, like_weights = [], []
-    dislike_vecs, dislike_weights = [], []
-    for rid, rating in user_ratings.items():
-        vec = embeddings_map.get(rid)
-        if vec is not None:
-            w = float(rating) / 5.0
-            centered_vec = _center_vec(torch.from_numpy(vec).float(), centroid)
-            if rating >= 3.5:
-                like_vecs.append(centered_vec * w)
-                like_weights.append(w)
-            else:
-                aw = (6.0 - rating) / 5.0
-                dislike_vecs.append(centered_vec * aw)
-                dislike_weights.append(aw)
-
-    if not like_vecs and not dislike_vecs:
+    profile = _build_user_preference_profile(user_ratings, embeddings_map, centroid)
+    if profile is None:
         return pd.DataFrame()
-
-    user_like_vec = torch.stack(like_vecs).sum(dim=0) / sum(like_weights) if like_vecs else torch.zeros(512)
-    if like_vecs: user_like_vec = user_like_vec / (torch.linalg.norm(user_like_vec) + 1e-9)
-    
-    user_dislike_vec = torch.stack(dislike_vecs).sum(dim=0) / sum(dislike_weights) if dislike_vecs else torch.zeros(512)
-    if dislike_vecs: user_dislike_vec = user_dislike_vec / (torch.linalg.norm(user_dislike_vec) + 1e-9)
-    
-    mean_hist_rating = sum(user_ratings.values()) / len(user_ratings)
+    user_like_vec, user_dislike_vec, mean_hist_rating = profile
     scalar_feats = torch.tensor([mean_hist_rating], dtype=torch.float32)
 
     rows = []

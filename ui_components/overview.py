@@ -42,7 +42,7 @@ def _render_data_overview(catalog: pd.DataFrame) -> None:
     menus_df = load_menus_df()
     bios_df = load_bios_df()
 
-    st.subheader("Current Data Configuration")
+    st.markdown("<p class='co-note'>Current data footprint feeding the frontend.</p>", unsafe_allow_html=True)
     cols = st.columns(5)
     cols[0].metric("Restaurants", len(lookup_df))
     cols[1].metric("Reviews", len(reviews_df))
@@ -58,16 +58,16 @@ def _render_data_overview(catalog: pd.DataFrame) -> None:
         (str(MENUS_JSON), len(menus_df)),
         (str(BIOS_JSON), len(bios_df)),
     ]
-    st.dataframe(pd.DataFrame(file_rows, columns=["file", "rows"]), use_container_width=True, hide_index=True)
+    st.dataframe(pd.DataFrame(file_rows, columns=["file", "rows"]), width="stretch", hide_index=True)
 
     if not catalog.empty:
         st.markdown("### Coverage summary")
         coverage_df = pd.DataFrame(
             [
-                {"field": "has_menu", "restaurants": int(catalog["has_menu"].sum())},
-                {"field": "has_reviews", "restaurants": int(catalog["has_reviews"].sum())},
-                {"field": "has_food_images", "restaurants": int(catalog["has_food_images"].sum())},
-                {"field": "has_bio", "restaurants": int(catalog["bio_text"].astype(bool).sum())},
+                {"field": "Restaurants with menus", "restaurants": int(catalog["has_menu"].sum())},
+                {"field": "Restaurants with reviews", "restaurants": int(catalog["has_reviews"].sum())},
+                {"field": "Restaurants with food images", "restaurants": int(catalog["has_food_images"].sum())},
+                {"field": "Restaurants with bios", "restaurants": int(catalog["bio_text"].astype(bool).sum())},
             ]
         )
-        st.dataframe(coverage_df, use_container_width=True, hide_index=True)
+        st.dataframe(coverage_df, width="stretch", hide_index=True)
