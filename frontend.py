@@ -87,8 +87,8 @@ def main() -> None:
                             results_df = add_mdn_predictions(results_df, st.session_state.user_ratings)
                     
                     st.success(f"Found {len(results_df)} matching restaurants.")
-                    for _, result_row in results_df.head(top_k).iterrows():
-                        _render_result_card(result_row.to_dict(), "Match score")
+                    for idx, (_, result_row) in enumerate(results_df.head(top_k).iterrows()):
+                        _render_result_card(result_row.to_dict(), "Match score", render_key=f"search_text_{idx}")
 
         else:
             uploaded_image = st.file_uploader("Upload a reference image", type=["jpg", "jpeg", "png", "webp"])
@@ -113,8 +113,8 @@ def main() -> None:
                             results_df = add_mdn_predictions(results_df, st.session_state.user_ratings)
                             
                     st.success(f"Found {len(results_df)} visually similar restaurants.")
-                    for _, result_row in results_df.head(top_k).iterrows():
-                        _render_result_card(result_row.to_dict(), "Image similarity")
+                    for idx, (_, result_row) in enumerate(results_df.head(top_k).iterrows()):
+                        _render_result_card(result_row.to_dict(), "Image similarity", render_key=f"search_image_{idx}")
 
     with dish_search_tab:
         st.subheader("Exact Dish Search")
@@ -141,8 +141,8 @@ def main() -> None:
                 sort_label = "Exact Match"
 
                 st.success(f"Found {len(exact_results_df)} restaurants with exact matches.")
-                for _, result_row in exact_results_df.iterrows():
-                    _render_result_card(result_row.to_dict(), sort_label)
+                for idx, (_, result_row) in enumerate(exact_results_df.iterrows()):
+                    _render_result_card(result_row.to_dict(), sort_label, render_key=f"exact_dish_{idx}")
 
     with browse_tab:
         st.subheader("Restaurant Browser")
@@ -170,7 +170,7 @@ def main() -> None:
                     st.rerun()
             st.divider()
 
-            _render_result_card(selected_row, "Catalog score")
+            _render_result_card(selected_row, "Catalog score", render_key="browse_selected")
 
             st.markdown("### Raw records")
             raw_sections = st.tabs(["Lookup", "Menus", "Reviews", "Images", "Bio"])
@@ -238,8 +238,8 @@ def main() -> None:
             if rec_df.empty:
                 st.warning("Could not generate recommendations.")
             else:
-                for _, result_row in rec_df.head(6).iterrows():
-                    _render_result_card(result_row.to_dict(), "Predicted Rating")
+                for idx, (_, result_row) in enumerate(rec_df.head(6).iterrows()):
+                    _render_result_card(result_row.to_dict(), "Predicted Rating", render_key=f"recommendation_{idx}")
                     
                     st.caption("Rating Probability Distribution (HDR)")
                     chart_df = pd.DataFrame({"Probability Density": result_row["pdf_grid"]}, index=np.linspace(1.0, 5.0, 101))

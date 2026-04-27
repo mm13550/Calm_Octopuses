@@ -34,12 +34,33 @@ REVIEWS_CSV = DATA_DIR / "social_reviews.csv"
 IMAGES_CSV = DATA_DIR / "social_images.csv"
 MENUS_JSON = DATA_DIR / "extracted_menus" / "final_parsed_menus.json"
 BIOS_JSON = DATA_DIR / "extracted_bios" / "restaurant_bios_joinable.json"
-EMBEDDINGS_JSONL = DATA_DIR / "embeddings" / "restaurant_profiles.jsonl"
-MENU_EMBEDDINGS_JSONL = DATA_DIR / "embeddings" / "menu_embeddings.jsonl"
-REVIEW_EMBEDDINGS_JSONL = DATA_DIR / "embeddings" / "review_embeddings.jsonl"
-FOOD_EMBEDDINGS_JSONL = DATA_DIR / "embeddings" / "image_embeddings_food.jsonl"
-INTERIOR_EMBEDDINGS_JSONL = DATA_DIR / "embeddings" / "image_embeddings_interior.jsonl"
 DEFAULT_CLIP_MODEL_ID = "openai/clip-vit-base-patch32"
+
+
+def _resolve_embedding_path(filename: str) -> Path:
+    """
+    Resolve an embeddings file path, falling back to the local ``*_latest`` export.
+
+    This keeps the app compatible with both the canonical filenames used in code
+    and the locally generated data exports that are intentionally gitignored.
+    """
+    default_path = DATA_DIR / "embeddings" / filename
+    if default_path.exists():
+        return default_path
+
+    if filename.endswith(".jsonl"):
+        latest_path = default_path.with_name(f"{default_path.stem}_latest{default_path.suffix}")
+        if latest_path.exists():
+            return latest_path
+
+    return default_path
+
+
+EMBEDDINGS_JSONL = _resolve_embedding_path("restaurant_profiles.jsonl")
+MENU_EMBEDDINGS_JSONL = _resolve_embedding_path("menu_embeddings.jsonl")
+REVIEW_EMBEDDINGS_JSONL = _resolve_embedding_path("review_embeddings.jsonl")
+FOOD_EMBEDDINGS_JSONL = _resolve_embedding_path("image_embeddings_food.jsonl")
+INTERIOR_EMBEDDINGS_JSONL = _resolve_embedding_path("image_embeddings_interior.jsonl")
 
 def _clean_text(value: Any) -> str:
     """Normalise a raw field value to a single-line, whitespace-collapsed string."""

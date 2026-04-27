@@ -35,11 +35,18 @@ def _load_sentiment() -> pd.DataFrame:
     return _SENTIMENT_DF
 
 
+def _menu_item_key(value: Any) -> str:
+    cleaned_value = _clean_text(value)
+    if not cleaned_value:
+        return ""
+    return cleaned_value.split(" — ", 1)[0].lower()
+
+
 ASP_COLS  = ["asp_food_quality", "asp_service", "asp_ambiance", "asp_value", "asp_wait_time"]
 ASP_LABELS = ["Food", "Service", "Ambiance", "Value", "Wait Time"]
 
 
-def _render_sentiment(rest_id: str) -> None:
+def _render_sentiment(rest_id: str, element_key: str | None = None) -> None:
     """
     Render sentiment score bars + radar chart for a given restaurant.
     Shows nothing silently if no sentiment data is available.
@@ -90,11 +97,12 @@ def _render_sentiment(rest_id: str) -> None:
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
     )
-    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False}, key=f"radar_{rest_id}")
+    chart_key = f"radar_{element_key or rest_id}"
+    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False}, key=chart_key)
 
 
 # ── Main card renderer ────────────────────────────────────────────────────────
-def _render_result_card(row: Dict[str, Any], score_label: str) -> None:
+def _render_result_card(row: Dict[str, Any], score_label: str, render_key: str | None = None) -> None:
     """
     Render a styled restaurant result card in the current Streamlit column.
 
@@ -113,6 +121,9 @@ def _render_result_card(row: Dict[str, Any], score_label: str) -> None:
         ``review_snippets``, ``score``, ``predicted_rating``, ``actual_rating``.
     score_label : str
         Label text for the primary score metric (e.g. ``"Match Score"``).
+    render_key : str | None
+        Optional per-render unique key suffix used to avoid duplicate Streamlit
+        element IDs when the same restaurant card appears in multiple tabs.
     """
     with st.container(border=True):
         left, right = st.columns([1, 2])
@@ -158,11 +169,37 @@ def _render_result_card(row: Dict[str, Any], score_label: str) -> None:
                 with st.expander(title):
                     st.write(bio_text)
 
+            matched_menu_items = row.get("matched_menu_items", []) or []
+            matched_menu_items = [
+                _clean_text(item) for item in matched_menu_items if _clean_text(item)
+            ]
+
             menu_items = row.get("menu_items", []) or []
-            if menu_items:
+            remaining_menu_items = []
+            matched_menu_item_keys = {_menu_item_key(item) for item in matched_menu_items if _menu_item_key(item)}
+            for item in menu_items:
+                cleaned_item = _clean_text(item)
+                cleaned_key = _menu_item_key(cleaned_item)
+                if cleaned_item and cleaned_key not in matched_menu_item_keys:
+                    remaining_menu_items.append(cleaned_item)
+
+            if matched_menu_items or remaining_menu_items:
                 st.markdown("**Menu highlights**")
-                for item in menu_items[:3]:
-                    st.write(f"- {_truncate(_clean_text(item), 160)}")
+
+                seen_highlights = set()
+                for item in matched_menu_items[:3]:
+                    item_key = _menu_item_key(item)
+                    if not item_key or item_key in seen_highlights:
+                        continue
+                    st.write(f"- Matched dish: {_truncate(item, 160)}")
+                    seen_highlights.add(item_key)
+
+                for item in remaining_menu_items[:3]:
+                    item_key = _menu_item_key(item)
+                    if not item_key or item_key in seen_highlights:
+                        continue
+                    st.write(f"- {_truncate(item, 160)}")
+                    seen_highlights.add(item_key)
 
             review_snippets = row.get("review_snippets", []) or []
             if review_snippets:
@@ -175,6 +212,7 @@ def _render_result_card(row: Dict[str, Any], score_label: str) -> None:
         # ── Sentiment section (full width, below image+info) ──────────────────
         rest_id = _clean_text(row.get("rest_id", ""))
         if rest_id:
-            _render_sentiment(rest_id)
+            sentiment_key = f"{render_key}_{rest_id}" if render_key else rest_id
+            _render_sentiment(rest_id, element_key=sentiment_key)
 
         
