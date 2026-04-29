@@ -1,62 +1,124 @@
-# Project Proposal & Implementation Plan: Michelin NYC Dining Recommender (v3.0)
+# Calm Octopuses Project Plan
 
-## 1. Problem & Objective
+This document reflects the current repository state and the remaining work needed to keep the Streamlit Michelin NYC restaurant explorer reproducible.
 
-Current dining search tools (Google Maps, Yelp, Michelin Guide) rely heavily on coarse tags. For food enthusiasts seeking specific dish presentations (e.g., "creamy uni pasta") or precise ambiance, search is inefficient and lacks personalization.
+## 1. Current Objective
 
-This v3.0 project builds a **multimodal recommendation web application** focused on Michelin-starred restaurants. By integrating official menus with low-friction User-Generated Content (UGC), it enables precise dish-level searches using **images or natural language**. It also clusters latent restaurant styles and predicts personalized rating expectations, including risk intervals.
+Calm Octopuses is a local Streamlit application for exploring Michelin-listed New York City restaurants. The current product path combines tracked restaurant metadata with local generated artifacts:
 
-## 2. Core Methodology & Algorithmic Enhancements
+- Restaurant lookup and Michelin award metadata
+- Parsed restaurant biographies
+- Local menu, review, image, and embedding artifacts
+- CLIP-based text and image retrieval
+- MDN-based personalized recommendation scoring with an embedding fallback
+- Streamlit cards, browsing, search, recommendation, and data-overview UI
 
-1. **Multimodal Cross-Domain Search:**
-    - Embeds restaurant menus (text) and images into a shared vector space via OpenAI CLIP (or SigLIP) for text-to-image and image-to-image similarity retrieval.
-    - **Enhancement:** Introduces a lightweight **Vector Database** (e.g., LanceDB or ChromaDB) to efficiently manage query retrieval and incremental delta updates.
-2. **Dynamic UGC Integration:**
-    - Uses **Google Places API** (for reviews and photos) and **Apify Yelp Scraper** (for high-quality food images and additional reviews).
-    - Retrieval scoring is based purely on **Cosine Similarity** between query embeddings and stored vectors. No temporal or popularity weighting is applied, as neither Google Places API nor Apify Yelp Scraper provide reliable metadata for such scoring.
-3. **LLM-Assisted Menu Parsing:**
-    - **Enhancement:** Leverages Vision-Language Models (e.g., GPT-4o-mini / Claude 3) to extract structured JSON (Dish, Description, Price) from unstructured PDF and HTML menus, drastically improving text processing over brittle regular expressions.
-4. **Multimodal Style Feature Fusion & Clustering:**
-    - Concatenates official text descriptions (Text Embeddings) with the mean vector of all social images per restaurant (Image Embeddings).
-    - Utilizes **UMAP** for dimensionality reduction, followed by **Gaussian Mixture Models (GMM)** to cluster restaurants and generate "Style Tags" (e.g., "Classic French" vs. "Modern Creative").
-5. **Quantile Regression for Score Interval Prediction:**
-    - Moves beyond a static average predicted score by calculating a Confidence Interval (representing the risk of a bad experience).
-    - **Enhancement:** Integrates **Aspect-Based Sentiment Analysis (ABSA)** derived from the UGC text (scoring food vs. service vs. ambiance separately) directly into the Quantile Regression framework.
+The current main entry point is:
 
-## 3. Phased Implementation Plan (4-Week Agile Sprint)
+```powershell
+streamlit run frontend.py
+```
 
-### Phase 1: Infrastructure & Data Foundation
+## 2. Current Architecture
 
-- Register Developer APIs for Apify and Google Cloud (Places API).
-- Build the `social_scraper.py` pipeline: Use Google to resolve unique Place IDs (`rest_id`) and extract the 5 most recent Google maps reviews. Proxy search terms to Apify Yelp Scraper to autonomously fetch 30+ URLs of user-generated food imagery per location.
-- Enhance `menu_crawler.py` utilizing LLMs to standardize PDF extractions, alongside a robust three-stage extraction pipeline (Crawl, Retry, Merge) that automatically handles API Rate Limits, Next.js/React Server Components hidden menus, and strict firewalls (406 Bypass).
-- **[NEW]** Build the `bio_crawler.py` pipeline: Crawl homepage and 'About Us' URLs to extract official restaurant descriptions, culinary styles, and chef history to properly anchor styling representations during the UMAP/GMM clustering phase.
-- Ensure data lands in standard schemas: reviews as `[uid, rest_id, source, text, rating]`, images as `[image_uid, rest_id, source, image_path]`.
+### Application and UI
 
-### Phase 2: Core Vectors & Recommendation Logic
+- `frontend.py` is the primary Streamlit application.
+- `ui_components/cards.py` renders restaurant result cards, Michelin badges, menu/review snippets, and review sentiment panels.
+- `ui_components/theme.py` owns the app styling and reusable header/section rendering helpers.
+- `ui_components/overview.py` renders data coverage checks.
+- `ui_components/image_grid.py` is an optional helper for visual-search grid experiments.
 
-- Switch core storage backend to a Vector Database (`LanceDB`) handling `image_embeddings` and `social_embeddings` seamlessly.
-- Implement cosine similarity retrieval in `retrieval_engine.py`.
+### Data Loading
 
-### Phase 3: Advanced Clustering & Prediction
+- `core/data_loader.py` is the canonical path and schema layer.
+- It loads tracked CSV/JSON data, local generated menu/review/image artifacts, and embedding JSONL files.
+- It assembles the wide restaurant catalog consumed by `frontend.py`, `algorithms/retrieval.py`, and `algorithms/mdn_regression.py`.
 
-- Structure the Multi-modal fusion mappings in `clustering.py`.
-- Apply UMAP dimensionality reduction on the text+image vectors, feeding output into the GMM clusters.
-- Update `quantile_regression.py` to ingest the new multidimensional ABSA vectors and train the variance prediction models.
+### Retrieval and Recommendation
 
-### Phase 4: Streamlit Frontend UX Integration
+- `algorithms/retrieval.py` is the active frontend retrieval path.
+- It supports CLIP text query embedding, image query embedding, cosine similarity scoring, lexical overlap blending, menu-item scoped search, review scoped search, and exact dish matching.
+- `algorithms/mdn_regression.py` provides personalized rating predictions when an MDN checkpoint is available.
+- When the MDN checkpoint is missing, the recommendation flow falls back to embedding-based scoring.
+- `quarry/` contains LanceDB-style retrieval prototypes. These are useful for future vector database work but are not the active frontend path.
 
-- Upgrade GUI in `app.py` allowing interactive text and image query upload modes.
-- Implement visual overlays in `ui_components/image_grid.py` for search results.
-- Expose the visual Style Tags dynamically on the UI.
+### Data and Embedding Pipelines
 
-## 4. Existing Scripts That Require Modification
+- `pipelines/social_scraper.py`, `pipelines/menu_crawler.py`, and related cleanup scripts collect and normalize source records.
+- `pipelines/generate_embeddings_images.py`, `pipelines/generate_embeddings_reviews.py`, `pipelines/generate_embeddings_michelin.py`, and `pipelines/build_restaurant_profiles.py` generate local embedding artifacts.
+- `pipelines/check_embedding_integrity.py`, `pipelines/clean_restaurant_profiles.py`, `pipelines/refresh_social_derived_artifacts.py`, and `pipelines/refresh_review_profile_artifacts.py` maintain and realign generated artifacts after source changes.
+- `pipelines/yelp/` contains sandbox scripts for Yelp Open Dataset experiments and regression export support.
 
-The implementation of v3.0 requires immediate cascading updates to the following logic files:
+### Tests and Diagnostics
 
-1. **`requirements.txt`**: Needs addition of vector DB, API clients, and ML libs (`lancedb`, `apify-client`, `requests`, `openai`, `umap-learn`).
-2. **`pipelines/menu_crawler.py`**: Update to call LLM prompts instead of relying solely on sequential text parsing.
-3. **`algorithms/retrieval_engine.py`**: Implement cosine similarity retrieval against the vector database.
-4. **`algorithms/clustering.py`**: Refactor internal logic blocks to map concatenated Text+Image embeddings through UMAP into GMM.
-5. **`algorithms/quantile_regression.py`**: Modify the input tensor shape to accept decoupled ABSA sentiment arrays (food, service, ambiance) instead of just naive representations.
-6. **`app.py`**: Redesign the Streamlit UI Sidebar to include file uploads for image searching and a text bar for natural language query execution.
+- `tests/test_algorithms.py` covers GMM clustering behavior and retrieval helper determinism.
+- `tests/test_api.py` covers shared data-loader utilities.
+- `tools/diagnostics_app.py` is an optional local diagnostics Streamlit app.
+
+## 3. Data Policy
+
+Tracked source data is intentionally small:
+
+- `data/csv/restaurant_lookup.csv`
+- `data/csv/michelin_awards.csv`
+- `data/csv/nyc_michelin_names_cleaned.csv`
+- `data/csv/seeds_resolved.csv`
+- `data/csv/restaurant_profiles.csv`
+- `data/csv/social_reviews.csv`
+- `data/csv/social_images.csv`
+- `data/extracted_bios/restaurant_bios_joinable.json`
+
+Generated or large artifacts stay local and are ignored by Git:
+
+- `data/embeddings/*.jsonl`
+- `data/images/*`
+- `data/extracted_menus/final_parsed_menus.json`
+- `data/vector_db/`
+- `data/yelp_sandbox/`
+
+## 4. Remaining Work
+
+### Short-Term Cleanup
+
+- Keep README, PLAN, `data/README.md`, and `tools/README.md` synchronized when files move.
+- Keep generated artifacts out of Git and update `.gitignore` when new local output paths are introduced.
+- Add small deterministic tests when changing shared utilities in `core/`, `algorithms/`, or `ui_components/`.
+
+### Retrieval and Embeddings
+
+- Validate that every generated embedding JSONL file has matching restaurant IDs against `data/csv/restaurant_lookup.csv`.
+- Keep `core/data_loader.py` fallback behavior compatible with both canonical and `*_latest.jsonl` embedding exports.
+- Decide whether the LanceDB prototypes in `quarry/` should become the active retrieval backend or remain experimental.
+
+### Recommendation and Clustering
+
+- Keep `algorithms/mdn_regression.py` robust when the MDN checkpoint is unavailable.
+- Expand clustering tests when adding new clustering or dimensionality-reduction utilities.
+- Document any trained model checkpoints or Yelp sandbox outputs in `data/README.md` before sharing them outside a local environment.
+
+### Frontend
+
+- Keep `frontend.py` focused on app flow and state.
+- Move reusable display logic into `ui_components/`.
+- Preserve data coverage and diagnostics surfaces so missing local artifacts are easy to understand.
+
+## 5. Validation Commands
+
+Run automated checks:
+
+```powershell
+python -m pytest
+```
+
+Run a quick syntax check:
+
+```powershell
+python -m py_compile frontend.py core\data_loader.py ui_components\cards.py ui_components\theme.py
+```
+
+Run the app:
+
+```powershell
+streamlit run frontend.py
+```

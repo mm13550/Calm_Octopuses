@@ -8,7 +8,7 @@ Coordinates lookups via SerpAPI (Google) and Apify (Yelp), writes results to
 ``data/social_reviews.csv`` and ``data/social_images.csv``, and saves raw
 social images to ``data/images/``.
 
-Requires: ``SERPAPI_KEY`` and ``APIFY_TOKEN`` environment variables.
+Requires: ``GOOGLE_PLACES_API_KEY`` and ``APIFY_API_TOKEN`` environment variables.
 
 Usage::
 

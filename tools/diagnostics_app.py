@@ -1,11 +1,4 @@
-"""
-tests.py
-
-Diagnostic Streamlit frontend for the Calm Octopuses ML pipeline.
-Provides interfaces for the Image Similarity Explorer, Dual Encoder Training Logs,
-Cross-Modal Generalization Analysis, Risk Regression Analysis,
-and MDN Opinionatedness testing on NYC Michelin restaurants.
-"""
+"""Legacy diagnostic Streamlit app for model and embedding experiments."""
 import os
 import streamlit as st
 import pandas as pd
