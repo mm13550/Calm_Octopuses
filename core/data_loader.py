@@ -3,10 +3,9 @@ core/data_loader.py
 ===================
 Centralised, cache-aware data loading for the Calm Octopuses application.
 
-All functions that read from disk are decorated with ``@st.cache_data`` or
-``@st.cache_resource`` so they are executed at most once per Streamlit session.
-This module is the single source of truth for all path constants and is imported
-by both ``frontend.py`` and ``tests.py`` to guarantee consistent file resolution.
+All functions that read from disk are decorated with ``@st.cache_resource`` so
+they are executed at most once per Streamlit session and their return values are
+held by reference (no re-serialisation on each rerun).
 
 Key constants
 -------------
@@ -280,15 +279,20 @@ def _extract_review_snippets(review_rows: List[Dict[str, Any]], limit: int = 4) 
             snippets.append(f"{text} {'(⭐ ' + rating + ')' if rating else ''}".strip())
     return snippets
 
-@st.cache_data(show_spinner=False)
+@st.cache_resource(show_spinner=False)
 def build_restaurant_catalog() -> pd.DataFrame:
     """
-    Build and return the fully joined restaurant catalog as a cached DataFrame.
+    Builds and returns the fully joined restaurant catalog as a cached resource.
 
     Joins the lookup table with menus, reviews, images, and bios to produce
     a single wide DataFrame with one row per restaurant.  Pre-computed fields
     include ``search_text`` (for CLIP query matching), ``menu_items``,
     ``review_snippets``, ``image_paths``, and boolean coverage flags.
+
+    Decorated with ``@st.cache_resource`` (not ``@st.cache_data``) so that the
+    large, list-typed DataFrame is held by reference rather than being
+    pickled and re-hashed on every Streamlit rerun — which was the primary
+    cause of frontend startup lag.
 
     Returns an empty DataFrame if the lookup CSV is missing.
     """

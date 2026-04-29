@@ -64,7 +64,7 @@ def main() -> None:
 
     catalog = build_restaurant_catalog()
 
-    search_tab, dish_search_tab, browse_tab, rec_tab, overview_tab = st.tabs(["Search", "Dish Search", "Browse Restaurants", "Recommended", "Data Overview"])
+    search_tab, dish_search_tab, browse_tab, rec_tab, my_rest_tab, overview_tab = st.tabs(["Search", "Dish Search", "Browse Restaurants", "Recommended", "My Restaurants", "Data Overview"])
 
     with search_tab:
         st.subheader("Multimodal Search")
@@ -153,23 +153,6 @@ def main() -> None:
             selected_name = st.selectbox("Choose a restaurant", restaurant_names)
             selected_row = catalog[catalog["restaurant_name"] == selected_name].iloc[0].to_dict()
             
-            st.subheader("Rate this Restaurant")
-            current_rating = st.session_state.user_ratings.get(selected_row["rest_id"])
-            
-            if current_rating:
-                st.write(f"Your rating: **{int(current_rating)} ⭐**")
-            
-            feedback_val = st.feedback("stars", key=f"stars_{selected_row['rest_id']}")
-            
-            if feedback_val is not None:
-                st.session_state.user_ratings[selected_row["rest_id"]] = float(feedback_val + 1)
-                
-            if current_rating:
-                if st.button("Clear Rating", key=f"clear_{selected_row['rest_id']}"):
-                    del st.session_state.user_ratings[selected_row["rest_id"]]
-                    st.rerun()
-            st.divider()
-
             _render_result_card(selected_row, "Catalog score", render_key="browse_selected")
 
             st.markdown("### Raw records")
@@ -229,7 +212,7 @@ def main() -> None:
     with rec_tab:
         st.subheader("Personalized Recommendations")
         if not st.session_state.user_ratings:
-            st.info("Please rate some restaurants in the 'Browse Restaurants' tab to get personalized recommendations!")
+            st.info("Please rate some restaurants to get personalized recommendations!")
         else:
             st.write(f"You have rated **{len(st.session_state.user_ratings)}** restaurants.")
             with st.spinner("Generating MDN recommendations..."):
@@ -244,6 +227,20 @@ def main() -> None:
                     st.caption("Rating Probability Distribution (HDR)")
                     chart_df = pd.DataFrame({"Probability Density": result_row["pdf_grid"]}, index=np.linspace(1.0, 5.0, 101))
                     st.area_chart(chart_df, height=150, color="#FF4B4B")
+
+    with my_rest_tab:
+        st.subheader("My Rated Restaurants")
+        if not st.session_state.user_ratings:
+            st.info("You haven't rated any restaurants yet. Browse or search to add ratings!")
+        else:
+            rated_ids = list(st.session_state.user_ratings.keys())
+            my_df = catalog[catalog["rest_id"].isin(rated_ids)].copy()
+            my_df["actual_rating"] = my_df["rest_id"].map(st.session_state.user_ratings)
+            my_df = my_df.sort_values(by="actual_rating", ascending=False)
+            
+            st.write(f"You have rated **{len(my_df)}** restaurants.")
+            for idx, (_, result_row) in enumerate(my_df.iterrows()):
+                _render_result_card(result_row.to_dict(), "Your Rating", render_key=f"my_rated_{idx}")
 
     with overview_tab:
         _render_data_overview(catalog)

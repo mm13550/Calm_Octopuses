@@ -589,6 +589,7 @@ def _score_mdn_recommendations(catalog: pd.DataFrame, user_ratings: Dict[str, fl
         st.error("MDN checkpoint not found.")
         return pd.DataFrame()
         
+    from core.data_loader import load_restaurant_embeddings, _clean_text
     embeddings_map = load_restaurant_embeddings()
     centroid = get_michelin_centroid()
     
@@ -662,6 +663,7 @@ def add_mdn_predictions(catalog: pd.DataFrame, user_ratings: Dict[str, float]) -
     if catalog.empty or not user_ratings:
         return catalog
     
+    from core.data_loader import load_restaurant_embeddings, _clean_text
     embeddings_map = load_restaurant_embeddings()
     centroid = get_michelin_centroid()
     model = load_mdn_model()

@@ -143,15 +143,69 @@ def _render_result_card(row: Dict[str, Any], score_label: str, render_key: str |
                 f"{_clean_text(row.get('michelin_category')) or 'N/A'}"
             )
 
-            metrics = st.columns(2)
-            metrics[0].metric(score_label, f"{float(row.get('score', 0.0)):.3f}")
+            # ── Rating Section (Now prominent under the title) ───────────────
+            rest_id = _clean_text(row.get("rest_id", ""))
+            if rest_id and "user_ratings" in st.session_state:
+                r_col1, r_col2 = st.columns([2, 1])
+                with r_col1:
+                    current_rating = st.session_state.user_ratings.get(rest_id)
+                    f_key = f"rate_half_{render_key or 'default'}_{rest_id}"
+                    
+                    # Select slider for half-star steps
+                    new_rating = st.select_slider(
+                        "Your Rating",
+                        options=[1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0],
+                        value=float(current_rating or 4.0),
+                        key=f_key,
+                        help="Select a rating (1-5). Supports half-stars!"
+                    )
+                    
+                    # Visual Star Indicator: ⭐ for full stars, ✨ for half
+                    full_stars = int(new_rating)
+                    half_star = "✨" if (new_rating % 1 != 0) else ""
+                    st.markdown(f"**{new_rating}** {'⭐' * full_stars}{half_star}")
+
+                    # Logic to save changes
+                    if current_rating is None:
+                        touch_key = f"touched_{f_key}"
+                        if st.session_state.get(touch_key) or new_rating != 4.0:
+                            st.session_state.user_ratings[rest_id] = new_rating
+                            st.session_state[touch_key] = True
+                            st.rerun()
+                    elif current_rating != new_rating:
+                        st.session_state.user_ratings[rest_id] = new_rating
+                        st.rerun()
+                with r_col2:
+                    if current_rating:
+                        # Align button slightly lower to match star widget height
+                        st.write("") 
+                        if st.button("Clear Rating", key=f"clear_btn_{render_key or 'default'}_{rest_id}", use_container_width=True):
+                            del st.session_state.user_ratings[rest_id]
+                            st.rerun()
+            st.divider()
+
             actual_rating = row.get("actual_rating")
             predicted_rating = row.get("predicted_rating")
+            score = row.get("score")
 
-            if pd.notna(actual_rating):
-                metrics[1].metric("Your Rating", f"{float(actual_rating):.1f} ⭐")
-            elif pd.notna(predicted_rating):
-                metrics[1].metric("Predicted Rating", f"{float(predicted_rating):.1f} ⭐")
+            # Only show the similarity score if it's meaningful (not the 0.0 placeholder from browsing)
+            show_score = pd.notna(score) and score > 0 and score_label != "Catalog score"
+            show_rating = pd.notna(actual_rating) or pd.notna(predicted_rating)
+
+            if show_score and show_rating:
+                m_cols = st.columns(2)
+                m_cols[0].metric(score_label, f"{float(score):.3f}")
+                if pd.notna(actual_rating):
+                    m_cols[1].metric("Your Rating", f"{float(actual_rating):.1f} ⭐")
+                else:
+                    m_cols[1].metric("Predicted Rating", f"{float(predicted_rating):.1f} ⭐")
+            elif show_score:
+                st.metric(score_label, f"{float(score):.3f}")
+            elif show_rating:
+                if pd.notna(actual_rating):
+                    st.metric("Your Rating", f"{float(actual_rating):.1f} ⭐")
+                else:
+                    st.metric("Predicted Rating", f"{float(predicted_rating):.1f} ⭐")
 
             homepage = _clean_text(row.get("homepage"))
             if homepage:
@@ -209,7 +263,7 @@ def _render_result_card(row: Dict[str, Any], score_label: str, render_key: str |
                     with st.expander(title):
                         st.write(snippet)
 
-        # ── Sentiment section (full width, below image+info) ──────────────────
+        # ── Sentiment section (full width, below image+info) ──────────
         rest_id = _clean_text(row.get("rest_id", ""))
         if rest_id:
             sentiment_key = f"{render_key}_{rest_id}" if render_key else rest_id
