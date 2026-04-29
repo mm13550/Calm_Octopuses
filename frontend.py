@@ -315,34 +315,6 @@ def main() -> None:
             selected_image_rows = details["images"]
             lookup_df = details["lookup"]
             
-            st.markdown("<p class='co-eyebrow'>Preference Signal</p>", unsafe_allow_html=True)
-            st.markdown("### Rate This Restaurant")
-            current_rating = st.session_state.user_ratings.get(selected_rest_id)
-
-            rating_options = ["Not rated", "1", "2", "3", "4", "5"]
-            rating_index = 0 if current_rating is None else rating_options.index(str(int(current_rating)))
-            selected_rating = st.radio(
-                "Choose a rating",
-                rating_options,
-                index=rating_index,
-                horizontal=True,
-                key=f"rating_{selected_rest_id}",
-                label_visibility="collapsed",
-                format_func=lambda option: "Not rated" if option == "Not rated" else f"{option} star",
-            )
-
-            if selected_rating == "Not rated":
-                if current_rating is not None:
-                    del st.session_state.user_ratings[selected_rest_id]
-            else:
-                st.session_state.user_ratings[selected_rest_id] = float(selected_rating)
-
-            active_rating = st.session_state.user_ratings.get(selected_rest_id)
-            if active_rating is not None:
-                st.caption(f"Current rating: {int(active_rating)} / 5")
-            else:
-                st.caption("Rate a few restaurants here so the recommendation tab has a preference signal.")
-            st.divider()
 
             _render_result_card(selected_row, "Catalog score", render_key="browse_selected")
 

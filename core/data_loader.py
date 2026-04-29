@@ -29,8 +29,8 @@ import sys
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
 LOOKUP_CSV = DATA_DIR / "csv" / "restaurant_lookup.csv"
-REVIEWS_CSV = DATA_DIR / "social_reviews.csv"
-IMAGES_CSV = DATA_DIR / "social_images.csv"
+REVIEWS_CSV = DATA_DIR / "csv" / "social_reviews.csv"
+IMAGES_CSV = DATA_DIR / "csv" / "social_images.csv"
 MENUS_JSON = DATA_DIR / "extracted_menus" / "final_parsed_menus.json"
 BIOS_JSON = DATA_DIR / "extracted_bios" / "restaurant_bios_joinable.json"
 DEFAULT_CLIP_MODEL_ID = "openai/clip-vit-base-patch32"

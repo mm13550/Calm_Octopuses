@@ -683,9 +683,9 @@ def _score_mdn_recommendations(catalog: pd.DataFrame, user_ratings: Dict[str, fl
     centroid = get_michelin_centroid()
     
     # Load metadata
-    meta_path = os.path.join('data', 'embeddings', 'restaurant_metadata.json')
+    meta_path = DATA_DIR / "embeddings" / "restaurant_metadata.json"
     metadata = {}
-    if os.path.exists(meta_path):
+    if meta_path.exists():
         with open(meta_path, 'r') as f:
             metadata = json.load(f)
 
@@ -738,9 +738,9 @@ def add_mdn_predictions(catalog: pd.DataFrame, user_ratings: Dict[str, float]) -
     if model is None:
         return catalog
 
-    meta_path = os.path.join('data', 'embeddings', 'restaurant_metadata.json')
+    meta_path = DATA_DIR / "embeddings" / "restaurant_metadata.json"
     metadata = {}
-    if os.path.exists(meta_path):
+    if meta_path.exists():
         with open(meta_path, 'r') as f:
             metadata = json.load(f)
 
