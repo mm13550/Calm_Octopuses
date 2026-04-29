@@ -163,11 +163,26 @@ def _render_result_card(row: Dict[str, Any], score_label: str, render_key: str |
             restaurant_name = _clean_text(row.get("restaurant_name")) or "Unnamed restaurant"
             borough = _clean_text(row.get("borough"))
             michelin_category = _clean_text(row.get("michelin_category"))
+            michelin_stars = row.get("michelin_stars", 0)
+            michelin_award = _clean_text(row.get("michelin_award"))
+            michelin_distinction = _clean_text(row.get("michelin_distinction"))
             rest_id_label = _clean_text(row.get("rest_id"))
             badge_parts = []
             if borough:
                 badge_parts.append(_badge_html(borough, "soft"))
-            if michelin_category:
+            # Show Michelin star/distinction badge from michelin_awards.csv if available
+            try:
+                stars_int = int(float(michelin_stars)) if michelin_stars else 0
+            except (TypeError, ValueError):
+                stars_int = 0
+            if stars_int > 0:
+                star_label = "⭐" * stars_int + f" {michelin_award or michelin_distinction or 'Michelin Star'}"
+                badge_parts.append(_badge_html(star_label, "accent"))
+            elif michelin_award:
+                badge_parts.append(_badge_html(michelin_award, "accent"))
+            elif michelin_distinction:
+                badge_parts.append(_badge_html(michelin_distinction, "accent"))
+            elif michelin_category:
                 badge_parts.append(_badge_html(michelin_category, "accent"))
 
             st.markdown(
