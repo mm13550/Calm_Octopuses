@@ -365,7 +365,7 @@ import pandas as pd
 
 def evaluate_regression(train_json, test_json, train_emb, test_emb, max_epochs=20):
     """
-    Called by app.py: 
+    Called by frontend.py:
     1. Trains MDNScorer locally on the generic training payload.
     2. Zero-shot inference against the Michelin testing payload.
     3. Returns DataFrames mapped for Streamlit visualizations.

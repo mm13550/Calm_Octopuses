@@ -25,10 +25,10 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 
-import sys
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
 LOOKUP_CSV = DATA_DIR / "csv" / "restaurant_lookup.csv"
+MICHELIN_AWARDS_CSV = DATA_DIR / "csv" / "michelin_awards.csv"
 REVIEWS_CSV = DATA_DIR / "csv" / "social_reviews.csv"
 IMAGES_CSV = DATA_DIR / "csv" / "social_images.csv"
 MENUS_JSON = DATA_DIR / "extracted_menus" / "final_parsed_menus.json"
@@ -105,10 +105,89 @@ def _load_csv(path: Path) -> pd.DataFrame:
         return pd.DataFrame()
     return pd.read_csv(path, dtype=str, keep_default_na=False).fillna("")
 
+def _load_embedding_image_paths() -> Dict[str, List[str]]:
+    """Return representative image paths from image/profile embedding JSONL files."""
+    image_paths_by_restaurant: Dict[str, List[str]] = {}
+
+    def add_path(rest_id: str, image_path: Any) -> None:
+        cleaned_rest_id = _clean_text(rest_id)
+        cleaned_path = _clean_text(image_path)
+        if not cleaned_rest_id or not cleaned_path:
+            return
+        paths = image_paths_by_restaurant.setdefault(cleaned_rest_id, [])
+        if cleaned_path not in paths:
+            paths.append(cleaned_path)
+
+    for path in (FOOD_EMBEDDINGS_JSONL, INTERIOR_EMBEDDINGS_JSONL):
+        if not path.exists():
+            continue
+        with path.open("r", encoding="utf-8") as handle:
+            for line in handle:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    row = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                add_path(row.get("restaurant_id", row.get("rest_id")), row.get("image_path"))
+
+    if EMBEDDINGS_JSONL.exists():
+        with EMBEDDINGS_JSONL.open("r", encoding="utf-8") as handle:
+            for line in handle:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    row = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                rest_id = _clean_text(row.get("restaurant_id", row.get("rest_id")))
+                metadata = row.get("metadata") if isinstance(row.get("metadata"), dict) else {}
+                for key in ("food_image_paths", "interior_image_paths"):
+                    values = metadata.get(key, [])
+                    if isinstance(values, list):
+                        for image_path in values:
+                            add_path(rest_id, image_path)
+
+    return image_paths_by_restaurant
+
+def _load_local_image_paths(rest_ids: List[str]) -> Dict[str, List[str]]:
+    """Return local image files grouped by restaurant id from data image folders."""
+    image_paths_by_restaurant: Dict[str, List[str]] = {}
+    image_dirs = [DATA_DIR / "images", DATA_DIR / "image"]
+    extensions = ("*.jpg", "*.jpeg", "*.png", "*.webp")
+
+    for rest_id in rest_ids:
+        cleaned_rest_id = _clean_text(rest_id)
+        if not cleaned_rest_id:
+            continue
+
+        paths: List[str] = []
+        for image_dir in image_dirs:
+            if not image_dir.exists():
+                continue
+            for extension in extensions:
+                for image_path in sorted(image_dir.glob(f"{cleaned_rest_id}*{extension.removeprefix('*')}")):
+                    if image_path.is_file():
+                        rel_path = image_path.relative_to(PROJECT_ROOT).as_posix()
+                        if rel_path not in paths:
+                            paths.append(rel_path)
+
+        if paths:
+            image_paths_by_restaurant[cleaned_rest_id] = paths
+
+    return image_paths_by_restaurant
+
 @st.cache_data(show_spinner=False)
 def load_lookup_df() -> pd.DataFrame:
     """Return the restaurant lookup table (``restaurant_lookup.csv``) as a cached DataFrame."""
     return _load_csv(LOOKUP_CSV)
+
+@st.cache_data(show_spinner=False)
+def load_michelin_awards_df() -> pd.DataFrame:
+    """Return Michelin star/distinction metadata keyed by restaurant id."""
+    return _load_csv(MICHELIN_AWARDS_CSV)
 
 @st.cache_data(show_spinner=False)
 def load_reviews_df() -> pd.DataFrame:
@@ -257,7 +336,7 @@ def _join_snippets(values: List[str], limit: int = 6) -> str:
 
 def _extract_menu_items(menu_rows: List[Dict[str, Any]], limit: int = 6) -> List[str]:
     """
-    Format up to *limit* menu rows into human-readable ``"dish — ingredients — $price"`` strings.
+    Format up to *limit* menu rows into human-readable "dish - ingredients - $price" strings.
     """
     items: List[str] = []
     for row in menu_rows[:limit]:
@@ -266,7 +345,7 @@ def _extract_menu_items(menu_rows: List[Dict[str, Any]], limit: int = 6) -> List
         price = _clean_text(row.get("price"))
         parts = [part for part in [dish, ingredients, f"${price}" if price else ""] if part]
         if parts:
-            items.append(" — ".join(parts))
+            items.append(" - ".join(parts))
     return items
 
 def _extract_review_snippets(review_rows: List[Dict[str, Any]], limit: int = 4) -> List[str]:
@@ -276,7 +355,7 @@ def _extract_review_snippets(review_rows: List[Dict[str, Any]], limit: int = 4) 
         text = _clean_text(row.get("text"))
         rating = _clean_text(row.get("rating"))
         if text:
-            snippets.append(f"{text} {'(⭐ ' + rating + ')' if rating else ''}".strip())
+            snippets.append(f"{text} {'(' + rating + ' stars)' if rating else ''}".strip())
     return snippets
 
 @st.cache_resource(show_spinner=False)
@@ -298,13 +377,19 @@ def build_restaurant_catalog() -> pd.DataFrame:
     """
     # Cache buster: 1
     lookup_df = load_lookup_df()
+    awards_df = load_michelin_awards_df()
     reviews_df = load_reviews_df()
     images_df = load_images_df()
     menus_df = load_menus_df()
     bios_df = load_bios_df()
-
     if lookup_df.empty:
         return pd.DataFrame()
+
+    lookup_records = lookup_df.to_dict(orient="records")
+    lookup_records.sort(key=lambda row: _clean_text(row.get("name")).lower())
+    lookup_rest_ids = [_clean_text(row.get("rest_id")) for row in lookup_records if _clean_text(row.get("rest_id"))]
+    embedding_image_paths = _load_embedding_image_paths()
+    local_image_paths = _load_local_image_paths(lookup_rest_ids)
 
     bio_map: Dict[str, str] = {}
     if not bios_df.empty:
@@ -314,13 +399,17 @@ def build_restaurant_catalog() -> pd.DataFrame:
                 continue
             bio_map[rest_id] = _clean_text(row.get("bio_text"))
 
+    award_map: Dict[str, Dict[str, Any]] = {}
+    if not awards_df.empty:
+        for row in awards_df.to_dict(orient="records"):
+            rest_id = _clean_text(row.get("rest_id"))
+            if rest_id:
+                award_map[rest_id] = row
+
     records: List[Dict[str, Any]] = []
     menu_groups = menus_df.groupby("rest_id") if not menus_df.empty and "rest_id" in menus_df.columns else None
     review_groups = reviews_df.groupby("rest_id") if not reviews_df.empty and "rest_id" in reviews_df.columns else None
     image_groups = images_df.groupby("rest_id") if not images_df.empty and "rest_id" in images_df.columns else None
-
-    lookup_records = lookup_df.to_dict(orient="records")
-    lookup_records.sort(key=lambda row: _clean_text(row.get("name")).lower())
 
     for row in lookup_records:
         rest_id = _clean_text(row.get("rest_id"))
@@ -332,11 +421,24 @@ def build_restaurant_catalog() -> pd.DataFrame:
         image_rows = image_groups.get_group(rest_id).to_dict(orient="records") if image_groups is not None and rest_id in image_groups.groups else []
 
         image_paths = [_clean_text(image_row.get("image_path")) for image_row in image_rows if _clean_text(image_row.get("image_path"))]
+        for image_path in embedding_image_paths.get(rest_id, []) + local_image_paths.get(rest_id, []):
+            if image_path not in image_paths:
+                image_paths.append(image_path)
         representative_image_path = _first_existing_path(image_paths)
 
         menu_items = _extract_menu_items(menu_rows)
         review_snippets = _extract_review_snippets(review_rows)
         bio_text = bio_map.get(rest_id, "")
+        award_row = award_map.get(rest_id, {})
+        try:
+            michelin_stars = int(float(award_row.get("michelin_stars", 0) or 0))
+        except (TypeError, ValueError):
+            michelin_stars = 0
+        michelin_award = _clean_text(award_row.get("michelin_award")) or (
+            f"{michelin_stars} Michelin Star" + ("s" if michelin_stars != 1 else "")
+            if michelin_stars
+            else _clean_text(row.get("michelin_category"))
+        )
 
         search_text = " ".join(
             [
@@ -356,6 +458,11 @@ def build_restaurant_catalog() -> pd.DataFrame:
                 "homepage": _clean_text(row.get("homepage")),
                 "borough": _clean_text(row.get("borough")),
                 "michelin_category": _clean_text(row.get("michelin_category")),
+                "michelin_stars": michelin_stars,
+                "michelin_award": michelin_award,
+                "michelin_distinction": _clean_text(award_row.get("michelin_distinction")),
+                "michelin_cuisine": _clean_text(award_row.get("michelin_cuisine")),
+                "michelin_location": _clean_text(award_row.get("michelin_location")),
                 "bio_text": bio_text,
                 "menu_items": menu_items,
                 "review_snippets": review_snippets,
@@ -363,10 +470,10 @@ def build_restaurant_catalog() -> pd.DataFrame:
                 "representative_image_path": representative_image_path,
                 "menu_count": len(menu_rows),
                 "review_count": len(review_rows),
-                "image_count": len(image_rows),
+                "image_count": len(image_paths),
                 "has_menu": bool(menu_rows),
                 "has_reviews": bool(review_rows),
-                "has_food_images": bool(image_rows),
+                "has_food_images": bool(image_paths),
                 "search_text": search_text,
             }
         )

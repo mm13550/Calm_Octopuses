@@ -1,54 +1,62 @@
-out/
-out_test/
+# Python caches
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
+*.py[cod]
+*$py.class
+.pytest_cache/
+pytest-cache-files-*/
+.mypy_cache/
+.ruff_cache/
 
+# Virtual environments and secrets
 .env
 .venv/
-env/
 venv/
+env/
 
+# OS and editor files
+.DS_Store
+Thumbs.db
 .idea/
 .vscode/
 *.lnk
 
+# Local outputs and scratch work
+out/
+out_test/
+logs/
+*.log
+scratch.py
+tests.py
+tests/tests_output/
 test_*.csv
-
-# Ignored image scraper output
-data/images/
-data/social_images.csv
-data/social_reviews.csv
-data/embeddings/
-
-# Ignored planning files
-plan.md
-repo_structure.txt
-
-# Ignored local environment scripts
-activate.bat
-activate.ps1
-
-# Vector DB local artifacts
-vector_db/*
-!vector_db/.gitkeep
-
-# Ignore virtual environment
-.venv/
-
-# Ignored summary files
+repo_structure*.txt
 recent_changes_summary.md
 README_LEO_HANDOFF.md
+.streamlit_uploaded_query_image_*.png
 
-# Yelp Sandbox Large Data Files
-data/yelp_sandbox/
+# Archives, local databases, and model/data artifacts
+data.zip
 *.tar
-*.json
-!data/extracted_bios/restaurant_bios_joinable.json
-data/extracted_menus/
-data.zip # 给 Git 下禁令，以后别碰它
+*.zip
+*.sqlite
+*.db
+*.pt
+*.pth
+*.parquet
+*.pkl
+*.pickle
 
+# Generated project data and local vector DB
+data/images/
+data/yelp_sandbox/
+data/social_images.csv
 data/social_images_cleaned.csv
+data/social_reviews.csv
+data/extracted_menus/
+data/embeddings/
 data/vector_db/
-data/embeddings/restaurant_profiles.jsonl
+vector_db/
+
+# Keep intentionally small fixtures/placeholders
+!data/extracted_bios/restaurant_bios_joinable.json
+!data/**/.gitkeep

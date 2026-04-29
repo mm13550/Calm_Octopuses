@@ -433,6 +433,55 @@ def apply_global_theme() -> None:
             font-weight: 800;
         }
 
+        .co-card-heading {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+
+        .co-michelin-medal {
+            flex: 0 0 auto;
+            min-width: 6.8rem;
+            padding: 0.68rem 0.8rem;
+            border-radius: 16px;
+            border: 1px solid rgba(148, 57, 31, 0.20);
+            background: linear-gradient(180deg, #fff8e8 0%, #fff0d2 100%);
+            box-shadow: 0 8px 18px rgba(148, 57, 31, 0.10);
+            text-align: center;
+        }
+
+        .co-michelin-medal--listed {
+            background: #faf7f4;
+            border-color: var(--co-border);
+            box-shadow: none;
+        }
+
+        .co-michelin-medal-value {
+            display: block;
+            color: #94391f;
+            font-size: 1.05rem;
+            line-height: 1;
+            font-weight: 900;
+            letter-spacing: 0.04em;
+        }
+
+        .co-michelin-medal--listed .co-michelin-medal-value {
+            color: var(--co-ink-muted);
+            font-size: 0.72rem;
+            letter-spacing: 0.12em;
+        }
+
+        .co-michelin-medal-label {
+            display: block;
+            margin-top: 0.28rem;
+            color: var(--co-ink);
+            font-size: 0.76rem;
+            line-height: 1.1;
+            font-weight: 800;
+            white-space: nowrap;
+        }
+
         .co-badge-row {
             display: flex;
             flex-wrap: wrap;
@@ -503,6 +552,17 @@ def apply_global_theme() -> None:
 
         .co-menu-match strong {
             color: #8c341c;
+        }
+
+        .co-menu-item {
+            margin: 0 0 0.45rem 0;
+            padding: 0.7rem 0.85rem;
+            border-radius: 14px;
+            border: 1px solid var(--co-border);
+            background: #ffffff;
+            color: var(--co-ink);
+            line-height: 1.55;
+            font-size: 0.95rem;
         }
 
         .co-note {

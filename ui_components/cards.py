@@ -25,6 +25,7 @@ def _load_sentiment() -> pd.DataFrame:
     global _SENTIMENT_DF
     if _SENTIMENT_DF is None:
         candidates = [
+            Path(__file__).resolve().parent.parent / "data" / "csv" / "restaurant_profiles.csv",
             Path(__file__).resolve().parent.parent / "data" / "restaurant_profiles.csv",
             Path(__file__).resolve().parent.parent / "restaurant_profiles.csv",
         ]
