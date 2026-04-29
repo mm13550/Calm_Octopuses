@@ -103,80 +103,6 @@ def _load_csv(path: Path) -> pd.DataFrame:
         return pd.DataFrame()
     return pd.read_csv(path, dtype=str, keep_default_na=False).fillna("")
 
-def _load_embedding_image_paths() -> Dict[str, List[str]]:
-    """Return representative image paths from image/profile embedding JSONL files."""
-    image_paths_by_restaurant: Dict[str, List[str]] = {}
-
-    def add_path(rest_id: str, image_path: Any) -> None:
-        cleaned_rest_id = _clean_text(rest_id)
-        cleaned_path = _clean_text(image_path)
-        if not cleaned_rest_id or not cleaned_path:
-            return
-        paths = image_paths_by_restaurant.setdefault(cleaned_rest_id, [])
-        if cleaned_path not in paths:
-            paths.append(cleaned_path)
-
-    for path in (FOOD_EMBEDDINGS_JSONL, INTERIOR_EMBEDDINGS_JSONL):
-        if not path.exists():
-            continue
-        with path.open("r", encoding="utf-8") as handle:
-            for line in handle:
-                line = line.strip()
-                if not line:
-                    continue
-                try:
-                    row = json.loads(line)
-                except json.JSONDecodeError:
-                    continue
-                add_path(row.get("restaurant_id", row.get("rest_id")), row.get("image_path"))
-
-    if EMBEDDINGS_JSONL.exists():
-        with EMBEDDINGS_JSONL.open("r", encoding="utf-8") as handle:
-            for line in handle:
-                line = line.strip()
-                if not line:
-                    continue
-                try:
-                    row = json.loads(line)
-                except json.JSONDecodeError:
-                    continue
-                rest_id = _clean_text(row.get("restaurant_id", row.get("rest_id")))
-                metadata = row.get("metadata") if isinstance(row.get("metadata"), dict) else {}
-                for key in ("food_image_paths", "interior_image_paths"):
-                    values = metadata.get(key, [])
-                    if isinstance(values, list):
-                        for image_path in values:
-                            add_path(rest_id, image_path)
-
-    return image_paths_by_restaurant
-
-def _load_local_image_paths(rest_ids: List[str]) -> Dict[str, List[str]]:
-    """Return local image files grouped by restaurant id from data image folders."""
-    image_paths_by_restaurant: Dict[str, List[str]] = {}
-    image_dirs = [DATA_DIR / "images", DATA_DIR / "image"]
-    extensions = ("*.jpg", "*.jpeg", "*.png", "*.webp")
-
-    for rest_id in rest_ids:
-        cleaned_rest_id = _clean_text(rest_id)
-        if not cleaned_rest_id:
-            continue
-
-        paths: List[str] = []
-        for image_dir in image_dirs:
-            if not image_dir.exists():
-                continue
-            for extension in extensions:
-                for image_path in sorted(image_dir.glob(f"{cleaned_rest_id}*{extension.removeprefix('*')}")):
-                    if image_path.is_file():
-                        rel_path = image_path.relative_to(PROJECT_ROOT).as_posix()
-                        if rel_path not in paths:
-                            paths.append(rel_path)
-
-        if paths:
-            image_paths_by_restaurant[cleaned_rest_id] = paths
-
-    return image_paths_by_restaurant
-
 @st.cache_data(show_spinner=False)
 def load_lookup_df() -> pd.DataFrame:
     """Return the restaurant lookup table (``restaurant_lookup.csv``) as a cached DataFrame."""
@@ -385,9 +311,6 @@ def build_restaurant_catalog() -> pd.DataFrame:
 
     lookup_records = lookup_df.to_dict(orient="records")
     lookup_records.sort(key=lambda row: _clean_text(row.get("name")).lower())
-    lookup_rest_ids = [_clean_text(row.get("rest_id")) for row in lookup_records if _clean_text(row.get("rest_id"))]
-    embedding_image_paths = _load_embedding_image_paths()
-    local_image_paths = _load_local_image_paths(lookup_rest_ids)
 
     bio_map: Dict[str, str] = {}
     if not bios_df.empty:
@@ -419,9 +342,6 @@ def build_restaurant_catalog() -> pd.DataFrame:
         image_rows = image_groups.get_group(rest_id).to_dict(orient="records") if image_groups is not None and rest_id in image_groups.groups else []
 
         image_paths = [_clean_text(image_row.get("image_path")) for image_row in image_rows if _clean_text(image_row.get("image_path"))]
-        for image_path in embedding_image_paths.get(rest_id, []) + local_image_paths.get(rest_id, []):
-            if image_path not in image_paths:
-                image_paths.append(image_path)
         representative_image_path = _first_existing_path(image_paths)
 
         menu_items = _extract_menu_items(menu_rows)
