@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import json
 import re
@@ -7,9 +7,13 @@ from typing import Any, Dict, List
 import numpy as np
 import pandas as pd
 import streamlit as st
-import torch
+import io
+from typing import Any, Dict, List, Union
+
+import numpy as np
+import pandas as pd
+import streamlit as st
 from PIL import Image
-from transformers import CLIPModel, CLIPProcessor
 
 from core.data_loader import (
     _clean_text,
@@ -72,6 +76,8 @@ def load_menu_embedding_records() -> Dict[str, List[Dict[str, Any]]]:
 
 @st.cache_resource(show_spinner=False)
 def load_clip_model():
+    import torch
+    from transformers import CLIPModel, CLIPProcessor
     device = "cuda" if torch.cuda.is_available() else "cpu"
     processor = CLIPProcessor.from_pretrained(DEFAULT_CLIP_MODEL_ID)
     model = CLIPModel.from_pretrained(DEFAULT_CLIP_MODEL_ID).to(device)
@@ -88,6 +94,7 @@ def _cosine_similarity(vec_a: np.ndarray, vec_b: np.ndarray) -> float:
 
 @st.cache_data(show_spinner=False)
 def embed_text(text: str) -> tuple:
+    import torch
     text = _clean_text(text)
     if not text:
         return tuple()
@@ -116,14 +123,17 @@ def embed_text(text: str) -> tuple:
     return tuple(float(value) for value in outputs[0].detach().cpu().tolist())
 
 @st.cache_data(show_spinner=False)
-def embed_image(image_path: str) -> tuple:
-    path = _resolve_path(image_path)
-    if not path.exists():
-        return tuple()
-
+def embed_image(image_input: Union[str, bytes]) -> tuple:
+    import torch
     processor, model, device = load_clip_model()
-    with Image.open(path) as image_file:
-        image = image_file.convert("RGB")
+    
+    if isinstance(image_input, bytes):
+        image = Image.open(io.BytesIO(image_input)).convert("RGB")
+    else:
+        path = _resolve_path(image_input)
+        if not path.exists():
+            return tuple()
+        image = Image.open(path).convert("RGB")
 
     inputs = processor(images=image, return_tensors="pt")
     pixel_values = inputs["pixel_values"].to(device)
@@ -258,11 +268,11 @@ def score_text_results(catalog: pd.DataFrame, query: str, scope: str) -> pd.Data
     result_df = pd.DataFrame(rows)
     return result_df.sort_values(by="score", ascending=False)
 
-def score_image_results(catalog: pd.DataFrame, image_path: str) -> pd.DataFrame:
-    if catalog.empty or not _clean_text(image_path):
+def score_image_results(catalog: pd.DataFrame, image_input: Union[str, bytes]) -> pd.DataFrame:
+    if catalog.empty or not image_input:
         return pd.DataFrame()
 
-    query_vector = np.array(embed_image(image_path), dtype=np.float32)
+    query_vector = np.array(embed_image(image_input), dtype=np.float32)
     if query_vector.size == 0:
         return pd.DataFrame()
 

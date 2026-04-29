@@ -43,8 +43,7 @@ from core.data_loader import (
     _clean_text,
     _resolve_path,
 )
-from algorithms.retrieval import score_text_results, score_image_results, score_exact_dish_search
-from algorithms.mdn_regression import _score_mdn_recommendations, add_mdn_predictions
+from core.logic import get_restaurant_details, filter_my_restaurants
 from ui_components.cards import _render_result_card
 from ui_components.overview import _render_data_overview
 from ui_components.theme import apply_global_theme, render_app_hero, render_section_intro
@@ -201,15 +200,20 @@ def main() -> None:
     st.set_page_config(page_title="Calm Octopuses Frontend", layout="wide")
     apply_global_theme()
 
+    # Lazy load heavy algorithm modules inside the blocks where they are used
+    # to ensure the initial app load is near-instant.
+
     if "user_ratings" not in st.session_state:
         st.session_state.user_ratings = {}
 
     catalog = build_restaurant_catalog()
     render_app_hero(len(catalog))
 
-    search_tab, dish_search_tab, browse_tab, rec_tab, my_rest_tab, overview_tab = st.tabs(["Search", "Dish Search", "Browse Restaurants", "Recommended", "My Restaurants", "Data Overview"])
+    browse_tab, search_tab, dish_search_tab, rec_tab, my_rest_tab, overview_tab = st.tabs(["Browse Restaurants", "Search", "Dish Search", "Recommended", "My Restaurants", "Data Overview"])
 
     with search_tab:
+        from algorithms.retrieval import score_text_results, score_image_results
+        from algorithms.mdn_regression import add_mdn_predictions
         render_section_intro(
             "Discover",
             "Multimodal Search",
@@ -244,14 +248,7 @@ def main() -> None:
                 st.image(uploaded_image, caption="Query image", width="stretch")
                 with st.spinner("Finding visually similar restaurant images..."):
                     image_bytes = uploaded_image.getvalue()
-                    image_digest = hashlib.sha1(image_bytes).hexdigest()
-                    temp_path = PROJECT_ROOT / f".streamlit_uploaded_query_image_{image_digest}.png"
-                    temp_path.write_bytes(uploaded_image.getbuffer())
-                    try:
-                        results_df = score_image_results(catalog, str(temp_path))
-                    finally:
-                        if temp_path.exists():
-                            temp_path.unlink()
+                    results_df = score_image_results(catalog, image_bytes)
 
                 if results_df.empty:
                     st.info("No visually similar restaurants found.")
@@ -265,6 +262,8 @@ def main() -> None:
                         _render_result_card(result_row.to_dict(), "Image similarity", render_key=f"search_image_{idx}")
 
     with dish_search_tab:
+        from algorithms.retrieval import score_exact_dish_search
+        from algorithms.mdn_regression import add_mdn_predictions
         render_section_intro(
             "Precision",
             "Exact Dish Search",
@@ -309,25 +308,12 @@ def main() -> None:
             selected_row = catalog[catalog["restaurant_name"] == selected_name].iloc[0].to_dict()
             selected_rest_id = selected_row["rest_id"]
 
-            menus_df = load_menus_df()
-            reviews_df = load_reviews_df()
-            images_df = load_images_df()
-            lookup_df = load_lookup_df()
-            selected_menu_rows = (
-                menus_df[menus_df["rest_id"] == selected_rest_id].copy()
-                if not menus_df.empty and "rest_id" in menus_df.columns
-                else pd.DataFrame()
-            )
-            selected_review_rows = (
-                reviews_df[reviews_df["rest_id"] == selected_rest_id].copy()
-                if not reviews_df.empty and "rest_id" in reviews_df.columns
-                else pd.DataFrame()
-            )
-            selected_image_rows = (
-                images_df[images_df["rest_id"] == selected_rest_id].copy()
-                if not images_df.empty and "rest_id" in images_df.columns
-                else pd.DataFrame()
-            )
+            # Use logic helper to get all restaurant-specific data
+            details = get_restaurant_details(selected_rest_id)
+            selected_menu_rows = details["menus"]
+            selected_review_rows = details["reviews"]
+            selected_image_rows = details["images"]
+            lookup_df = details["lookup"]
             
             st.markdown("<p class='co-eyebrow'>Preference Signal</p>", unsafe_allow_html=True)
             st.markdown("### Rate This Restaurant")
@@ -409,6 +395,7 @@ def main() -> None:
         if not st.session_state.user_ratings:
             st.info("Please rate some restaurants to get personalized recommendations!")
         else:
+            from algorithms.mdn_regression import _score_mdn_recommendations
             st.write(f"You have rated **{len(st.session_state.user_ratings)}** restaurants.")
             with st.spinner("Generating MDN recommendations..."):
                 rec_df = _score_mdn_recommendations(catalog, st.session_state.user_ratings)
@@ -433,10 +420,7 @@ def main() -> None:
         if not st.session_state.user_ratings:
             st.info("You haven't rated any restaurants yet. Browse or search to add ratings!")
         else:
-            rated_ids = list(st.session_state.user_ratings.keys())
-            my_df = catalog[catalog["rest_id"].isin(rated_ids)].copy()
-            my_df["actual_rating"] = my_df["rest_id"].map(st.session_state.user_ratings)
-            my_df = my_df.sort_values(by="actual_rating", ascending=False)
+            my_df = filter_my_restaurants(catalog, st.session_state.user_ratings)
             
             st.write(f"You have rated **{len(my_df)}** restaurants.")
             for idx, (_, result_row) in enumerate(my_df.iterrows()):
