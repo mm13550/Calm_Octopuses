@@ -1,15 +1,14 @@
-﻿"""
+"""
 pipelines/dedupe_image_records.py
 ==================================
-Removes duplicate image entries from ``data/social_images.csv`` and the
-corresponding ``data/embeddings/image_embeddings_*.jsonl`` files.
+Deduplicates image records and their corresponding embeddings.
 
-Deduplication is based on image path and perceptual hash; the first occurrence
-per restaurant is kept.
+Synchronizes the raw ``social_images.csv`` with the food and interior 
+embedding JSONL files by removing duplicates based on image path and UID.
 
 Usage::
 
-    python pipelines/dedupe_image_records.py
+    python pipelines/dedupe_image_records.py [--restaurant-id ID]
 """
 from __future__ import annotations
 

@@ -1,8 +1,10 @@
-﻿"""
+"""
 pipelines/dedupe_restaurant_summaries.py
 =========================================
-Removes duplicate records from ``data/embeddings/restaurant_summary_latest.jsonl``
-keeping the most recent entry per ``rest_id``.
+Deduplicates restaurant-level summary embeddings.
+
+Ensures only the richest summary record (highest menu item count and text length) 
+is kept per ``restaurant_id`` in the ``restaurant_summary_latest.jsonl`` file.
 
 Usage::
 

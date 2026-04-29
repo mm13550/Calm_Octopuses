@@ -1,3 +1,19 @@
+"""
+pipelines/menu_crawler.py
+========================
+Robust web scraper and LLM-based menu extractor.
+
+This module provides the core crawling and extraction engine for the project:
+1. `scrape_menu_text`: Uses BFS to find PDF and HTML menu content on restaurant sites.
+2. `parse_text_to_json_with_llm`: Uses OpenAI (gpt-4o-mini) to structure raw text 
+   into a clean JSON array of menu items.
+3. `get_place_id`: Resolves canonical Google Place IDs with homepage validation.
+
+Performance Note:
+----------------
+This script uses OpenAI Vision (if images are found) and multiple retry loops
+to handle site-specific anti-bot measures and rate limits.
+"""
 import re
 
 import os

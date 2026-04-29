@@ -1,15 +1,15 @@
-﻿"""
+"""
 pipelines/dedupe_review_records.py
 ====================================
-Removes duplicate review entries from ``data/social_reviews.csv`` and the
-corresponding ``data/embeddings/review_embeddings.jsonl`` file.
+Deduplicates social review records and their corresponding embeddings.
 
-Deduplication is based on (rest_id, review_text) pairs; the first occurrence
-is kept.
+This script ensures consistency between the raw ``social_reviews.csv`` and 
+the vector ``review_embeddings_latest.jsonl`` by removing duplicate entries
+based on (rest_id, text, rating) collisions.
 
 Usage::
 
-    python pipelines/dedupe_review_records.py
+    python pipelines/dedupe_review_records.py [--restaurant-id ID]
 """
 from __future__ import annotations
 

@@ -1,15 +1,15 @@
-﻿"""
+"""
 pipelines/retry_zero_dishes.py
 ===============================
-Re-runs ``menu_crawler.py`` for restaurants whose menu records contain
-zero dishes (indicating a failed or empty crawl).
+Targeted recovery for failed menu crawls.
 
-Reads the current ``final_parsed_menus.json``, identifies zero-dish entries,
-and triggers targeted re-crawls to improve menu coverage.
+Identifies restaurants in the catalog that have zero extracted dishes and 
+triggers a targeted re-run of ``menu_crawler.py`` to attempt recovery via 
+different crawl paths or LLM re-parsing.
 
 Usage::
 
-    python pipelines/retry_zero_dishes.py
+    python pipelines/retry_zero_dishes.py [start_idx] [end_idx]
 """
 import os
 import json

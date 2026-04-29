@@ -15,7 +15,7 @@ vectors to:
 
 Usage::
 
-    python pipelines/generate_embeddings_michelin.py [--limit N] [--model-id MODEL]
+    python pipelines/generate_embeddings_michelin.py [--backend {clip,hash}]
 """
 
 import argparse

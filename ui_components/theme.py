@@ -1,10 +1,13 @@
 """
 ui_components/theme.py
 ======================
-Shared theme helpers for the Calm Octopuses Streamlit frontend.
+Centralized visual design system and CSS injection for the application.
 
-This theme keeps the app visually coherent while prioritizing contrast and
-readability over decorative styling.
+This module defines:
+1. The global CSS variables (colors, spacing, shadows).
+2. Injected styles for standard Streamlit components (tabs, inputs, metrics).
+3. Custom HTML components (hero section, section headers).
+4. Page layout and typography defaults.
 """
 from __future__ import annotations
 

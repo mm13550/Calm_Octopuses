@@ -1,11 +1,12 @@
-﻿"""
+"""
 pipelines/audit_restaurant_lookup.py
 =====================================
-Audits ``data/csv/restaurant_lookup.csv`` and ``data/extracted_menus/``
-for data quality issues: missing fields, duplicate rest_ids, domain mismatches,
-and restaurants with no menu entries.
+Data quality auditor for the restaurant catalog and menus.
 
-Writes a findings report to ``data/audit/audit_findings.json``.
+Scans the canonical lookup table and menu JSONs for:
+1. Missing or inconsistent fields.
+2. Duplicate IDs and domain mismatches.
+3. Incomplete menu coverage or alignment issues.
 
 Usage::
 

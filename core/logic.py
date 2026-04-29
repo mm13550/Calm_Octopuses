@@ -1,10 +1,13 @@
 """
 core/logic.py
 =============
-Orchestration logic for the Calm Octopuses frontend.
+Business logic and data orchestration layer.
 
-This module decouples the UI (frontend.py) from data filtering and 
-business logic, ensuring the frontend stays focused on rendering.
+This module decouples the presentation layer (frontend.py) from the 
+data access layer (core.data_loader.py). It handles:
+1. Cross-table joining and filtering for specific restaurant details.
+2. User state management for rated restaurants.
+3. High-level result set manipulation for the UI.
 """
 
 import pandas as pd

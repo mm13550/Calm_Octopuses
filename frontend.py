@@ -9,10 +9,12 @@ cards keyed by rest_id.
 
 Tabs
 ----
-Search          CLIP semantic search over the full restaurant catalog.
-Dish Search     Exact-match search over individual menu items.
-Explore         Browse and rate restaurants; get MDN-personalised recommendations.
-Data Overview   Coverage metrics and source file health-check.
+Browse Restaurants  Default landing page; lightweight catalog view (near-instant).
+Search              CLIP semantic search (text/image) over the restaurant catalog.
+Dish Search         Vector-based search over individual menu items.
+Recommended         Personalised MDN-regression based rating predictions.
+My Restaurants      Filtered list of restaurants the user has rated.
+Data Overview       Coverage metrics and source file health-check.
 
 Run with::
 

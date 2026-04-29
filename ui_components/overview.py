@@ -1,11 +1,12 @@
 """
 ui_components/overview.py
 =========================
-Streamlit UI component for the data coverage overview panel.
+Data health and coverage dashboard for the Calm Octopuses catalog.
 
-Renders row counts and per-field coverage statistics for the current
-restaurant catalog, giving operators a quick health-check of how much
-of the dataset has menus, reviews, images, and bios.
+Provides `_render_data_overview`, which calculates and displays:
+1. Total row counts across all major data tables.
+2. Per-field coverage percentages (how many restaurants have menus, images, etc.).
+3. Status indicators for the underlying CSV and JSON source files.
 """
 import pandas as pd
 import streamlit as st

@@ -1,3 +1,19 @@
+"""
+algorithms/retrieval.py
+======================
+Semantic retrieval and embedding logic using CLIP (Contrastive Language-Image Pre-training).
+
+This module handles:
+1. Text-to-restaurant retrieval using mean-pooled restaurant profiles.
+2. Fine-grained dish and review re-ranking using component-level embeddings.
+3. Image-to-image similarity search.
+4. On-the-fly embedding of user queries (text or uploaded images).
+
+Performance Note:
+----------------
+Heavy dependencies (torch, transformers) are imported lazily within functions
+to ensure the main application starts instantly.
+"""
 from __future__ import annotations
 
 import json

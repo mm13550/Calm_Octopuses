@@ -1,16 +1,15 @@
-﻿"""
+"""
 pipelines/apply_social_rest_id_mapping.py
 ==========================================
-Applies a YAML-defined set of rest_id rewrite rules to ``social_reviews.csv``
-and ``social_images.csv``.
+Propagates restaurant ID rewrites across the data pipeline.
 
-Use this when a restaurant's canonical ``rest_id`` changes (e.g. after a
-duplicate-merge or data audit) to propagate the new ID through all artifact files
-without re-running the full scrape pipeline.
+This script applies a set of remap/drop rules to social reviews and images.
+Use this to fix ID collisions or canonicalize restaurant IDs without 
+re-running expensive scrapers or embedding generation.
 
 Usage::
 
-    python pipelines/apply_social_rest_id_mapping.py --rules data/mapping_rules.yaml
+    python pipelines/apply_social_rest_id_mapping.py --apply
 """
 from __future__ import annotations
 

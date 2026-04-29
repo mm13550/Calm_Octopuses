@@ -1,10 +1,13 @@
-﻿"""
+"""
 pipelines/clean_restaurant_profiles.py
 =======================================
-Deduplicates and sorts ``data/embeddings/restaurant_profiles.jsonl``.
+Cleans and deduplicates restaurant profile embeddings.
 
-Removes entries with missing or near-duplicate vectors (cosine similarity
-above a configurable threshold) and re-writes the file in-place.
+This script:
+1. Loads current profiles and the canonical restaurant lookup table.
+2. Identifies duplicate profiles by restaurant name.
+3. Ranks duplicates based on data richness (review/image counts).
+4. Removes "thin" duplicates and ensures only one best profile exists per ID.
 
 Usage::
 

@@ -1,8 +1,11 @@
-﻿"""
+"""
 pipelines/refresh_review_profile_artifacts.py
 ==============================================
-Rebuilds ``data/social_reviews.csv`` rest_id assignments from the canonical
-lookup table to fix any stale or incorrect IDs written during an earlier scrape.
+Synchronizes review-derived artifacts with the canonical lookup table.
+
+This script ensures that all review-based metadata and counts are aligned
+with the current ``restaurant_lookup.csv``, fixing any stale assignments
+without requiring a full re-embedding.
 
 Usage::
 

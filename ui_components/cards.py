@@ -1,12 +1,13 @@
 """
 ui_components/cards.py
 ======================
-Streamlit UI component for rendering a single restaurant result card.
+Standardized UI cards for displaying restaurant results in Streamlit.
 
-Provides ``_render_result_card``, a reusable card that displays restaurant
-metadata, image, coverage metrics, bio, menu highlights, and review snippets.
-The rating label is automatically switched between "Your Rating" (actual) and
-"Predicted Rating" (MDN output) depending on the row's data.
+This module provides the `_render_result_card` function, which handles:
+1. Dynamic metadata rendering (stars, price, sentiment).
+2. Mode-specific rating display (Actual Rating vs. MDN Predicted Interval).
+3. Expandable detail sections for Bio, Menu Highlights, and Review snippets.
+4. Interactive rating slider for user feedback.
 """
 from html import escape
 

@@ -1,16 +1,17 @@
-﻿"""
+"""
 pipelines/generate_embeddings_reviews.py
 =========================================
-Generates 512-D CLIP text embeddings for all review records in
-``data/social_reviews.csv``.
+Generates 512-D CLIP text embeddings for social reviews.
 
-Each review text is encoded by ``openai/clip-vit-base-patch32`` and stored
-as an L2-normalised vector in ``data/embeddings/review_embeddings.jsonl``,
-keyed by ``rest_id``.
+This pipeline:
+1. Reads review text from ``data/social_reviews.csv``.
+2. Resolves restaurant names via ``data/csv/restaurant_lookup.csv``.
+3. Encodes reviews using ``openai/clip-vit-base-patch32``.
+4. Writes results to ``data/embeddings/review_embeddings_latest.jsonl``.
 
 Usage::
 
-    python pipelines/generate_embeddings_reviews.py [--batch-size 128]
+    python pipelines/generate_embeddings_reviews.py [--backend {clip,hash}]
 """
 from __future__ import annotations
 

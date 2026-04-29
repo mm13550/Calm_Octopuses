@@ -1,6 +1,23 @@
 """
-Mixture Density Network (Laplace MoG) for Rating Intervals
-Predicts Mixture of Laplace components for user-restaurant pairs.
+algorithms/mdn_regression.py
+==========================
+Mixture Density Network (MDN) for predicting restaurant rating distributions.
+
+Unlike standard regression, this model outputs a Mixture of Laplace distributions,
+allowing it to capture multi-modal user preferences and provide uncertainty 
+estimates via Highest Density Regions (HDR).
+
+Key Components:
+--------------
+1. Mixture of Laplaces: Predicts locations (mu), scales (b), and mixing weights (pi).
+2. Sharpness Penalty: Forces the model to be opinionated by penalizing distribution width.
+3. Coverage Penalty: Ensures the true rating falls within the 95% confidence interval.
+4. User History Embedding: Uses rating-weighted mean of historical restaurant CLIP vectors.
+
+Performance Note:
+----------------
+PyTorch and PyTorch Lightning are imported lazily within functions to avoid 
+blocking the Streamlit frontend during startup.
 """
 
 import os

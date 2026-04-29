@@ -1,26 +1,20 @@
-﻿"""
+"""
 pipelines/fetch_and_embed_reviews.py
 =====================================
-Fetches review text from external sources and immediately generates CLIP
-text embeddings, writing results to ``data/embeddings/review_embeddings.jsonl``.
+Google Places Review Fetcher & Embedder Pipeline.
 
-Designed for incremental runs: already-embedded reviews are skipped.
+This script serves as the primary data ingestion pipeline for social reviews.
+It performs the following steps:
+1. Reads a curated list of Michelin restaurants from CSV.
+2. Iteratively searches for their Google Place ID.
+3. Fetches up to 10 latest text reviews per restaurant via Google Places (v1) API.
+4. Processes review text through a local DistilBERT Transformer to generate 
+   768-dimensional L2-normalized vector embeddings.
+5. Saves results to ``data/embeddings/reviews_embeddings.parquet``.
 
 Usage::
 
     python pipelines/fetch_and_embed_reviews.py
-"""
-"""
-Google Places Review Fetcher & Embedder Pipeline
-
-This script serves as the primary data ingestion pipeline for Phase 1 of the 
-Michelin NYC Dining Recommender. It connects to the Google Places (v1) API
-to grab the top reviews for a curated list of Michelin restaurants, and then
-processes those text reviews through a local DistilBERT Transformer to generate
-768-dimensional L2-normalized vector embeddings.
-
-These embeddings are consolidated and saved as a Parquet file for downstream 
-clustering and dimensionality reduction algorithms.
 """
 
 import os

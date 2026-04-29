@@ -1,10 +1,11 @@
-﻿"""
+"""
 pipelines/merge_menus.py
 ========================
-Merges multiple partial menu JSON files into a single deduplicated
-``data/extracted_menus/final_parsed_menus.json``.
+Consolidates multiple menu JSON artifacts into a final catalog.
 
-Run this after any batch of ``menu_crawler.py`` runs to consolidate results.
+Merges raw crawled dishes, retried menus, and manually fixed entries into
+the canonical ``final_parsed_menus.json`` file, ensuring exact ordering
+matching the project seeds.
 
 Usage::
 
