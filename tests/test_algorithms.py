@@ -1,3 +1,12 @@
+"""
+tests/test_algorithms.py
+========================
+Unit tests for the project's machine learning and retrieval algorithms.
+
+This suite verifies the mathematical and logical correctness of:
+1. `algorithms/clustering.py`: GMM fitting, label assignment, and AIC/BIC calculations.
+2. `algorithms/retrieval.py`: Cosine similarity metrics and keyword overlap heuristics.
+"""
 import numpy as np
 import pytest
 

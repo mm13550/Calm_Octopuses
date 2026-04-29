@@ -1,3 +1,14 @@
+"""
+tests/test_api.py
+==================
+Unit tests for the project's core data loading and path resolution utilities.
+
+This suite verifies that the `core/data_loader.py` module correctly handles:
+1. Directory constants and project root resolution.
+2. Text cleaning (whitespace collapse, None handling).
+3. String truncation for UI display.
+4. Relative vs. Absolute path resolution for images.
+"""
 from pathlib import Path
 
 from core import data_loader
