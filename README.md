@@ -125,7 +125,7 @@ python algorithms/generate_embeddings.py
 **Launch the Streamlit Recommendation App:**
 
 ```
-streamlit run app.py
+streamlit run frontend.py
 ```
 
 ## 📜 Workflows & Agent Guidelines
