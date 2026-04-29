@@ -149,27 +149,6 @@ This tree reflects the current project files in the repository, excluding `.git/
 
 Large generated assets are intentionally ignored by Git. Keep local embeddings, image downloads, vector databases, logs, and cache files out of commits.
 
-### Important Project Files
-
-| Area | Important files | Purpose |
-|---|---|---|
-| App entry point | `frontend.py` | Merry's Streamlit app shell coordinating Search, Dish Search, Browse Restaurants, Recommended, and Data Overview tabs. |
-| Data loading and app logic | `core/data_loader.py`, `core/logic.py` | Merry + Leo maintain canonical paths, cached CSV/JSON/JSONL readers, joined restaurant catalog data, and detail/rating filters consumed by the frontend and algorithms. |
-| UI rendering | `ui_components/cards.py`, `ui_components/theme.py`, `ui_components/overview.py`, `ui_components/image_grid.py` | Merry's reusable UI layer for restaurant cards, Michelin badges, sentiment charts, global styling, coverage summaries, and image-grid helpers. |
-| Current retrieval | `algorithms/retrieval.py` | Leo implements the active frontend search path: CLIP query embedding, local JSONL embedding lookup, cosine similarity, lexical overlap, image search, and exact dish matching. |
-| Recommendations | `algorithms/mdn_regression.py` | Craig's MDN recommendation module for personalized rating prediction, uncertainty-style outputs, and embedding fallback scoring. |
-| Clustering | `algorithms/clustering.py` | Craig's GMM clustering utility used by algorithm experiments and tests. |
-| Source data | `data/csv/restaurant_lookup.csv`, `data/csv/michelin_awards.csv`, `data/csv/social_reviews.csv`, `data/csv/social_images.csv`, `data/csv/restaurant_profiles.csv`, `data/extracted_bios/restaurant_bios_joinable.json` | Neil + Grace + Leo maintain canonical restaurant IDs, Michelin award metadata, social records, bios, and sentiment/profile fields used by the app. |
-| NLP and sentiment integration | `pipelines/text_cleaning.py`, `data/csv/restaurant_profiles.csv`, `ui_components/cards.py` | Grace's ABSA-derived sentiment/profile fields, including food quality, service, ambiance, value, and wait-time signals surfaced in restaurant cards. |
-| Local generated artifacts | `data/embeddings/*.jsonl`, `data/images/`, `data/extracted_menus/final_parsed_menus.json`, `data/vector_db/` | Neil + Leo produce local-only files through scraping, parsing, embedding, and vector DB experiments. These are intentionally ignored by Git. |
-| Embedding generation | `pipelines/generate_embeddings_images.py`, `pipelines/generate_embeddings_reviews.py`, `pipelines/generate_embeddings_michelin.py`, `pipelines/build_restaurant_profiles.py` | Leo generates image, review, menu, summary, and restaurant-profile embeddings consumed by `core/data_loader.py`, `algorithms/retrieval.py`, and `algorithms/mdn_regression.py`. |
-| Embedding maintenance | `pipelines/check_embedding_integrity.py`, `pipelines/clean_restaurant_profiles.py`, `pipelines/refresh_social_derived_artifacts.py`, `pipelines/refresh_review_profile_artifacts.py` | Leo validates, deduplicates, refreshes, and realigns embedding-derived artifacts after data updates. |
-| Data collection and cleanup | `pipelines/social_scraper.py`, `pipelines/menu_crawler.py`, `pipelines/merge_menus.py`, `pipelines/clean_social_images.py`, `pipelines/remap_problematic_rest_ids.py` | Neil collects reviews/images/menus and cleans source records before downstream embedding generation. |
-| Yelp sandbox | `pipelines/yelp/download_yelp_dataset.py`, `pipelines/yelp/preprocess_yelp.py`, `pipelines/yelp/generate_embeddings_yelp.py`, `pipelines/yelp/aggregate_restaurant_embeddings.py`, `pipelines/yelp/export_regression_train.py`, `pipelines/yelp/evaluate_generalization.py` | Neil + Craig support Yelp Open Dataset experiments, training exports, and cross-modal embedding evaluation outside the main app path. |
-| Vector DB prototypes | `quarry/retrieval_engine.py`, `quarry/retrieval_engine_reviews.py`, `quarry/retrieval_engine_profiles.py`, `quarry/retrieval_engine_hybrid.py`, `quarry/retrieval_metadata.py` | Leo prototypes LanceDB-style retrieval over menu, review, profile, and hybrid vector tables. |
-| Tests | `tests/test_algorithms.py`, `tests/test_api.py` | Leo + Craig + Merry verify clustering behavior, retrieval helper determinism, and shared data-loader utilities. |
-| Tooling and docs | `pyproject.toml`, `requirements.txt`, `data/README.md`, `tools/diagnostics_app.py` | Team-maintained test configuration, dependency list, data policy, and optional local diagnostics. |
-
 The main embedding artifact flow is:
 
 ```text
