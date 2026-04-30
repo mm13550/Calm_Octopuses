@@ -11,6 +11,25 @@ The current app supports:
 - Lightweight personalized ranking from user ratings
 - Data coverage checks in the UI
 
+## 🚀 Quick Start (New Users)
+
+If you are just cloning the repository and want to run the application immediately without running data collection pipelines:
+
+```powershell
+# 1. Create and activate a virtual environment
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+
+# 2. Install dependencies
+pip install -r requirements.txt
+
+# 3. Download the pre-trained models, embeddings, and images
+python download_assets.py
+
+# 4. Start the application
+streamlit run frontend.py
+```
+
 ## Team & Division of Labor
 
 - **Neil (Module A):** Data operations and scraping, including Google Places/Apify collection, Yelp dataset utilities, menu crawling, image collection, and source-data cleanup.
