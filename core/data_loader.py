@@ -27,6 +27,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
 LOOKUP_CSV = DATA_DIR / "csv" / "restaurant_lookup.csv"
 MICHELIN_AWARDS_CSV = DATA_DIR / "csv" / "michelin_awards.csv"
+MICHELIN_AWARDS_XLSX = DATA_DIR / "csv" / "nyc_michelin_awards.xlsx"
 REVIEWS_CSV = DATA_DIR / "csv" / "social_reviews.csv"
 IMAGES_CSV = DATA_DIR / "csv" / "social_images.csv"
 MENUS_JSON = DATA_DIR / "extracted_menus" / "final_parsed_menus.json"
@@ -103,6 +104,66 @@ def _load_csv(path: Path) -> pd.DataFrame:
         return pd.DataFrame()
     return pd.read_csv(path, dtype=str, keep_default_na=False).fillna("")
 
+def _name_key(value: Any) -> str:
+    """Return a compact restaurant-name key for joining source files without IDs."""
+    return "".join(ch for ch in _clean_text(value).lower() if ch.isalnum())
+
+def _read_awards_xlsx(path: Path) -> pd.DataFrame:
+    """Read the current Michelin awards workbook and normalize it to app columns."""
+    if not path.exists():
+        return pd.DataFrame()
+
+    awards_df = pd.read_excel(path, sheet_name="All Restaurants", dtype=str).fillna("")
+    if awards_df.empty:
+        return pd.DataFrame()
+
+    lookup_df = _load_csv(LOOKUP_CSV)
+    lookup_by_name = {}
+    if not lookup_df.empty:
+        for row in lookup_df.to_dict(orient="records"):
+            key = _name_key(row.get("name"))
+            if key:
+                lookup_by_name[key] = _clean_text(row.get("rest_id"))
+
+    normalized_rows: List[Dict[str, Any]] = []
+    for row in awards_df.to_dict(orient="records"):
+        name = _clean_text(row.get("Restaurant Name"))
+        original_name = _clean_text(row.get("Original Name in Uploaded Base"))
+        rest_id = ""
+        for candidate_name in (name, original_name):
+            rest_id = lookup_by_name.get(_name_key(candidate_name), "")
+            if rest_id:
+                break
+
+        try:
+            star_count = int(float(row.get("Star Count", 0) or 0))
+        except (TypeError, ValueError):
+            star_count = 0
+
+        distinction = _clean_text(row.get("Michelin Distinction"))
+        if star_count > 0:
+            award = f"{star_count} Michelin Star" + ("s" if star_count != 1 else "")
+        elif distinction.lower() == "bib gourmand":
+            award = "Bib Gourmand"
+        else:
+            award = distinction
+
+        normalized_rows.append(
+            {
+                "rest_id": rest_id,
+                "restaurant_name": name,
+                "michelin_stars": star_count,
+                "michelin_award": award,
+                "michelin_distinction": distinction,
+                "michelin_cuisine": _clean_text(row.get("Cuisine")),
+                "michelin_location": _clean_text(row.get("Location / Neighborhood")),
+                "michelin_city_area": _clean_text(row.get("City / Area")),
+                "michelin_source_url": _clean_text(row.get("Source URL")),
+            }
+        )
+
+    return pd.DataFrame(normalized_rows)
+
 @st.cache_data(show_spinner=False)
 def load_lookup_df() -> pd.DataFrame:
     """Return the restaurant lookup table (``restaurant_lookup.csv``) as a cached DataFrame."""
@@ -111,7 +172,10 @@ def load_lookup_df() -> pd.DataFrame:
 @st.cache_data(show_spinner=False)
 def load_michelin_awards_df() -> pd.DataFrame:
     """Return Michelin star/distinction metadata keyed by restaurant id."""
-    return _load_csv(MICHELIN_AWARDS_CSV)
+    csv_df = _load_csv(MICHELIN_AWARDS_CSV)
+    if not csv_df.empty:
+        return csv_df
+    return _read_awards_xlsx(MICHELIN_AWARDS_XLSX)
 
 @st.cache_data(show_spinner=False)
 def load_reviews_df() -> pd.DataFrame:
@@ -299,7 +363,7 @@ def build_restaurant_catalog() -> pd.DataFrame:
 
     Returns an empty DataFrame if the lookup CSV is missing.
     """
-    # Cache buster: 1
+    # Cache buster: 2
     lookup_df = load_lookup_df()
     awards_df = load_michelin_awards_df()
     reviews_df = load_reviews_df()

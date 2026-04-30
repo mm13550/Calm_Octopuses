@@ -16,7 +16,10 @@ from core.data_loader import (
     load_images_df, 
     load_menus_df, 
     load_bios_df,
+    load_michelin_awards_df,
     LOOKUP_CSV,
+    MICHELIN_AWARDS_CSV,
+    MICHELIN_AWARDS_XLSX,
     REVIEWS_CSV,
     IMAGES_CSV,
     MENUS_JSON,
@@ -42,18 +45,22 @@ def _render_data_overview(catalog: pd.DataFrame) -> None:
     images_df = load_images_df()
     menus_df = load_menus_df()
     bios_df = load_bios_df()
+    awards_df = load_michelin_awards_df()
 
     st.markdown("<p class='co-note'>Current data footprint feeding the frontend.</p>", unsafe_allow_html=True)
-    cols = st.columns(5)
+    cols = st.columns(6)
     cols[0].metric("Restaurants", len(lookup_df))
     cols[1].metric("Reviews", len(reviews_df))
     cols[2].metric("Images", len(images_df))
     cols[3].metric("Menu rows", len(menus_df))
     cols[4].metric("Bios", len(bios_df))
+    cols[5].metric("Michelin awards", len(awards_df))
 
     st.markdown("### Source files")
+    awards_path = MICHELIN_AWARDS_CSV if MICHELIN_AWARDS_CSV.exists() else MICHELIN_AWARDS_XLSX
     file_rows = [
         (str(LOOKUP_CSV), len(lookup_df)),
+        (str(awards_path), len(awards_df)),
         (str(REVIEWS_CSV), len(reviews_df)),
         (str(IMAGES_CSV), len(images_df)),
         (str(MENUS_JSON), len(menus_df)),

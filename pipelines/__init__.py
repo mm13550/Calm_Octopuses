@@ -9,19 +9,19 @@ Streamlit apps; they are standalone executables invoked from the command line.
 
 Key scripts
 -----------
-generate_embeddings_michelin.py
-    Embed NYC Michelin restaurant menus and reviews into 512-D CLIP vectors
-    stored in ``data/embeddings/``.
-generate_embeddings_images.py
-    Embed social food/interior images into per-image CLIP vectors.
-generate_embeddings_reviews.py
-    Embed social review text into per-review CLIP vectors.
+embeddings_pipeline.py
+    Generate menu, review, and image CLIP embedding JSONL files under
+    ``data/embeddings/``.
 build_restaurant_profiles.py
     Merge per-modality embeddings into a single restaurant profile vector.
 social_scraper.py
     Scrape Yelp and Google Places data for each Michelin restaurant.
 menu_crawler.py
     Crawl restaurant homepages and extract structured menu data.
+menu_pipeline.py
+    Merge parsed menu exports and retry restaurants with zero dishes.
+maintenance.py
+    Deduplicate, audit, refresh, and realign generated artifacts.
 
 Subpackage: yelp/
     Scripts for the Yelp Open Dataset training pipeline.

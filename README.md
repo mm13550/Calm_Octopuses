@@ -32,15 +32,16 @@ The project is organized around a Streamlit frontend, a shared data-loading laye
 ### 2. Data Layer (`core/`, `data/`)
 
 - **`core/data_loader.py` and `core/logic.py` (Merry + Leo):** The central path, schema, and app-logic layer. These files load tracked CSV/JSON data, read local embedding JSONL files, join menus/reviews/images/bios/Michelin metadata, and expose catalog/detail helpers used by the app.
-- **Tracked source data (Neil + Grace + Leo):** `data/csv/restaurant_lookup.csv`, `data/csv/michelin_awards.csv`, `data/csv/nyc_michelin_names_cleaned.csv`, `data/csv/seeds_resolved.csv`, `data/csv/restaurant_profiles.csv`, `data/csv/social_reviews.csv`, `data/csv/social_images.csv`, and `data/extracted_bios/restaurant_bios_joinable.json`.
+- **Tracked source data (Neil + Grace + Leo):** `data/csv/restaurant_lookup.csv`, `data/csv/nyc_michelin_awards.xlsx`, `data/csv/nyc_michelin_names_cleaned.csv`, `data/csv/seeds_resolved.csv`, `data/csv/restaurant_profiles.csv`, `data/csv/social_reviews.csv`, `data/csv/social_images.csv`, and `data/extracted_bios/restaurant_bios_joinable.json`.
 - **Local generated artifacts (Neil + Leo):** `data/embeddings/*.jsonl`, `data/images/`, `data/extracted_menus/final_parsed_menus.json`, and `data/vector_db/` are generated locally and intentionally kept out of Git.
 
 ### 3. Data and Embedding Pipelines (`pipelines/`)
 
-- **Collection and cleaning (Neil):** `social_scraper.py`, `menu_crawler.py`, `merge_menus.py`, `clean_social_images.py`, `remap_problematic_rest_ids.py`, and related scripts collect reviews/images/menus and clean source records before embedding generation.
-- **Text cleaning and ABSA support (Grace):** `text_cleaning.py` documents the text-cleaning and aspect-based sentiment analysis path, with ABSA-derived fields such as food quality, service, ambiance, value, and wait time synchronized into `data/csv/restaurant_profiles.csv` for frontend display.
-- **Embedding artifact layer (Leo):** `generate_embeddings_images.py`, `generate_embeddings_reviews.py`, `generate_embeddings_michelin.py`, and `build_restaurant_profiles.py` generate the image, review, menu, summary, and fused restaurant-profile vectors consumed by retrieval and recommendation code.
-- **Embedding maintenance (Leo):** `check_embedding_integrity.py`, `clean_restaurant_profiles.py`, `refresh_social_derived_artifacts.py`, and `refresh_review_profile_artifacts.py` validate, deduplicate, refresh, and realign embedding-derived artifacts when source records change.
+- **Collection and crawling (Neil):** `social_scraper.py`, `menu_crawler.py`, `bio_crawler.py`, `resolve_homepages.py`, `fetch_and_embed_reviews.py`, and `clean_social_images.py` collect and normalize reviews, images, biographies, homepages, and menu source records.
+- **Text cleaning and ABSA support (Grace):** Grace's NLP work provides the aspect-based sentiment fields consumed by the frontend, including food quality, service, ambiance, value, and wait time values synchronized into `data/csv/restaurant_profiles.csv`.
+- **Menu maintenance (Neil):** `menu_pipeline.py` consolidates legacy menu tasks. It can merge parsed/retried menu exports into `data/extracted_menus/final_parsed_menus.json` and retry restaurants with zero dishes.
+- **Embedding artifact layer (Leo):** `embeddings_pipeline.py` is the unified embedding entry point for menu, review, and image JSONL artifacts. `build_restaurant_profiles.py` generates fused restaurant-profile vectors consumed by retrieval and recommendation code.
+- **Embedding maintenance (Leo):** `check_embedding_integrity.py` and `maintenance.py` validate, deduplicate, audit, refresh, and realign generated artifacts when source records change.
 - **Yelp sandbox (`pipelines/yelp/`) (Neil + Craig):** `download_yelp_dataset.py`, `preprocess_yelp.py`, `generate_embeddings_yelp.py`, `aggregate_restaurant_embeddings.py`, `export_regression_train.py`, and `evaluate_generalization.py` support Yelp Open Dataset experiments, restaurant-level embedding aggregation, training exports, and generalization evaluation outside the main app path.
 
 ### 4. Algorithms and Retrieval (`algorithms/`, `quarry/`)
@@ -50,10 +51,10 @@ The project is organized around a Streamlit frontend, a shared data-loading laye
 - **`algorithms/clustering.py` (Craig):** Latent-style clustering utility. The active clustering utility fits Gaussian Mixture Models and returns labels, soft cluster probabilities, BIC, and AIC diagnostics for restaurant embedding analysis.
 - **`quarry/retrieval_engine*.py` (Leo):** Experimental LanceDB-style retrieval prototypes for menu, review, profile, and hybrid search. These are not the current Streamlit app path, but they document the vector database direction and metadata-rich retrieval API experiments.
 
-### 5. Tests and Diagnostics (`tests/`, `tools/`)
+### 5. Tests and Diagnostics (`tests/`)
 
 - **`tests/test_algorithms.py` and `tests/test_api.py` (Leo + Craig + Merry):** Automated checks for clustering behavior, retrieval helper determinism, and shared data-loader utilities.
-- **`tools/diagnostics_app.py` (Merry + Leo):** Optional local Streamlit diagnostics app for inspecting data and model artifacts outside the main product UI.
+- Diagnostics currently live in the main app's Data Overview tab and in targeted pipeline checks such as `pipelines/check_embedding_integrity.py`; there is no tracked `tools/` directory in the current repository.
 
 ### Directory Overview
 
@@ -64,6 +65,8 @@ This tree reflects the current project files in the repository, excluding `.git/
 |-- .cursorrules
 |-- .env.example
 |-- .gitignore
+|-- activate.bat
+|-- activate.ps1
 |-- CHANGELOG.md
 |-- PLAN.md
 |-- README.md
@@ -79,7 +82,7 @@ This tree reflects the current project files in the repository, excluding `.git/
 |-- data/                       # Tracked source data plus ignored local artifacts
 |   |-- README.md
 |   |-- csv/
-|   |   |-- michelin_awards.csv
+|   |   |-- nyc_michelin_awards.xlsx
 |   |   |-- nyc_michelin_names_cleaned.csv
 |   |   |-- restaurant_profiles.csv
 |   |   |-- restaurant_lookup.csv
@@ -91,31 +94,17 @@ This tree reflects the current project files in the repository, excluding `.git/
 |-- frontend.py                 # Main Streamlit app entry point
 |-- pipelines/                  # Data collection, cleaning, embedding, and refresh scripts
 |   |-- __init__.py
-|   |-- apply_social_rest_id_mapping.py
-|   |-- audit_restaurant_lookup.py
 |   |-- bio_crawler.py
-|   |-- generate_embeddings_images.py
-|   |-- generate_embeddings_reviews.py
-|   |-- generate_embeddings_michelin.py
 |   |-- build_restaurant_profiles.py
 |   |-- check_embedding_integrity.py
-|   |-- clean_restaurant_profiles.py
 |   |-- clean_social_images.py
-|   |-- dedupe_image_records.py
-|   |-- dedupe_restaurant_summaries.py
-|   |-- dedupe_review_records.py
+|   |-- embeddings_pipeline.py
 |   |-- fetch_and_embed_reviews.py
 |   |-- menu_crawler.py
-|   |-- merge_menus.py
-|   |-- refetch_missing_yelp_images.py
-|   |-- refresh_review_profile_artifacts.py
-|   |-- refresh_social_derived_artifacts.py
-|   |-- remap_problematic_rest_ids.py
-|   |-- rerun_likely_problematic_restaurants.py
+|   |-- maintenance.py
+|   |-- menu_pipeline.py
 |   |-- resolve_homepages.py
-|   |-- retry_zero_dishes.py
 |   |-- social_scraper.py
-|   |-- text_cleaning.py
 |   `-- yelp/                   # Yelp sandbox preprocessing and embedding experiments
 |       |-- __init__.py
 |       |-- aggregate_restaurant_embeddings.py
@@ -136,9 +125,6 @@ This tree reflects the current project files in the repository, excluding `.git/
 |   |-- __init__.py
 |   |-- test_algorithms.py
 |   `-- test_api.py
-|-- tools/                      # Optional diagnostics utilities
-|   |-- README.md
-|   `-- diagnostics_app.py
 `-- ui_components/              # Streamlit UI components and theme
     |-- __init__.py
     |-- cards.py
@@ -190,7 +176,7 @@ The app expects a small set of tracked CSV/JSON files and several larger ignored
 Tracked or intentionally small:
 
 - `data/csv/restaurant_lookup.csv`
-- `data/csv/michelin_awards.csv`
+- `data/csv/nyc_michelin_awards.xlsx`
 - `data/csv/nyc_michelin_names_cleaned.csv`
 - `data/csv/seeds_resolved.csv`
 - `data/csv/restaurant_profiles.csv`
@@ -219,12 +205,6 @@ Then open:
 
 ```text
 http://localhost:8501
-```
-
-Optional legacy diagnostics live in:
-
-```powershell
-streamlit run tools/diagnostics_app.py
 ```
 
 ## Test

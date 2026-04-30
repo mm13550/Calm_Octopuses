@@ -5,7 +5,7 @@ This folder contains the small source files needed to assemble the restaurant ca
 ## Tracked Data
 
 - `csv/restaurant_lookup.csv`
-- `csv/michelin_awards.csv`
+- `csv/nyc_michelin_awards.xlsx`
 - `csv/nyc_michelin_names_cleaned.csv`
 - `csv/seeds_resolved.csv`
 - `csv/restaurant_profiles.csv`

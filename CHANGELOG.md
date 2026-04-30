@@ -13,13 +13,14 @@ For the current architecture, setup, and active entry points, see `README.md` an
 - Added MDN-based recommendation support in `algorithms/mdn_regression.py`, including an embedding-based fallback when the trained checkpoint is unavailable.
 - Added tests for clustering behavior, retrieval helper determinism, and shared data-loader utilities.
 - Added `pyproject.toml` pytest configuration.
-- Added `data/README.md` and `tools/README.md` to clarify local data and optional diagnostics usage.
-- Cleaned repository documentation to match the current file structure and local-data policy.
+- Added `data/README.md` to clarify local data and generated-artifact policy.
+- Cleaned repository documentation to match the current file structure, consolidated pipeline scripts, and local-data policy.
+- Updated Michelin award loading to support the current `data/csv/nyc_michelin_awards.xlsx` workbook, including Bib Gourmand distinctions.
 
 ## Current Data Policy
 
-- Small source data can be tracked in Git, including lookup CSVs, Michelin metadata, bios, and `data/restaurant_profiles.csv`.
-- Large generated artifacts stay local and are ignored by Git, including downloaded images, embedding JSONL files, parsed menu exports, social review/image CSVs, vector databases, and Yelp sandbox outputs.
+- Small source data can be tracked in Git, including lookup CSVs, Michelin metadata, bios, and `data/csv/restaurant_profiles.csv`.
+- Large generated artifacts stay local and are ignored by Git, including downloaded images, embedding JSONL files, parsed menu exports, vector databases, and Yelp sandbox outputs.
 
 ## Legacy History
 

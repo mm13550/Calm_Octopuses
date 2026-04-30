@@ -170,7 +170,7 @@ def _render_result_card(row: Dict[str, Any], score_label: str, render_key: str |
             badge_parts = []
             if borough:
                 badge_parts.append(_badge_html(borough, "soft"))
-            # Show Michelin star/distinction badge from michelin_awards.csv if available
+            # Show Michelin star/distinction badge from Michelin award metadata if available.
             try:
                 stars_int = int(float(michelin_stars)) if michelin_stars else 0
             except (TypeError, ValueError):
@@ -246,15 +246,17 @@ def _render_result_card(row: Dict[str, Any], score_label: str, render_key: str |
             show_score = pd.notna(score) and score > 0 and score_label != "Catalog score"
             show_rating = pd.notna(actual_rating) or pd.notna(predicted_rating)
 
+            score_value = f"{float(score):.3f}" if show_score else ""
+
             if show_score and show_rating:
                 m_cols = st.columns(2)
-                m_cols[0].metric(score_label, f"{float(score):.3f}")
+                m_cols[0].metric(score_label, score_value)
                 if pd.notna(actual_rating):
                     m_cols[1].metric("Your Rating", f"{float(actual_rating):.1f} ⭐")
                 else:
                     m_cols[1].metric("Predicted Rating", f"{float(predicted_rating):.1f} ⭐")
             elif show_score:
-                st.metric(score_label, f"{float(score):.3f}")
+                st.metric(score_label, score_value)
             elif show_rating:
                 if pd.notna(actual_rating):
                     st.metric("Your Rating", f"{float(actual_rating):.1f} ⭐")

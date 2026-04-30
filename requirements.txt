@@ -44,6 +44,7 @@ narwhals==2.18.1
 networkx==3.6.1
 numpy==2.4.4
 openai==2.30.0
+openpyxl
 packaging==26.0
 pandas==2.3.3
 patsy==1.0.2

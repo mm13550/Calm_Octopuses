@@ -178,6 +178,18 @@ def _keyword_overlap(text: str, query_terms: set) -> float:
     matches = len(tokens & query_terms)
     return float(matches) / float(max(len(query_terms), 1))
 
+def _contains_exact_term(text: Any, query: str) -> bool:
+    """Return True when query appears as a full term or exact phrase."""
+    cleaned_text = _clean_text(text).lower()
+    cleaned_query = _clean_text(query).lower()
+    if not cleaned_text or not cleaned_query:
+        return False
+
+    if " " in cleaned_query:
+        return cleaned_query in cleaned_text
+
+    return re.search(rf"(?<![a-z0-9]){re.escape(cleaned_query)}(?![a-z0-9])", cleaned_text) is not None
+
 def score_text_results(catalog: pd.DataFrame, query: str, scope: str) -> pd.DataFrame:
     if catalog.empty or not _clean_text(query):
         return pd.DataFrame()
@@ -322,10 +334,16 @@ def score_exact_dish_search(catalog: pd.DataFrame, menus_df: pd.DataFrame, query
         return pd.DataFrame()
 
     query_lower = query.lower().strip()
-    
-    mask = (
-        menus_df['dish_name'].str.contains(query_lower, case=False, regex=False, na=False) |
-        menus_df['ingredients'].str.contains(query_lower, case=False, regex=False, na=False)
+
+    if len(query_lower) < 2:
+        return pd.DataFrame()
+
+    mask = menus_df.apply(
+        lambda row: (
+            _contains_exact_term(row.get("dish_name"), query_lower)
+            or _contains_exact_term(row.get("ingredients"), query_lower)
+        ),
+        axis=1,
     )
     
     matched_menus = menus_df[mask]
@@ -360,5 +378,37 @@ def score_exact_dish_search(catalog: pd.DataFrame, menus_df: pd.DataFrame, query
 
     results["matched_menu_items"] = results["rest_id"].map(lambda rest_id: matched_items_by_restaurant.get(rest_id, []))
     results["match_count"] = results["rest_id"].map(lambda rest_id: int(match_counts.get(rest_id, 0)))
-    results['score'] = 1.0
-    return results.sort_values(by=["match_count", "restaurant_name"], ascending=[False, True])
+
+    query_vector = np.array(embed_text(query), dtype=np.float32)
+    query_terms = set(re.findall(r"[a-z0-9]+", query.lower()))
+    menu_records_map = load_menu_embedding_records()
+
+    score_by_restaurant: Dict[str, float] = {}
+    semantic_by_restaurant: Dict[str, float] = {}
+    lexical_by_restaurant: Dict[str, float] = {}
+
+    for rest_id in matched_rest_ids:
+        scored_records = []
+        for record in menu_records_map.get(rest_id, []):
+            if not _contains_exact_term(record.get("search_text"), query_lower):
+                continue
+            semantic_score = _cosine_similarity(query_vector, record["vector"])
+            lexical_score = _keyword_overlap(record["search_text"], query_terms)
+            final_score = (0.85 * semantic_score) + (0.15 * lexical_score)
+            scored_records.append((final_score, semantic_score, lexical_score))
+
+        if scored_records:
+            final_score, semantic_score, lexical_score = max(scored_records, key=lambda item: item[0])
+        else:
+            semantic_score = 0.0
+            lexical_score = 1.0
+            final_score = lexical_score
+
+        score_by_restaurant[rest_id] = final_score
+        semantic_by_restaurant[rest_id] = semantic_score
+        lexical_by_restaurant[rest_id] = lexical_score
+
+    results["score"] = results["rest_id"].map(lambda rest_id: float(score_by_restaurant.get(rest_id, 0.0)))
+    results["semantic_score"] = results["rest_id"].map(lambda rest_id: float(semantic_by_restaurant.get(rest_id, 0.0)))
+    results["lexical_score"] = results["rest_id"].map(lambda rest_id: float(lexical_by_restaurant.get(rest_id, 0.0)))
+    return results.sort_values(by=["score", "match_count", "restaurant_name"], ascending=[False, False, True])

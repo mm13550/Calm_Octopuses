@@ -239,8 +239,9 @@ def main() -> None:
                         with st.spinner("Adding personalized predicted ratings..."):
                             results_df = add_mdn_predictions(results_df, st.session_state.user_ratings)
                     
-                    st.success(f"Found {len(results_df)} matching restaurants.")
-                    for idx, (_, result_row) in enumerate(results_df.head(top_k).iterrows()):
+                    visible_results = results_df.head(top_k)
+                    st.success(f"Showing top {len(visible_results)} of {len(results_df)} matching restaurants.")
+                    for idx, (_, result_row) in enumerate(visible_results.iterrows()):
                         _render_result_card(result_row.to_dict(), "Match score", render_key=f"search_text_{idx}")
 
         else:
@@ -259,8 +260,9 @@ def main() -> None:
                         with st.spinner("Adding personalized predicted ratings..."):
                             results_df = add_mdn_predictions(results_df, st.session_state.user_ratings)
                             
-                    st.success(f"Found {len(results_df)} visually similar restaurants.")
-                    for idx, (_, result_row) in enumerate(results_df.head(top_k).iterrows()):
+                    visible_results = results_df.head(top_k)
+                    st.success(f"Showing top {len(visible_results)} of {len(results_df)} visually similar restaurants.")
+                    for idx, (_, result_row) in enumerate(visible_results.iterrows()):
                         _render_result_card(result_row.to_dict(), "Image similarity", render_key=f"search_image_{idx}")
 
     with dish_search_tab:
@@ -290,10 +292,21 @@ def main() -> None:
                     if not scored_df.empty:
                         exact_results_df = scored_df
                 
-                sort_label = "Exact Match"
+                sort_label = "Menu match"
+                max_visible_results = min(12, len(exact_results_df))
+                default_visible_results = min(6, max_visible_results)
+                query_key = hashlib.md5(dish_query.strip().lower().encode("utf-8")).hexdigest()[:8]
+                dish_top_k = st.slider(
+                    "Number of dish search results",
+                    min_value=1,
+                    max_value=max_visible_results,
+                    value=default_visible_results,
+                    key=f"dish_search_top_k_{query_key}_{max_visible_results}",
+                )
 
-                st.success(f"Found {len(exact_results_df)} restaurants with exact matches.")
-                for idx, (_, result_row) in enumerate(exact_results_df.iterrows()):
+                visible_results = exact_results_df.head(dish_top_k)
+                st.success(f"Showing top {len(visible_results)} of {len(exact_results_df)} restaurants with menu matches.")
+                for idx, (_, result_row) in enumerate(visible_results.iterrows()):
                     _render_result_card(result_row.to_dict(), sort_label, render_key=f"exact_dish_{idx}")
 
     with browse_tab:

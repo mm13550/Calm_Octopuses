@@ -45,23 +45,26 @@ streamlit run frontend.py
 
 ### Data and Embedding Pipelines
 
-- `pipelines/social_scraper.py`, `pipelines/menu_crawler.py`, and related cleanup scripts collect and normalize source records.
-- `pipelines/generate_embeddings_images.py`, `pipelines/generate_embeddings_reviews.py`, `pipelines/generate_embeddings_michelin.py`, and `pipelines/build_restaurant_profiles.py` generate local embedding artifacts.
-- `pipelines/check_embedding_integrity.py`, `pipelines/clean_restaurant_profiles.py`, `pipelines/refresh_social_derived_artifacts.py`, and `pipelines/refresh_review_profile_artifacts.py` maintain and realign generated artifacts after source changes.
+- `pipelines/social_scraper.py`, `pipelines/menu_crawler.py`, `pipelines/bio_crawler.py`, `pipelines/resolve_homepages.py`, `pipelines/fetch_and_embed_reviews.py`, and `pipelines/clean_social_images.py` collect and normalize source records.
+- Grace's NLP and ABSA work supplies the aspect sentiment fields consumed by the frontend, with food quality, service, ambiance, value, and wait time data synchronized into `data/csv/restaurant_profiles.csv`.
+- `pipelines/menu_pipeline.py` consolidates menu merge and zero-dish retry maintenance tasks.
+- `pipelines/embeddings_pipeline.py` is the unified entry point for menu, review, and image embedding generation.
+- `pipelines/build_restaurant_profiles.py` generates local restaurant-profile embedding artifacts.
+- `pipelines/check_embedding_integrity.py` and `pipelines/maintenance.py` maintain, audit, deduplicate, refresh, and realign generated artifacts after source changes.
 - `pipelines/yelp/` contains sandbox scripts for Yelp Open Dataset experiments and regression export support.
 
 ### Tests and Diagnostics
 
 - `tests/test_algorithms.py` covers GMM clustering behavior and retrieval helper determinism.
 - `tests/test_api.py` covers shared data-loader utilities.
-- `tools/diagnostics_app.py` is an optional local diagnostics Streamlit app.
+- Diagnostics currently live in the main app's Data Overview tab and targeted pipeline checks such as `pipelines/check_embedding_integrity.py`.
 
 ## 3. Data Policy
 
 Tracked source data is intentionally small:
 
 - `data/csv/restaurant_lookup.csv`
-- `data/csv/michelin_awards.csv`
+- `data/csv/nyc_michelin_awards.xlsx`
 - `data/csv/nyc_michelin_names_cleaned.csv`
 - `data/csv/seeds_resolved.csv`
 - `data/csv/restaurant_profiles.csv`
@@ -81,7 +84,7 @@ Generated or large artifacts stay local and are ignored by Git:
 
 ### Short-Term Cleanup
 
-- Keep README, PLAN, `data/README.md`, and `tools/README.md` synchronized when files move.
+- Keep README, PLAN, CHANGELOG, and `data/README.md` synchronized when files move.
 - Keep generated artifacts out of Git and update `.gitignore` when new local output paths are introduced.
 - Add small deterministic tests when changing shared utilities in `core/`, `algorithms/`, or `ui_components/`.
 
