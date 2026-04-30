@@ -14,9 +14,9 @@ FILES_TO_UPLOAD = {
     # Destination path in HF repo -> Local absolute path
     "images.zip": DATA_DIR / "images.zip",
     "extracted_menus/final_parsed_menus.json": DATA_DIR / "extracted_menus" / "final_parsed_menus.json",
-    "embeddings/restaurant_profiles_latest.jsonl": DATA_DIR / "embeddings" / "restaurant_profiles_latest.jsonl",
-    "embeddings/menu_embeddings_latest.jsonl": DATA_DIR / "embeddings" / "menu_embeddings_latest.jsonl",
-    "embeddings/review_embeddings_latest.jsonl": DATA_DIR / "embeddings" / "review_embeddings_latest.jsonl",
+    "embeddings/restaurant_profiles.jsonl": DATA_DIR / "embeddings" / "restaurant_profiles.jsonl",
+    "embeddings/menu_embeddings.jsonl": DATA_DIR / "embeddings" / "menu_embeddings.jsonl",
+    "embeddings/review_embeddings.jsonl": DATA_DIR / "embeddings" / "review_embeddings.jsonl",
     "embeddings/restaurant_metadata.json": DATA_DIR / "embeddings" / "restaurant_metadata.json",
     "yelp_sandbox/mdn_models/clip_v2/clip_v2_full.ckpt": DATA_DIR / "yelp_sandbox" / "mdn_models" / "clip_v2" / "clip_v2_full.ckpt",
 }
