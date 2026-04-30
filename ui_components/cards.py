@@ -181,40 +181,31 @@ def _render_result_card(row: Dict[str, Any], score_label: str, render_key: str |
             rest_id = _clean_text(row.get("rest_id", ""))
             if rest_id and "user_ratings" in st.session_state:
                 r_col1, r_col2 = st.columns([2, 1])
-                with r_col1:
-                    current_rating = st.session_state.user_ratings.get(rest_id)
-                    f_key = f"rate_half_{render_key or 'default'}_{rest_id}"
-                    
-                    # Select slider for half-star steps
-                    new_rating = st.select_slider(
-                        "Your Rating",
-                        options=[1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0],
-                        value=float(current_rating or 4.0),
-                        key=f_key,
-                        help="Select a rating (1-5). Supports half-stars!"
-                    )
-                    
-                    # Visual Star Indicator: ⭐ for full stars, ✨ for half
-                    full_stars = int(new_rating)
-                    half_star = "✨" if (new_rating % 1 != 0) else ""
-                    st.markdown(f"**{new_rating}** {'⭐' * full_stars}{half_star}")
+                f_key = f"rate_stars_{render_key or 'default'}_{rest_id}"
+                current_rating = st.session_state.user_ratings.get(rest_id)
 
-                    # Logic to save changes
-                    if current_rating is None:
-                        touch_key = f"touched_{f_key}"
-                        if st.session_state.get(touch_key) or new_rating != 4.0:
+                with r_col1:
+                    # Sync global rating to widget state
+                    if current_rating is not None and f_key not in st.session_state:
+                        st.session_state[f_key] = int(current_rating) - 1
+                        
+                    st.markdown("**Your Rating**")
+                    val = st.feedback("stars", key=f_key)
+                    
+                    if val is not None:
+                        new_rating = float(val + 1)
+                        if current_rating != new_rating:
                             st.session_state.user_ratings[rest_id] = new_rating
-                            st.session_state[touch_key] = True
                             st.rerun()
-                    elif current_rating != new_rating:
-                        st.session_state.user_ratings[rest_id] = new_rating
-                        st.rerun()
+
                 with r_col2:
                     if current_rating:
-                        # Align button slightly lower to match star widget height
+                        # Align button slightly lower to match widget height
                         st.write("") 
                         if st.button("Clear Rating", key=f"clear_btn_{render_key or 'default'}_{rest_id}", use_container_width=True):
                             del st.session_state.user_ratings[rest_id]
+                            if f_key in st.session_state:
+                                del st.session_state[f_key]
                             st.rerun()
             st.divider()
 
