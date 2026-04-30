@@ -161,6 +161,12 @@ Install dependencies:
 pip install -r requirements.txt
 ```
 
+Download pre-computed models, embeddings, and images:
+
+```powershell
+python download_assets.py
+```
+
 Create a local `.env` file from the example when running collection pipelines:
 
 ```powershell
