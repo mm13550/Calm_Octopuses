@@ -255,6 +255,20 @@ def apply_global_theme() -> None:
             box-shadow: 0 12px 20px rgba(239, 106, 71, 0.20);
         }
 
+        [data-testid="stFeedback"] button,
+        [data-testid="stFeedback"] button:hover,
+        [data-testid="stFeedback"] button:focus {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            color: #ffb400 !important;
+            transform: none !important;
+        }
+
+        [data-testid="stFeedback"] svg {
+            fill: currentColor !important;
+        }
+
         [data-testid="stSuccess"],
         [data-testid="stInfo"],
         [data-testid="stWarning"] {
