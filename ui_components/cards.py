@@ -16,27 +16,7 @@ import streamlit as st
 import plotly.graph_objects as go
 from pathlib import Path
 from typing import Dict, Any
-from core.data_loader import _clean_text, _resolve_path, _truncate
-
-# ── Sentiment data loader ─────────────────────────────────────────────────────
-_SENTIMENT_DF: pd.DataFrame | None = None
-
-def _load_sentiment() -> pd.DataFrame:
-    """Load restaurant_profiles.csv once and cache it in memory."""
-    global _SENTIMENT_DF
-    if _SENTIMENT_DF is None:
-        candidates = [
-            Path(__file__).resolve().parent.parent / "data" / "csv" / "restaurant_profiles.csv",
-            Path(__file__).resolve().parent.parent / "data" / "restaurant_profiles.csv",
-            Path(__file__).resolve().parent.parent / "restaurant_profiles.csv",
-        ]
-        for p in candidates:
-            if p.exists():
-                _SENTIMENT_DF = pd.read_csv(p).set_index("restaurant_id")
-                break
-        if _SENTIMENT_DF is None:
-            _SENTIMENT_DF = pd.DataFrame()
-    return _SENTIMENT_DF
+from core.data_loader import _clean_text, _resolve_path, _truncate, load_sentiment_df
 
 
 def _menu_item_key(value: Any) -> str:
@@ -62,7 +42,7 @@ def _render_sentiment(rest_id: str, element_key: str | None = None) -> None:
     Render sentiment score bars + radar chart for a given restaurant.
     Shows nothing silently if no sentiment data is available.
     """
-    df = _load_sentiment()
+    df = load_sentiment_df()
     if df.empty or rest_id not in df.index:
         return
 

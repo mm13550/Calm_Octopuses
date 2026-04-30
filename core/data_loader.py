@@ -30,6 +30,7 @@ MICHELIN_AWARDS_CSV = DATA_DIR / "csv" / "michelin_awards.csv"
 MICHELIN_AWARDS_XLSX = DATA_DIR / "csv" / "nyc_michelin_awards.xlsx"
 REVIEWS_CSV = DATA_DIR / "csv" / "social_reviews.csv"
 IMAGES_CSV = DATA_DIR / "csv" / "social_images.csv"
+SENTIMENT_CSV = DATA_DIR / "csv" / "restaurant_profiles.csv"
 MENUS_JSON = DATA_DIR / "extracted_menus" / "final_parsed_menus.json"
 BIOS_JSON = DATA_DIR / "extracted_bios" / "restaurant_bios_joinable.json"
 DEFAULT_CLIP_MODEL_ID = "openai/clip-vit-base-patch32"
@@ -192,6 +193,13 @@ def load_menus_df() -> pd.DataFrame:
     """Return the parsed menu records as a cached DataFrame."""
     rows = _load_json_records(MENUS_JSON)
     return pd.DataFrame(rows)
+
+@st.cache_data(show_spinner=False)
+def load_sentiment_df() -> pd.DataFrame:
+    """Return the sentiment profiles as a cached DataFrame indexed by restaurant_id."""
+    if not SENTIMENT_CSV.exists():
+        return pd.DataFrame()
+    return pd.read_csv(SENTIMENT_CSV).set_index("restaurant_id")
 
 @st.cache_data(show_spinner=False)
 def load_bios_df() -> pd.DataFrame:
