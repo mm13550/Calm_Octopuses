@@ -15,7 +15,8 @@ This folder contains the small source files needed to assemble the restaurant ca
 
 ## Local-Only Data
 
-These files are generated or too large for the repository:
+These files are generated or too large for the repository and must be copied in
+from the shared asset bundle before the app will run end-to-end:
 
 - `embeddings/*.jsonl`
 - `images/*`
@@ -23,4 +24,10 @@ These files are generated or too large for the repository:
 - `vector_db/`
 - Yelp sandbox outputs
 
-Keep local-only data out of commits. If a new generated artifact is required to reproduce the app locally, document where it should be placed and add it to `.gitignore`.
+The standard setup path is `python download_assets.py`, which downloads the
+default asset bundle into `data/`. If your team uses a shared Google Drive
+mirror instead, copy the same files into the matching paths under `data/`.
+
+Keep local-only data out of commits. If a new generated artifact is required to
+reproduce the app locally, document where it should be placed and add it to
+`.gitignore`.
