@@ -12,7 +12,8 @@ DATA_DIR = PROJECT_ROOT / "data"
 
 DOWNLOAD_GROUPS = {
     "image archive": ["images.zip"],
-    "parsed menus": ["extracted_menus/final_parsed_menus.json"],
+    "final parsed menus": ["extracted_menus/final_parsed_menus.json"],
+    "raw parsed menus": ["extracted_menus/parsed_menus.json"],
     "restaurant profile embeddings": ["embeddings/restaurant_profiles.jsonl"],
     "menu embeddings": ["embeddings/menu_embeddings.jsonl"],
     "review embeddings": ["embeddings/review_embeddings.jsonl"],
