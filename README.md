@@ -11,7 +11,9 @@ The current app supports:
 - Image-based visual similarity search
 - Exact dish/menu search
 - Restaurant browsing with representative images and Michelin badges
+- Review sentiment panels on restaurant cards when sentiment data is available
 - Lightweight personalized ranking from user ratings
+- A My Restaurants view for restaurants the user has rated
 - Data coverage checks in the UI
 
 ## 🚀 Quick Start (New Users)
@@ -58,6 +60,16 @@ locally:
 - `data/embeddings/restaurant_metadata.json`
 - `data/images/`
 
+The pipeline scripts also generate `_latest` exports locally, including:
+
+- `data/embeddings/restaurant_profiles_latest.jsonl`
+- `data/embeddings/menu_embeddings_latest.jsonl`
+- `data/embeddings/review_embeddings_latest.jsonl`
+- `data/embeddings/image_embeddings_food_latest.jsonl`
+- `data/embeddings/image_embeddings_interior_latest.jsonl`
+- `data/embeddings/restaurant_summary_latest.jsonl`
+- `data/embeddings/review_restaurant_ids_latest.jsonl`
+
 The recommendation tab can also use:
 
 - `data/yelp_sandbox/mdn_models/clip_v2/clip_v2_full.ckpt`
@@ -70,7 +82,7 @@ recommendations instead of crashing.
 - **Neil (Module A):** Data operations and scraping, including Google Places/Apify collection, Yelp dataset utilities, menu crawling, image collection, and source-data cleanup.
 - **Leo (Module B):** Embedding and retrieval work, including CLIP-based text/image search, JSONL embedding artifacts, similarity scoring, and embedding maintenance utilities.
 - **Craig (Module C):** Advanced ML algorithms, including MDN-based personalized rating recommendations, rating uncertainty outputs, Yelp sandbox evaluation, and embedding-based fallback recommendation logic.
-- **Merry (Module D):** Streamlit frontend development, including app navigation, multimodal search inputs, exact dish search, restaurant cards, browse/rating/recommendation flows, data overview panels, and dynamic Michelin/sentiment UI badges.
+- **Merry (Module D):** Streamlit frontend development, including app navigation, multimodal search inputs, exact dish search, restaurant cards, browse/rating/recommendation flows, data overview panels, Michelin badges, and review sentiment panels.
 - **Grace (Module E):** NLP and system integration, including ABSA-derived review sentiment fields, aspect score schema alignment, and synchronization of sentiment/profile data consumed by the frontend.
 
 ## Core Architecture & Directory Structure
@@ -79,15 +91,15 @@ The project is organized around a Streamlit frontend, a shared data-loading laye
 
 ### 1. Application Layer (`frontend.py`, `ui_components/`)
 
-- **`frontend.py` (Merry):** Main Streamlit entry point. It builds the Search, Dish Search, Browse Restaurants, Recommended, and Data Overview tabs, and wires retrieval, rating input, recommendation scoring, and catalog inspection into one app flow.
-- **`ui_components/cards.py`, `theme.py`, and `overview.py` (Merry):** Reusable UI pieces for restaurant cards, Michelin badges, review sentiment charts, global styling, section headers, and data coverage reporting.
+- **`frontend.py` (Merry):** Main Streamlit entry point. It builds the Browse Restaurants, Search, Dish Search, Recommended, My Restaurants, and Data Overview tabs, and wires retrieval, rating input, recommendation scoring, and catalog inspection into one app flow.
+- **`ui_components/cards.py`, `theme.py`, and `overview.py` (Merry):** Reusable UI pieces for restaurant cards, Michelin badges, review sentiment panels, global styling, section headers, and data coverage reporting.
 - **`ui_components/image_grid.py` (Merry):** Optional helper for image similarity grids and visual-search experiments.
 
 ### 2. Data Layer (`core/`, `data/`)
 
 - **`core/data_loader.py` and `core/logic.py` (Merry + Leo):** The central path, schema, and app-logic layer. These files load tracked CSV/JSON data, read local embedding JSONL files, join menus/reviews/images/bios/Michelin metadata, and expose catalog/detail helpers used by the app.
 - **Tracked source data (Neil + Grace + Leo):** `data/csv/restaurant_lookup.csv`, `data/csv/nyc_michelin_awards.xlsx`, `data/csv/nyc_michelin_names_cleaned.csv`, `data/csv/seeds_resolved.csv`, `data/csv/restaurant_profiles.csv`, `data/csv/social_reviews.csv`, `data/csv/social_images.csv`, and `data/extracted_bios/restaurant_bios_joinable.json`.
-- **Local generated artifacts (Neil + Leo):** `data/embeddings/*.jsonl`, `data/images/`, `data/extracted_menus/final_parsed_menus.json`, and `data/vector_db/` are generated locally, downloaded from the shared asset bundle, and intentionally kept out of Git.
+- **Local generated artifacts (Neil + Leo):** `data/embeddings/*.jsonl`, `data/images/`, `data/extracted_menus/final_parsed_menus.json`, and `data/vector_db/` are generated locally or downloaded from the shared asset bundle, and intentionally kept out of Git.
 
 ### 3. Data and Embedding Pipelines (`pipelines/`)
 
@@ -120,6 +132,8 @@ This tree reflects the current project files in the repository, excluding `.git/
 |-- activate.bat
 |-- activate.ps1
 |-- CHANGELOG.md
+|-- conversations.md
+|-- download_assets.py         # Pulls precomputed assets from Hugging Face
 |-- PLAN.md
 |-- README.md
 |-- REGRESSION_TUNING.md
@@ -166,6 +180,7 @@ This tree reflects the current project files in the repository, excluding `.git/
 |       `-- preprocess_yelp.py
 |-- pyproject.toml              # Project metadata and pytest configuration
 |-- requirements.txt            # Runtime dependencies
+|-- upload_assets.py            # Upload helper for curated local assets
 |-- tests/                      # Automated tests
 |   |-- __init__.py
 |   |-- test_algorithms.py
