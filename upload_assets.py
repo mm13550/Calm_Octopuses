@@ -1,3 +1,4 @@
+import argparse
 import os
 import shutil
 from pathlib import Path
@@ -24,7 +25,7 @@ STATIC_FILES_TO_UPLOAD = {
 }
 
 
-def collect_embedding_files() -> dict[str, Path]:
+def collect_embedding_files(name_prefix: str | None = None) -> dict[str, Path]:
     """Return canonical embedding assets to upload under ``embeddings/``."""
     if not EMBEDDINGS_DIR.exists():
         return {}
@@ -37,15 +38,17 @@ def collect_embedding_files() -> dict[str, Path]:
             continue
         if path.name.endswith(".bak") or "_latest" in path.stem:
             continue
+        if name_prefix and not path.name.startswith(name_prefix):
+            continue
 
         files_to_upload[f"embeddings/{path.name}"] = path
 
     return files_to_upload
 
 
-def build_upload_manifest() -> dict[str, Path]:
-    manifest = dict(STATIC_FILES_TO_UPLOAD)
-    manifest.update(collect_embedding_files())
+def build_upload_manifest(*, include_static: bool = True, embedding_name_prefix: str | None = None) -> dict[str, Path]:
+    manifest = dict(STATIC_FILES_TO_UPLOAD) if include_static else {}
+    manifest.update(collect_embedding_files(name_prefix=embedding_name_prefix))
     return manifest
 
 def zip_images():
@@ -62,10 +65,11 @@ def zip_images():
     print("Compression complete!")
     return True
 
-def upload_to_hf():
+def upload_to_hf(files_to_upload: dict[str, Path] | None = None):
     """Upload specified files to Hugging Face dataset repository."""
     api = HfApi()
-    files_to_upload = build_upload_manifest()
+    if files_to_upload is None:
+        files_to_upload = build_upload_manifest()
     
     try:
         api.dataset_info(repo_id=REPO_ID)
@@ -96,7 +100,25 @@ def upload_to_hf():
             
     print("\nAll uploads completed!")
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Upload Calm Octopuses assets to Hugging Face.")
+    parser.add_argument(
+        "--only-image-embeddings",
+        action="store_true",
+        help="Upload only canonical image embedding files under data/embeddings/.",
+    )
+    return parser.parse_args()
+
 if __name__ == "__main__":
     print("=== Calm Octopuses Asset Uploader ===")
-    zip_images()
-    upload_to_hf()
+    args = parse_args()
+
+    if args.only_image_embeddings:
+        manifest = build_upload_manifest(include_static=False, embedding_name_prefix="image_embeddings_")
+        if not manifest:
+            print("No canonical image embedding files were found under data/embeddings/. Nothing to upload.")
+        else:
+            upload_to_hf(manifest)
+    else:
+        zip_images()
+        upload_to_hf()
