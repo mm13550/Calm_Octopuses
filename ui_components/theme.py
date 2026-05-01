@@ -455,55 +455,26 @@ def apply_global_theme() -> None:
             align-items: flex-start;
             justify-content: space-between;
             gap: 1rem;
+            margin-bottom: 0.65rem;
         }
 
-        .co-michelin-medal {
+        .co-card-title-block {
+            min-width: 0;
+        }
+
+        .co-distinction-mark {
             flex: 0 0 auto;
-            min-width: 6.8rem;
-            padding: 0.68rem 0.8rem;
-            border-radius: 16px;
-            border: 1px solid rgba(148, 57, 31, 0.20);
-            background: linear-gradient(180deg, #fff8e8 0%, #fff0d2 100%);
-            box-shadow: 0 8px 18px rgba(148, 57, 31, 0.10);
-            text-align: center;
-        }
-
-        .co-michelin-medal--listed {
-            background: #faf7f4;
-            border-color: var(--co-border);
-            box-shadow: none;
-        }
-
-        .co-michelin-medal-value {
-            display: block;
-            color: #94391f;
-            font-size: 1.05rem;
-            line-height: 1;
-            font-weight: 900;
-            letter-spacing: 0.04em;
-        }
-
-        .co-michelin-medal--listed .co-michelin-medal-value {
-            color: var(--co-ink-muted);
-            font-size: 0.72rem;
-            letter-spacing: 0.12em;
-        }
-
-        .co-michelin-medal-label {
-            display: block;
-            margin-top: 0.28rem;
-            color: var(--co-ink);
-            font-size: 0.76rem;
-            line-height: 1.1;
-            font-weight: 800;
-            white-space: nowrap;
+            display: inline-flex;
+            align-items: flex-start;
+            justify-content: flex-end;
+            padding-top: 0.12rem;
         }
 
         .co-badge-row {
             display: flex;
             flex-wrap: wrap;
             gap: 0.45rem;
-            margin: 0.75rem 0 0.5rem 0;
+            margin: 0.5rem 0 0.5rem 0;
         }
 
         .co-inline-badge {
@@ -653,6 +624,17 @@ def apply_global_theme() -> None:
 
             .co-stat-pill {
                 width: 100%;
+            }
+
+            .co-card-heading {
+                align-items: stretch;
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+
+            .co-distinction-mark {
+                justify-content: flex-start;
+                padding-top: 0;
             }
         }
         </style>

@@ -9,14 +9,23 @@ This module provides the `_render_result_card` function, which handles:
 3. Expandable detail sections for Bio, Menu Highlights, and Review snippets.
 4. Interactive rating slider for user feedback.
 """
+import base64
+import re
+from functools import lru_cache
 from html import escape
+from io import BytesIO
+from textwrap import dedent
 
 import pandas as pd
 import streamlit as st
 import plotly.graph_objects as go
 from pathlib import Path
 from typing import Dict, Any
+from PIL import Image, ImageChops
 from core.data_loader import _clean_text, _resolve_path, _truncate, load_sentiment_df
+
+
+DISTINCTION_ASSET_DIR = Path(__file__).resolve().parents[1] / "data" / "distiction"
 
 
 def _menu_item_key(value: Any) -> str:
@@ -31,6 +40,135 @@ def _badge_html(text: str, variant: str = "soft") -> str:
     if not cleaned_text:
         return ""
     return f'<span class="co-inline-badge co-inline-badge--{variant}">{escape(cleaned_text)}</span>'
+
+
+def _html(markup: str) -> None:
+    st.html(markup)
+
+
+def _distinction_asset_path(filename: str) -> Path | None:
+    if not filename:
+        return None
+    asset_path = DISTINCTION_ASSET_DIR / filename
+    return asset_path if asset_path.exists() else None
+
+
+@lru_cache(maxsize=8)
+def _distinction_mask_data_uri(filename: str) -> tuple[str, int, int]:
+    asset_path = _distinction_asset_path(filename)
+    if not asset_path:
+        return "", 1, 1
+
+    image = Image.open(asset_path).convert("RGBA")
+    white = Image.new("RGBA", image.size, (255, 255, 255, 255))
+    diff = ImageChops.difference(image, white).convert("L")
+    source_alpha = image.getchannel("A")
+    alpha = Image.eval(diff, lambda value: min(255, value * 3))
+    alpha = ImageChops.multiply(alpha, source_alpha)
+
+    bbox = alpha.getbbox()
+    if bbox:
+        alpha = alpha.crop(bbox)
+
+    mask = Image.new("RGBA", alpha.size, (0, 0, 0, 0))
+    mask.putalpha(alpha)
+
+    buffer = BytesIO()
+    mask.save(buffer, format="PNG")
+    encoded = base64.b64encode(buffer.getvalue()).decode("ascii")
+    width, height = mask.size
+    return f"data:image/png;base64,{encoded}", width, height
+
+
+def _inject_distinction_mask_styles() -> None:
+    asset_specs = {
+        "one-star": ("1_star.PNG", "1.72rem"),
+        "two-star": ("2_star.PNG", "1.72rem"),
+        "three-star": ("3_star.png", "1.72rem"),
+        "bib": ("bib_gourmand.png", "1.55rem"),
+    }
+    rules = []
+    for class_suffix, (filename, height) in asset_specs.items():
+        data_uri, width, image_height = _distinction_mask_data_uri(filename)
+        if not data_uri:
+            continue
+        aspect_ratio = width / max(image_height, 1)
+        rules.append(
+            dedent(f"""
+            .co-distinction-shape--{class_suffix} {{
+                --co-distinction-mask: url("{data_uri}");
+                width: calc({height} * {aspect_ratio:.5f});
+                height: {height};
+            }}
+            """).strip()
+        )
+
+    if not rules:
+        return
+
+    _html(
+        dedent(f"""
+        <style>
+        .co-distinction-shape {{
+            display: inline-block;
+            background: #ef3e3a;
+            -webkit-mask-image: var(--co-distinction-mask);
+            mask-image: var(--co-distinction-mask);
+            -webkit-mask-repeat: no-repeat;
+            mask-repeat: no-repeat;
+            -webkit-mask-position: center;
+            mask-position: center;
+            -webkit-mask-size: contain;
+            mask-size: contain;
+        }}
+        {''.join(rules)}
+        </style>
+        """).strip()
+    )
+
+
+def _michelin_distinction_asset(
+    stars: int,
+    award: str,
+    distinction: str,
+    category: str,
+) -> tuple[str, str]:
+    text = " ".join(part for part in (award, distinction, category) if _clean_text(part)).lower()
+    if stars <= 0:
+        if re.search(r"\b(3|three)\b.*\bstars?\b", text):
+            stars = 3
+        elif re.search(r"\b(2|two)\b.*\bstars?\b", text):
+            stars = 2
+        elif re.search(r"\b(1|one)\b.*\bstars?\b", text):
+            stars = 1
+
+    if stars > 0:
+        class_by_star = {
+            1: "one-star",
+            2: "two-star",
+            3: "three-star",
+        }
+        label = f"Michelin {stars} Star" + ("s" if stars != 1 else "")
+        return class_by_star.get(stars, ""), label
+
+    label = award or distinction or category
+    if not label:
+        return "", ""
+
+    if "bib" not in text or "gourmand" not in text:
+        return "", ""
+    return "bib", label
+
+
+def _michelin_distinction_html(class_suffix: str, label: str) -> str:
+    if not class_suffix or not label:
+        return ""
+    return (
+        '<span class="co-distinction-mark" '
+        f'aria-label="{escape(label, quote=True)}" title="{escape(label, quote=True)}">'
+        f'<span class="co-distinction-shape co-distinction-shape--{escape(class_suffix, quote=True)}"></span>'
+        "</span>"
+    )
 
 
 ASP_COLS  = ["asp_food_quality", "asp_service", "asp_ambiance", "asp_value", "asp_wait_time"]
@@ -155,26 +293,30 @@ def _render_result_card(row: Dict[str, Any], score_label: str, render_key: str |
                 stars_int = int(float(michelin_stars)) if michelin_stars else 0
             except (TypeError, ValueError):
                 stars_int = 0
-            if stars_int > 0:
-                star_label = "⭐" * stars_int + f" {michelin_award or michelin_distinction or 'Michelin Star'}"
-                badge_parts.append(_badge_html(star_label, "accent"))
-            elif michelin_award:
-                badge_parts.append(_badge_html(michelin_award, "accent"))
-            elif michelin_distinction:
-                badge_parts.append(_badge_html(michelin_distinction, "accent"))
-            elif michelin_category:
-                badge_parts.append(_badge_html(michelin_category, "accent"))
+            distinction_class, distinction_label = _michelin_distinction_asset(
+                stars_int,
+                michelin_award,
+                michelin_distinction,
+                michelin_category,
+            )
+            distinction_html = _michelin_distinction_html(distinction_class, distinction_label)
+            if distinction_html:
+                _inject_distinction_mask_styles()
 
-            st.markdown(
-                f"""
+            _html(
+                dedent(f"""
                 <div class="co-result-meta">
-                    <p class="co-card-kicker">Restaurant Card</p>
-                    <h3 class="co-card-title">{escape(restaurant_name)}</h3>
+                    <div class="co-card-heading">
+                        <div class="co-card-title-block">
+                            <p class="co-card-kicker">Restaurant Card</p>
+                            <h3 class="co-card-title">{escape(restaurant_name)}</h3>
+                        </div>
+                        {distinction_html}
+                    </div>
                     <div class="co-badge-row">{''.join(badge_parts)}</div>
-                    <p class="co-card-id">Catalog ID · {escape(rest_id_label)}</p>
+                    <p class="co-card-id">Catalog ID - {escape(rest_id_label)}</p>
                 </div>
-                """,
-                unsafe_allow_html=True,
+                """).strip()
             )
 
             # ── Rating Section (Now prominent under the title) ───────────────
@@ -202,7 +344,7 @@ def _render_result_card(row: Dict[str, Any], score_label: str, render_key: str |
                     if current_rating:
                         # Align button slightly lower to match widget height
                         st.write("") 
-                        if st.button("Clear Rating", key=f"clear_btn_{render_key or 'default'}_{rest_id}", use_container_width=True):
+                        if st.button("Clear Rating", key=f"clear_btn_{render_key or 'default'}_{rest_id}", width="stretch"):
                             del st.session_state.user_ratings[rest_id]
                             if f_key in st.session_state:
                                 del st.session_state[f_key]
@@ -237,10 +379,7 @@ def _render_result_card(row: Dict[str, Any], score_label: str, render_key: str |
             homepage = _clean_text(row.get("homepage"))
             if homepage:
                 safe_homepage = escape(homepage, quote=True)
-                st.markdown(
-                    f'<a class="co-link-pill" href="{safe_homepage}" target="_blank">Visit homepage</a>',
-                    unsafe_allow_html=True,
-                )
+                _html(f'<a class="co-link-pill" href="{safe_homepage}" target="_blank">Visit homepage</a>')
 
             counts = st.columns(4)
             counts[0].metric("Menus", int(row.get("menu_count", 0)))
@@ -276,9 +415,8 @@ def _render_result_card(row: Dict[str, Any], score_label: str, render_key: str |
                     item_key = _menu_item_key(item)
                     if not item_key or item_key in seen_highlights:
                         continue
-                    st.markdown(
+                    _html(
                         f"<div class='co-menu-match'><strong>Matched dish</strong> · {escape(_truncate(item, 160))}</div>",
-                        unsafe_allow_html=True,
                     )
                     seen_highlights.add(item_key)
 

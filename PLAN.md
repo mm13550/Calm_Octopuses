@@ -41,7 +41,7 @@ streamlit run frontend.py
 - It supports CLIP text query embedding, image query embedding, cosine similarity scoring, lexical overlap blending, menu-item scoped search, review scoped search, and exact dish matching.
 - `algorithms/mdn_regression.py` provides personalized rating predictions when an MDN checkpoint is available.
 - When the MDN checkpoint is missing, the recommendation flow falls back to embedding-based scoring.
-- `quarry/` contains LanceDB-style retrieval prototypes. These are useful for future vector database work but are not the active frontend path.
+- The active retrieval path lives in `algorithms/retrieval.py` and `core/data_loader.py`; there is no separate vector database backend in the current app.
 
 ### Data and Embedding Pipelines
 
@@ -55,7 +55,7 @@ streamlit run frontend.py
 
 ### Tests and Diagnostics
 
-- `tests/test_algorithms.py` covers GMM clustering behavior and retrieval helper determinism.
+- `tests/test_algorithms.py` covers retrieval helper determinism.
 - `tests/test_api.py` covers shared data-loader utilities.
 - Diagnostics currently live in the main app's Data Overview tab and targeted pipeline checks such as `pipelines/check_embedding_integrity.py`.
 
@@ -92,12 +92,11 @@ Generated or large artifacts stay local and are ignored by Git:
 
 - Validate that every generated embedding JSONL file has matching restaurant IDs against `data/csv/restaurant_lookup.csv`.
 - Keep `core/data_loader.py` fallback behavior compatible with both canonical and `*_latest.jsonl` embedding exports.
-- Decide whether the LanceDB prototypes in `quarry/` should become the active retrieval backend or remain experimental.
+- Keep the retrieval path centered on the current CLIP-plus-JSONL workflow unless the team explicitly decides to reintroduce a vector database backend.
 
-### Recommendation and Clustering
+### Recommendation
 
 - Keep `algorithms/mdn_regression.py` robust when the MDN checkpoint is unavailable.
-- Expand clustering tests when adding new clustering or dimensionality-reduction utilities.
 - Document any trained model checkpoints or Yelp sandbox outputs in `data/README.md` before sharing them outside a local environment.
 
 ### Frontend
