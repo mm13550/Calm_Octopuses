@@ -26,6 +26,12 @@ STATIC_FILES_TO_UPLOAD = {
     "yelp_sandbox/mdn_models/clip_v2/clip_v2_full.ckpt": DATA_DIR / "yelp_sandbox" / "mdn_models" / "clip_v2" / "clip_v2_full.ckpt",
 }
 
+CANONICAL_EMBEDDING_FILES = {
+    local_path.name
+    for repo_path, local_path in STATIC_FILES_TO_UPLOAD.items()
+    if repo_path.startswith("embeddings/")
+}
+
 
 def collect_embedding_files(name_prefix: str | None = None) -> dict[str, Path]:
     """Return canonical embedding assets to upload under ``embeddings/``."""
@@ -38,7 +44,9 @@ def collect_embedding_files(name_prefix: str | None = None) -> dict[str, Path]:
             continue
         if path.suffix not in {".json", ".jsonl"}:
             continue
-        if path.name.endswith(".bak") or "_latest" in path.stem:
+        if path.name.endswith(".bak"):
+            continue
+        if path.name not in CANONICAL_EMBEDDING_FILES:
             continue
         if name_prefix and not path.name.startswith(name_prefix):
             continue

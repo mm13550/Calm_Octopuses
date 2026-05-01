@@ -3,7 +3,7 @@ pipelines/embeddings_pipeline.py
 ===============================
 Unified embedding generation pipeline for the Calm Octopuses project.
 
-This script consolidates legacy embedding scripts into a single tool for:
+This script consolidates embedding generation for:
 1. Menus: 512-D CLIP text embeddings for Michelin dishes.
 2. Reviews: 512-D CLIP text embeddings for social reviews.
 3. Images: 512-D CLIP image embeddings for food and interior photos.
@@ -37,7 +37,6 @@ UTC = timezone.utc
 
 DEFAULT_CLIP_MODEL_ID = "openai/clip-vit-base-patch32"
 
-# --- Common Helpers ---
 
 def utc_now_iso() -> str:
     return datetime.now(UTC).isoformat()
@@ -52,16 +51,17 @@ def normalize(vector: list[float]) -> list[float]:
 
 _CLIP_CACHE: dict[str, Any] = {}
 
+
 def get_clip_backend(model_id: str):
     if model_id in _CLIP_CACHE:
         return _CLIP_CACHE[model_id]
-    
+
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model = CLIPModel.from_pretrained(model_id).to(device)
     model.eval()
     tokenizer = CLIPTokenizer.from_pretrained(model_id)
     processor = CLIPProcessor.from_pretrained(model_id)
-    
+
     _CLIP_CACHE[model_id] = (model, tokenizer, processor, device)
     return model, tokenizer, processor, device
 
@@ -78,7 +78,8 @@ def embed_text_clip(text: str, model_id: str) -> list[float]:
 def embed_text_hash(text: str, dim: int = 512) -> list[float]:
     vec = [0.0] * dim
     tokens = str(text).lower().split()
-    if not tokens: tokens = ["empty"]
+    if not tokens:
+        tokens = ["empty"]
     for tok in tokens:
         h = int(hashlib.md5(tok.encode("utf-8")).hexdigest(), 16)
         idx = h % dim
@@ -99,8 +100,6 @@ def embed_image_clip(image: Image.Image, model_id: str) -> list[float]:
     return normalize(features[0].detach().cpu().tolist())
 
 
-# --- Menu Embedding Logic ---
-
 def run_menus(args: argparse.Namespace) -> None:
     input_path = Path(args.input)
     output_dir = Path(args.output_dir)
@@ -117,42 +116,53 @@ def run_menus(args: argparse.Namespace) -> None:
         rid = str(record.get("rest_id") or record.get("restaurant_id") or "").strip()
         rname = str(record.get("restaurant_name") or record.get("name") or "").strip()
         dname = str(record.get("dish_name") or record.get("dish") or "").strip()
-        if not rid or not rname or not dname: continue
+        if not rid or not rname or not dname:
+            continue
 
         key = f"{rid}|{rname}|{dname}|{record.get('ingredients')}".lower()
-        if key in dedup_seen: continue
+        if key in dedup_seen:
+            continue
         dedup_seen.add(key)
 
         text = f"Restaurant: {rname}. Dish: {dname}. Ingredients: {record.get('ingredients', '')}"
         vector = embed_text_clip(text, args.model_id) if args.backend == "clip" else embed_text_hash(text)
-        
+
         out = {
             "doc_id": f"dish_{hashlib.md5(key.encode()).hexdigest()[:12]}",
-            "restaurant_id": rid, "restaurant_name": rname, "content_type": "menu",
-            "dish_name": dname, "created_at": utc_now_iso(), "text": text, "vector": vector
+            "restaurant_id": rid,
+            "restaurant_name": rname,
+            "content_type": "menu",
+            "dish_name": dname,
+            "created_at": utc_now_iso(),
+            "text": text,
+            "vector": vector,
         }
         dish_rows.append(out)
         vectors_by_restaurant[(rid, rname)].append(vector)
 
-    # Summaries
     for (rid, rname), vecs in vectors_by_restaurant.items():
         dim = len(vecs[0])
         acc = [sum(v[i] for v in vecs) / len(vecs) for i in range(dim)]
-        summary_rows.append({
-            "doc_id": f"rest_sum_{hashlib.md5(rid.encode()).hexdigest()[:12]}",
-            "restaurant_id": rid, "restaurant_name": rname, "content_type": "restaurant_summary",
-            "text": f"Summary for {rname}. Items: {len(vecs)}", "vector": normalize(acc),
-            "metadata": {"menu_item_count": len(vecs)}
-        })
+        summary_rows.append(
+            {
+                "doc_id": f"rest_sum_{hashlib.md5(rid.encode()).hexdigest()[:12]}",
+                "restaurant_id": rid,
+                "restaurant_name": rname,
+                "content_type": "restaurant_summary",
+                "text": f"Summary for {rname}. Items: {len(vecs)}",
+                "vector": normalize(acc),
+                "metadata": {"menu_item_count": len(vecs)},
+            }
+        )
 
-    with (output_dir / "menu_embeddings_latest.jsonl").open("w", encoding="utf-8") as f:
-        for r in dish_rows: f.write(json.dumps(r, ensure_ascii=False) + "\n")
-    with (output_dir / "restaurant_summary_latest.jsonl").open("w", encoding="utf-8") as f:
-        for r in summary_rows: f.write(json.dumps(r, ensure_ascii=False) + "\n")
+    with (output_dir / "menu_embeddings.jsonl").open("w", encoding="utf-8") as f:
+        for row in dish_rows:
+            f.write(json.dumps(row, ensure_ascii=False) + "\n")
+    with (output_dir / "restaurant_summary.jsonl").open("w", encoding="utf-8") as f:
+        for row in summary_rows:
+            f.write(json.dumps(row, ensure_ascii=False) + "\n")
     print(f"Menus complete. Wrote {len(dish_rows)} dishes and {len(summary_rows)} summaries.")
 
-
-# --- Review Embedding Logic ---
 
 def run_reviews(args: argparse.Namespace) -> None:
     input_path = Path(args.input)
@@ -160,41 +170,47 @@ def run_reviews(args: argparse.Namespace) -> None:
     lookup_df = pd.read_csv(Path(args.lookup_csv))
     lookup = dict(zip(lookup_df["rest_id"], lookup_df["name"]))
 
-    output_path = Path(args.output_dir) / "review_embeddings_latest.jsonl"
+    output_path = Path(args.output_dir) / "review_embeddings.jsonl"
     with output_path.open("w", encoding="utf-8") as f:
         for i, row in df.iterrows():
             rid = str(row.get("rest_id") or row.get("restaurant_id") or "").strip()
             text = str(row.get("text") or "").strip()
-            if not rid or not text: continue
-            
+            if not rid or not text:
+                continue
+
             rname = lookup.get(rid, rid)
             full_text = f"Restaurant: {rname}. Review: {text}"
             vector = embed_text_clip(full_text, args.model_id) if args.backend == "clip" else embed_text_hash(full_text)
-            
+
             out = {
                 "doc_id": str(row.get("uid") or f"rev_{i}"),
-                "restaurant_id": rid, "restaurant_name": rname, "content_type": "review",
-                "text": text, "rating": row.get("rating"), "created_at": utc_now_iso(), "vector": vector
+                "restaurant_id": rid,
+                "restaurant_name": rname,
+                "content_type": "review",
+                "text": text,
+                "rating": row.get("rating"),
+                "created_at": utc_now_iso(),
+                "vector": vector,
             }
             f.write(json.dumps(out, ensure_ascii=False) + "\n")
     print(f"Reviews complete. Wrote embeddings to {output_path.name}")
 
 
-# --- Image Embedding Logic ---
-
 def run_images(args: argparse.Namespace) -> None:
     df = pd.read_csv(Path(args.input))
     keep_col = "keep_for_food_embedding" if args.mode == "food" else "keep_for_ambiance_embedding"
     filtered = df[df[keep_col].astype(bool)].copy()
-    
-    output_path = Path(args.output_dir) / f"image_embeddings_{args.mode}_latest.jsonl"
+
+    output_path = Path(args.output_dir) / f"image_embeddings_{args.mode}.jsonl"
     written = 0
     with output_path.open("w", encoding="utf-8") as f:
         for row in filtered.to_dict(orient="records"):
             img_path = Path(str(row.get("image_path") or "").strip())
-            if not img_path.is_absolute(): img_path = BASE_DIR / img_path
-            if not img_path.exists(): continue
-            
+            if not img_path.is_absolute():
+                img_path = BASE_DIR / img_path
+            if not img_path.exists():
+                continue
+
             try:
                 with Image.open(img_path) as img:
                     vector = embed_image_clip(img.convert("RGB"), args.model_id)
@@ -202,49 +218,51 @@ def run_images(args: argparse.Namespace) -> None:
                     "doc_id": str(row.get("image_uid") or ""),
                     "restaurant_id": str(row.get("rest_id") or ""),
                     "restaurant_name": str(row.get("restaurant_name") or ""),
-                    "content_type": f"image_{args.mode}", "image_path": str(row.get("image_path")),
-                    "created_at": utc_now_iso(), "vector": vector
+                    "content_type": f"image_{args.mode}",
+                    "image_path": str(row.get("image_path")),
+                    "created_at": utc_now_iso(),
+                    "vector": vector,
                 }
                 f.write(json.dumps(out, ensure_ascii=False) + "\n")
                 written += 1
-            except Exception: continue
+            except Exception:
+                continue
     print(f"Images ({args.mode}) complete. Wrote {written} embeddings.")
 
-
-# --- Main CLI ---
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Unified Embedding Generation Pipeline")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    # Menus
-    m_parser = subparsers.add_parser("menus", help="Embed Michelin menus.")
-    m_parser.add_argument("--input", default=str(DATA_DIR / "extracted_menus" / "final_parsed_menus.json"))
-    m_parser.add_argument("--output-dir", default=str(EMBEDDINGS_DIR))
-    m_parser.add_argument("--backend", default="clip", choices=["clip", "hash"])
-    m_parser.add_argument("--model-id", default=DEFAULT_CLIP_MODEL_ID)
+    menus_parser = subparsers.add_parser("menus", help="Embed Michelin menus.")
+    menus_parser.add_argument("--input", default=str(DATA_DIR / "extracted_menus" / "final_parsed_menus.json"))
+    menus_parser.add_argument("--output-dir", default=str(EMBEDDINGS_DIR))
+    menus_parser.add_argument("--backend", default="clip", choices=["clip", "hash"])
+    menus_parser.add_argument("--model-id", default=DEFAULT_CLIP_MODEL_ID)
 
-    # Reviews
-    r_parser = subparsers.add_parser("reviews", help="Embed social reviews.")
-    r_parser.add_argument("--input", default=str(DATA_DIR / "social_reviews.csv"))
-    r_parser.add_argument("--lookup-csv", default=str(DATA_DIR / "csv" / "restaurant_lookup.csv"))
-    r_parser.add_argument("--output-dir", default=str(EMBEDDINGS_DIR))
-    r_parser.add_argument("--backend", default="clip", choices=["clip", "hash"])
-    r_parser.add_argument("--model-id", default=DEFAULT_CLIP_MODEL_ID)
+    reviews_parser = subparsers.add_parser("reviews", help="Embed social reviews.")
+    reviews_parser.add_argument("--input", default=str(DATA_DIR / "csv" / "social_reviews.csv"))
+    reviews_parser.add_argument("--lookup-csv", default=str(DATA_DIR / "csv" / "restaurant_lookup.csv"))
+    reviews_parser.add_argument("--output-dir", default=str(EMBEDDINGS_DIR))
+    reviews_parser.add_argument("--backend", default="clip", choices=["clip", "hash"])
+    reviews_parser.add_argument("--model-id", default=DEFAULT_CLIP_MODEL_ID)
 
-    # Images
-    i_parser = subparsers.add_parser("images", help="Embed restaurant images.")
-    i_parser.add_argument("--input", default=str(DATA_DIR / "social_images_cleaned.csv"))
-    i_parser.add_argument("--output-dir", default=str(EMBEDDINGS_DIR))
-    i_parser.add_argument("--mode", choices=["food", "interior"], required=True)
-    i_parser.add_argument("--model-id", default=DEFAULT_CLIP_MODEL_ID)
+    images_parser = subparsers.add_parser("images", help="Embed restaurant images.")
+    images_parser.add_argument("--input", default=str(DATA_DIR / "csv" / "social_images_cleaned.csv"))
+    images_parser.add_argument("--output-dir", default=str(EMBEDDINGS_DIR))
+    images_parser.add_argument("--mode", choices=["food", "interior"], required=True)
+    images_parser.add_argument("--model-id", default=DEFAULT_CLIP_MODEL_ID)
 
     args = parser.parse_args()
 
-    if args.command == "menus": run_menus(args)
-    elif args.command == "reviews": run_reviews(args)
-    elif args.command == "images": run_images(args)
+    if args.command == "menus":
+        run_menus(args)
+    elif args.command == "reviews":
+        run_reviews(args)
+    elif args.command == "images":
+        run_images(args)
     return 0
+
 
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -1,7 +1,7 @@
 ﻿"""
 pipelines/clean_social_images.py
 =================================
-Quality-filters ``data/social_images.csv`` using a zero-shot CLIP classifier
+Quality-filters ``data/csv/social_images.csv`` using a zero-shot CLIP classifier
 to remove non-food, non-interior images (e.g. screenshots, menus, logos).
 
 Images below the quality threshold are marked for removal; the updated CSV
@@ -27,9 +27,9 @@ from transformers import CLIPModel, CLIPProcessor
 
 BASE_DIR = Path(__file__).resolve().parent.parent if Path(__file__).resolve().parent.name == "pipelines" else Path.cwd()
 DATA_DIR = BASE_DIR / "data"
-DEFAULT_INPUT = DATA_DIR / "social_images.csv"
+DEFAULT_INPUT = DATA_DIR / "csv" / "social_images.csv"
 DEFAULT_LOOKUP = DATA_DIR / "csv" / "restaurant_lookup.csv"
-DEFAULT_OUTPUT = DATA_DIR / "social_images_cleaned.csv"
+DEFAULT_OUTPUT = DATA_DIR / "csv" / "social_images_cleaned.csv"
 DEFAULT_MODEL_ID = "openai/clip-vit-base-patch32"
 
 CATEGORY_PROMPTS: dict[str, list[str]] = {
@@ -221,7 +221,7 @@ def keep_flags(category: str, quality_score: float) -> tuple[bool, bool]:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Clean and label social_images.csv into social_images_cleaned.csv")
+    parser = argparse.ArgumentParser(description="Clean and label csv/social_images.csv into csv/social_images_cleaned.csv")
     parser.add_argument("--input", default=str(DEFAULT_INPUT))
     parser.add_argument("--lookup-csv", default=str(DEFAULT_LOOKUP))
     parser.add_argument("--output", default=str(DEFAULT_OUTPUT))
@@ -246,7 +246,7 @@ def main() -> None:
     required = {"image_uid", "rest_id", "source", "image_path"}
     missing = required - set(df.columns)
     if missing:
-        raise ValueError(f"social_images.csv missing required columns: {sorted(missing)}")
+        raise ValueError(f"csv/social_images.csv missing required columns: {sorted(missing)}")
 
     lookup = load_restaurant_lookup(Path(args.lookup_csv))
     classifier = ZeroShotImageClassifier(model_id=args.model_id)

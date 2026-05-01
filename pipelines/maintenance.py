@@ -34,12 +34,12 @@ DATA_DIR = BASE_DIR / "data"
 EMBEDDINGS_DIR = DATA_DIR / "embeddings"
 
 # --- Constants for Deduplication ---
-RAW_REVIEWS_CSV = DATA_DIR / "social_reviews.csv"
-REVIEW_JSONL = EMBEDDINGS_DIR / "review_embeddings_latest.jsonl"
-RAW_IMAGES_CSV = DATA_DIR / "social_images.csv"
-FOOD_JSONL = EMBEDDINGS_DIR / "image_embeddings_food_latest.jsonl"
-INTERIOR_JSONL = EMBEDDINGS_DIR / "image_embeddings_interior_latest.jsonl"
-SUMMARY_JSONL = EMBEDDINGS_DIR / "restaurant_summary_latest.jsonl"
+RAW_REVIEWS_CSV = DATA_DIR / "csv" / "social_reviews.csv"
+REVIEW_JSONL = EMBEDDINGS_DIR / "review_embeddings.jsonl"
+RAW_IMAGES_CSV = DATA_DIR / "csv" / "social_images.csv"
+FOOD_JSONL = EMBEDDINGS_DIR / "image_embeddings_food.jsonl"
+INTERIOR_JSONL = EMBEDDINGS_DIR / "image_embeddings_interior.jsonl"
+SUMMARY_JSONL = EMBEDDINGS_DIR / "restaurant_summary.jsonl"
 
 # --- Constants for Audit ---
 LOOKUP_CSV = DATA_DIR / "csv" / "restaurant_lookup.csv"
@@ -48,12 +48,12 @@ PARSED_MENUS_JSON = DATA_DIR / "extracted_menus" / "parsed_menus.json"
 AUDIT_OUTPUT_CSV = DATA_DIR / "csv" / "restaurant_lookup_audit.csv"
 
 # --- Constants for Refresh ---
-REVIEW_IDS_LATEST = EMBEDDINGS_DIR / "review_restaurant_ids_latest.jsonl"
+REVIEW_IDS_PATH = EMBEDDINGS_DIR / "review_restaurant_ids.jsonl"
 
 
 # --- Constants for Mapping ---
 MAPPING_CSV = DATA_DIR / "csv" / "social_rest_id_mapping.csv"
-PROFILE_PATH = EMBEDDINGS_DIR / "restaurant_profiles_latest.jsonl"
+PROFILE_PATH = EMBEDDINGS_DIR / "restaurant_profiles.jsonl"
 
 
 # --- Common Helpers ---
@@ -411,11 +411,11 @@ def apply_mapping(args: argparse.Namespace) -> None:
         files.extend([
             DATA_DIR / "extracted_menus" / "parsed_menus.json",
             DATA_DIR / "extracted_menus" / "final_parsed_menus.json",
-            EMBEDDINGS_DIR / "menu_embeddings_latest.jsonl",
-            EMBEDDINGS_DIR / "restaurant_summary_latest.jsonl",
-            EMBEDDINGS_DIR / "review_embeddings_latest.jsonl",
-            EMBEDDINGS_DIR / "image_embeddings_food_latest.jsonl",
-            EMBEDDINGS_DIR / "image_embeddings_interior_latest.jsonl",
+            EMBEDDINGS_DIR / "menu_embeddings.jsonl",
+            EMBEDDINGS_DIR / "restaurant_summary.jsonl",
+            EMBEDDINGS_DIR / "review_embeddings.jsonl",
+            EMBEDDINGS_DIR / "image_embeddings_food.jsonl",
+            EMBEDDINGS_DIR / "image_embeddings_interior.jsonl",
         ])
 
     for path in files:
@@ -501,7 +501,7 @@ def main() -> int:
     refresh_parser = subparsers.add_parser("refresh", help="Refresh review profile artifacts.")
     refresh_parser.add_argument("--review-embeddings", default=str(REVIEW_JSONL))
     refresh_parser.add_argument("--lookup-csv", default=str(LOOKUP_CSV))
-    refresh_parser.add_argument("--review-ids-output", default=str(REVIEW_IDS_LATEST))
+    refresh_parser.add_argument("--review-ids-output", default=str(REVIEW_IDS_PATH))
     refresh_parser.add_argument("--no-backup", action="store_true")
 
     # Map

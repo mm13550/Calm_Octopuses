@@ -26,8 +26,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = BASE_DIR / "data"
 EMBEDDINGS_DIR = DATA_DIR / "embeddings"
 LOOKUP_CSV = DATA_DIR / "csv" / "restaurant_lookup.csv"
-RAW_IMAGES_CSV = DATA_DIR / "social_images.csv"
-RAW_REVIEWS_CSV = DATA_DIR / "social_reviews.csv"
+RAW_IMAGES_CSV = DATA_DIR / "csv" / "social_images.csv"
+RAW_REVIEWS_CSV = DATA_DIR / "csv" / "social_reviews.csv"
 
 SAMPLE_LIMIT = 5
 
@@ -135,7 +135,7 @@ def analyze_jsonl_file(path: Path, lookup_ids: set[str]) -> CheckResult:
     if summary:
         issues.append(f"exact duplicate JSON objects: {summary}")
 
-    if name == "menu_embeddings_latest.jsonl":
+    if name == "menu_embeddings.jsonl":
         doc_counter = Counter(str(row.get("doc_id") or "").strip() for row in rows)
         summary = summarize_counter(doc_counter)
         if summary:
@@ -169,7 +169,7 @@ def analyze_jsonl_file(path: Path, lookup_ids: set[str]) -> CheckResult:
                     + ("" if len(ids_not_in_lookup) <= SAMPLE_LIMIT else ", ...")
                 )
 
-    elif name == "review_embeddings_latest.jsonl":
+    elif name == "review_embeddings.jsonl":
         doc_counter = Counter(str(row.get("doc_id") or "").strip() for row in rows)
         summary = summarize_counter(doc_counter)
         if summary:
@@ -289,7 +289,7 @@ def analyze_jsonl_file(path: Path, lookup_ids: set[str]) -> CheckResult:
                     + ("" if len(ids_not_in_lookup) <= SAMPLE_LIMIT else ", ...")
                 )
 
-    elif name == "restaurant_summary_latest.jsonl":
+    elif name == "restaurant_summary.jsonl":
         id_counter = Counter(str(row.get("restaurant_id") or "").strip() for row in rows)
         summary = summarize_counter(id_counter)
         if summary:
@@ -360,4 +360,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

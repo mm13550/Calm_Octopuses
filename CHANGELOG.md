@@ -1,7 +1,7 @@
 # Changelog
 
 This file summarizes meaningful project changes. It is not a full conversation log.
-For the current architecture, setup, and active entry points, see `README.md` and `PLAN.md`.
+For the current architecture, setup, and active entry points, see `README.md`.
 
 ## Unreleased
 

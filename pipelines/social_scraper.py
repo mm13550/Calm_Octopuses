@@ -5,7 +5,7 @@ Scrapes Yelp and Google Places data (reviews, images, metadata) for each
 Michelin-listed restaurant in the lookup table.
 
 Coordinates lookups via SerpAPI (Google) and Apify (Yelp), writes results to
-``data/social_reviews.csv`` and ``data/social_images.csv``, and saves raw
+``data/csv/social_reviews.csv`` and ``data/csv/social_images.csv``, and saves raw
 social images to ``data/images/``.
 
 Requires: ``GOOGLE_PLACES_API_KEY`` and ``APIFY_API_TOKEN`` environment variables.
@@ -47,8 +47,8 @@ DATA_DIR = BASE_DIR / "data"
 IMAGES_DIR = DATA_DIR / "images"
 LOOKUP_CSV = DATA_DIR / "csv" / "restaurant_lookup.csv"
 MAPPING_CSV = DATA_DIR / "csv" / "social_rest_id_mapping.csv"
-REVIEWS_OUTPUT = DATA_DIR / "social_reviews.csv"
-IMAGES_OUTPUT = DATA_DIR / "social_images.csv"
+REVIEWS_OUTPUT = DATA_DIR / "csv" / "social_reviews.csv"
+IMAGES_OUTPUT = DATA_DIR / "csv" / "social_images.csv"
 
 REQUEST_TIMEOUT = 20
 NAME_TOKEN_PATTERN = re.compile(r"[a-z0-9]+")
@@ -710,4 +710,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

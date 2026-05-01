@@ -10,16 +10,17 @@ Streamlit apps; they are standalone executables invoked from the command line.
 Key scripts
 -----------
 embeddings_pipeline.py
-    Generate menu, review, and image CLIP embedding JSONL files under
+    Generate menu, review, and image embedding JSONL files under
     ``data/embeddings/``.
+michelin_absa_pipeline.py
+    Run aspect-based sentiment analysis over review embeddings and aggregate
+    restaurant-level scores.
 build_restaurant_profiles.py
     Merge per-modality embeddings into a single restaurant profile vector.
 social_scraper.py
     Scrape Yelp and Google Places data for each Michelin restaurant.
 menu_crawler.py
     Crawl restaurant homepages and extract structured menu data.
-menu_pipeline.py
-    Merge parsed menu exports and retry restaurants with zero dishes.
 maintenance.py
     Deduplicate, audit, refresh, and realign generated artifacts.
 

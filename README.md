@@ -60,15 +60,10 @@ locally:
 - `data/embeddings/restaurant_metadata.json`
 - `data/images/`
 
-The pipeline scripts also generate `_latest` exports locally, including:
+The pipeline scripts may also refresh local derived artifacts, including:
 
-- `data/embeddings/restaurant_profiles_latest.jsonl`
-- `data/embeddings/menu_embeddings_latest.jsonl`
-- `data/embeddings/review_embeddings_latest.jsonl`
-- `data/embeddings/image_embeddings_food_latest.jsonl`
-- `data/embeddings/image_embeddings_interior_latest.jsonl`
-- `data/embeddings/restaurant_summary_latest.jsonl`
-- `data/embeddings/review_restaurant_ids_latest.jsonl`
+- `data/embeddings/restaurant_summary.jsonl`
+- `data/embeddings/review_restaurant_ids.jsonl`
 
 The recommendation tab can also use:
 
@@ -103,10 +98,9 @@ The project is organized around a Streamlit frontend, a shared data-loading laye
 
 ### 3. Data and Embedding Pipelines (`pipelines/`)
 
-- **Collection and crawling (Neil):** `social_scraper.py`, `menu_crawler.py`, `bio_crawler.py`, `resolve_homepages.py`, `fetch_and_embed_reviews.py`, and `clean_social_images.py` collect and normalize reviews, images, biographies, homepages, and menu source records.
-- **Text cleaning and ABSA support (Grace):** Grace's NLP work provides the aspect-based sentiment fields consumed by the frontend, including food quality, service, ambiance, value, and wait time values synchronized into `data/csv/restaurant_profiles.csv`.
-- **Menu maintenance (Neil):** `menu_pipeline.py` consolidates legacy menu tasks. It can merge parsed/retried menu exports into `data/extracted_menus/final_parsed_menus.json` and retry restaurants with zero dishes.
-- **Embedding artifact layer (Leo):** `embeddings_pipeline.py` is the unified embedding entry point for menu, review, and image JSONL artifacts. `build_restaurant_profiles.py` generates fused restaurant-profile vectors consumed by retrieval and recommendation code.
+- **Collection and crawling (Neil):** `social_scraper.py`, `menu_crawler.py`, `bio_crawler.py`, `resolve_homepages.py`, and `clean_social_images.py` collect and normalize reviews, images, biographies, homepages, and menu source records.
+- **Text cleaning and ABSA support (Grace):** Grace's NLP work provides the aspect-based sentiment fields consumed by the frontend, including food quality, service, ambiance, value, and wait time values synchronized into `data/csv/restaurant_profiles.csv`. `michelin_absa_pipeline.py` is the current review-level aspect sentiment analysis and aggregation pipeline.
+- **Embedding artifact layer (Leo):** `embeddings_pipeline.py` generates canonical menu, review, and image embedding JSONL artifacts, and `build_restaurant_profiles.py` fuses them into restaurant-profile vectors consumed by retrieval and recommendation code.
 - **Embedding maintenance (Leo):** `check_embedding_integrity.py` and `maintenance.py` validate, deduplicate, audit, refresh, and realign generated artifacts when source records change.
 - **Yelp sandbox (`pipelines/yelp/`) (Neil + Craig):** `download_yelp_dataset.py`, `preprocess_yelp.py`, `generate_embeddings_yelp.py`, `aggregate_restaurant_embeddings.py`, `export_regression_train.py`, and `evaluate_generalization.py` support Yelp Open Dataset experiments, restaurant-level embedding aggregation, training exports, and generalization evaluation outside the main app path.
 
@@ -134,7 +128,6 @@ This tree reflects the current project files in the repository, excluding `.git/
 |-- CHANGELOG.md                        # Project release history and changes
 |-- conversations.md                    # LLM conversation logs and context
 |-- download_assets.py                  # Pulls precomputed assets from Hugging Face
-|-- PLAN.md                             # Technical implementation plan and status
 |-- README.md                           # Main project documentation
 |-- REGRESSION_TUNING.md                # Documentation for MDN tuning and experiments
 |-- algorithms/                         # Retrieval, recommendation, and similarity logic
@@ -163,11 +156,10 @@ This tree reflects the current project files in the repository, excluding `.git/
 |   |-- build_restaurant_profiles.py    # Assembles aggregated CLIP profiles
 |   |-- check_embedding_integrity.py    # Validates embedding vector shapes and counts
 |   |-- clean_social_images.py          # Filters and cleans scraped images
-|   |-- embeddings_pipeline.py          # Generates CLIP embeddings for various modalities
-|   |-- fetch_and_embed_reviews.py      # Scrapes and embeds review texts
+|   |-- embeddings_pipeline.py         # Generates canonical menu, review, and image embeddings
 |   |-- menu_crawler.py                 # Fetches raw menus from restaurant sites
 |   |-- maintenance.py                  # Utilities for mapping, cleaning, and maintenance
-|   |-- menu_pipeline.py                # Parses raw menus into structured JSON
+|   |-- michelin_absa_pipeline.py       # Runs aspect sentiment analysis over review embeddings
 |   |-- resolve_homepages.py            # Discovers restaurant homepages from names
 |   |-- social_scraper.py               # Scrapes Yelp/Google for images and reviews
 |   `-- yelp/                           # Yelp sandbox preprocessing and embedding experiments

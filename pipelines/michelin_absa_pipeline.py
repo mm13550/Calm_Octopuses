@@ -2,9 +2,9 @@
 Michelin Restaurant — Aspect-Based Sentiment Analysis (ABSA) Pipeline
 ======================================================================
   data/
-  ├── social_reviews.csv
+  ├── csv/social_reviews.csv
   ├── csv/restaurant_lookup.csv
-  └── embeddings/review_embeddings_latest.jsonl
+  └── embeddings/review_embeddings.jsonl
 
 pip install pandas numpy scikit-learn umap-learn hdbscan plotly transformers torch tqdm
 python michelin_absa_pipeline.py
@@ -30,8 +30,8 @@ import hdbscan
 
 # ── 1. Config ─────────────────────────────────────────────────────────────────
 DATA_DIR         = Path("data")
-REVIEWS_CSV      = DATA_DIR / "social_reviews.csv"
-EMBEDDINGS_JSONL = DATA_DIR / "embeddings" / "review_embeddings_latest.jsonl"
+REVIEWS_CSV      = DATA_DIR / "csv" / "social_reviews.csv"
+EMBEDDINGS_JSONL = DATA_DIR / "embeddings" / "review_embeddings.jsonl"
 LOOKUP_CSV       = DATA_DIR / "csv" / "restaurant_lookup.csv"
 CACHE_PATH       = Path("absa_cache.jsonl")
 

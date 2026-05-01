@@ -49,9 +49,7 @@ data.zip
 # Generated project data and local vector DB
 data/images/
 data/yelp_sandbox/
-data/social_images.csv
-data/social_images_cleaned.csv
-data/social_reviews.csv
+data/csv/social_images_cleaned.csv
 data/extracted_menus/
 data/embeddings/
 data/vector_db/

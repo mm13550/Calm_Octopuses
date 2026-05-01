@@ -7,7 +7,7 @@ This pipeline:
 1. Loads menu, review, and image (food/interior) embeddings.
 2. Performs weighted fusion of modality-specific vectors.
 3. Generates a descriptive "bio" text for each restaurant.
-4. Writes profiles to ``data/embeddings/restaurant_profiles_latest.jsonl``.
+4. Writes profiles to ``data/embeddings/restaurant_profiles.jsonl``.
 
 Usage::
 
@@ -27,11 +27,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent if Path(__file__).resolve().pa
 DATA_DIR = BASE_DIR / "data"
 EMBEDDINGS_DIR = DATA_DIR / "embeddings"
 
-DEFAULT_MENU = EMBEDDINGS_DIR / "menu_embeddings_latest.jsonl"
-DEFAULT_REVIEW = EMBEDDINGS_DIR / "review_embeddings_latest.jsonl"
-DEFAULT_IMAGE_FOOD = EMBEDDINGS_DIR / "image_embeddings_food_latest.jsonl"
-DEFAULT_IMAGE_INTERIOR = EMBEDDINGS_DIR / "image_embeddings_interior_latest.jsonl"
-DEFAULT_OUTPUT = EMBEDDINGS_DIR / "restaurant_profiles_latest.jsonl"
+DEFAULT_MENU = EMBEDDINGS_DIR / "menu_embeddings.jsonl"
+DEFAULT_REVIEW = EMBEDDINGS_DIR / "review_embeddings.jsonl"
+DEFAULT_IMAGE_FOOD = EMBEDDINGS_DIR / "image_embeddings_food.jsonl"
+DEFAULT_IMAGE_INTERIOR = EMBEDDINGS_DIR / "image_embeddings_interior.jsonl"
+DEFAULT_OUTPUT = EMBEDDINGS_DIR / "restaurant_profiles.jsonl"
 
 UTC = timezone.utc
 
