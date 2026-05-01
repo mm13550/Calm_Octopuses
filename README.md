@@ -104,6 +104,24 @@ The project is organized around a Streamlit frontend, a shared data-loading laye
 - **Embedding maintenance (Leo):** `check_embedding_integrity.py` and `maintenance.py` validate, deduplicate, audit, refresh, and realign generated artifacts when source records change.
 - **Yelp sandbox (`pipelines/yelp/`) (Neil + Craig):** `download_yelp_dataset.py`, `preprocess_yelp.py`, `generate_embeddings_yelp.py`, `aggregate_restaurant_embeddings.py`, `export_regression_train.py`, and `evaluate_generalization.py` support Yelp Open Dataset experiments, restaurant-level embedding aggregation, training exports, and generalization evaluation outside the main app path.
 
+#### Aspect-Based Sentiment Analysis
+
+We added an offline Aspect-Based Sentiment Analysis (ABSA) pipeline for restaurant reviews in `pipelines/michelin_absa_pipeline.py`. Instead of only using an overall rating, the pipeline analyzes review text across five dining-related aspects:
+
+- Food Quality
+- Service
+- Ambiance
+- Value
+- Wait Time
+
+The pipeline first extracts aspect-related sentences using keyword matching. It then uses a local Hugging Face DistilBERT sentiment model to score each aspect-related sentence. The sentiment output is converted into a 1-5 score and aggregated at the restaurant level.
+
+The generated restaurant-level sentiment profiles are saved in:
+
+```text
+data/csv/restaurant_profiles.csv
+```
+
 ### 4. Algorithms and Retrieval (`algorithms/`)
 
 - **`algorithms/retrieval.py` (Leo):** Active frontend retrieval path. It embeds text/image queries with CLIP, loads local JSONL embedding artifacts, computes cosine similarity, blends text search with lexical overlap, and supports exact dish matching.
