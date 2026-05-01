@@ -53,8 +53,8 @@ locally:
 - `data/embeddings/restaurant_profiles.jsonl`
 - `data/embeddings/menu_embeddings.jsonl`
 - `data/embeddings/review_embeddings.jsonl`
-- `data/embeddings/image_embeddings_food.jsonl` or `image_embeddings_food_latest.jsonl`
-- `data/embeddings/image_embeddings_interior.jsonl` or `image_embeddings_interior_latest.jsonl`
+- `data/embeddings/image_embeddings_food.jsonl`
+- `data/embeddings/image_embeddings_interior.jsonl`
 - `data/embeddings/restaurant_metadata.json`
 - `data/images/`
 
@@ -246,8 +246,8 @@ Generated, downloaded, or local-only:
 - `data/embeddings/restaurant_profiles.jsonl`
 - `data/embeddings/menu_embeddings.jsonl`
 - `data/embeddings/review_embeddings.jsonl`
-- `data/embeddings/image_embeddings_food.jsonl` or `image_embeddings_food_latest.jsonl`
-- `data/embeddings/image_embeddings_interior.jsonl` or `image_embeddings_interior_latest.jsonl`
+- `data/embeddings/image_embeddings_food.jsonl`
+- `data/embeddings/image_embeddings_interior.jsonl`
 - `data/embeddings/restaurant_metadata.json`
 - `data/images/`
 - `data/vector_db/`

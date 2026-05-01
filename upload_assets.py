@@ -9,17 +9,39 @@ REPO_ID = "CONFUCIUS-MDP/Calm-Octopuses-Assets"
 REPO_TYPE = "dataset"
 PROJECT_ROOT = Path(__file__).resolve().parent
 DATA_DIR = PROJECT_ROOT / "data"
+EMBEDDINGS_DIR = DATA_DIR / "embeddings"
 
-FILES_TO_UPLOAD = {
+STATIC_FILES_TO_UPLOAD = {
     # Destination path in HF repo -> Local absolute path
     "images.zip": DATA_DIR / "images.zip",
     "extracted_menus/final_parsed_menus.json": DATA_DIR / "extracted_menus" / "final_parsed_menus.json",
-    "embeddings/restaurant_profiles.jsonl": DATA_DIR / "embeddings" / "restaurant_profiles.jsonl",
-    "embeddings/menu_embeddings.jsonl": DATA_DIR / "embeddings" / "menu_embeddings.jsonl",
-    "embeddings/review_embeddings.jsonl": DATA_DIR / "embeddings" / "review_embeddings.jsonl",
-    "embeddings/restaurant_metadata.json": DATA_DIR / "embeddings" / "restaurant_metadata.json",
     "yelp_sandbox/mdn_models/clip_v2/clip_v2_full.ckpt": DATA_DIR / "yelp_sandbox" / "mdn_models" / "clip_v2" / "clip_v2_full.ckpt",
 }
+
+
+def collect_embedding_files() -> dict[str, Path]:
+    """Return canonical embedding assets to upload under ``embeddings/``."""
+    if not EMBEDDINGS_DIR.exists():
+        return {}
+
+    files_to_upload: dict[str, Path] = {}
+    for path in sorted(EMBEDDINGS_DIR.iterdir()):
+        if not path.is_file():
+            continue
+        if path.suffix not in {".json", ".jsonl"}:
+            continue
+        if path.name.endswith(".bak") or "_latest" in path.stem:
+            continue
+
+        files_to_upload[f"embeddings/{path.name}"] = path
+
+    return files_to_upload
+
+
+def build_upload_manifest() -> dict[str, Path]:
+    manifest = dict(STATIC_FILES_TO_UPLOAD)
+    manifest.update(collect_embedding_files())
+    return manifest
 
 def zip_images():
     """Compress the images directory to images.zip"""
@@ -38,6 +60,7 @@ def zip_images():
 def upload_to_hf():
     """Upload specified files to Hugging Face dataset repository."""
     api = HfApi()
+    files_to_upload = build_upload_manifest()
     
     try:
         api.dataset_info(repo_id=REPO_ID)
@@ -49,7 +72,7 @@ def upload_to_hf():
         return
 
     print("\nStarting uploads...")
-    for repo_path, local_path in FILES_TO_UPLOAD.items():
+    for repo_path, local_path in files_to_upload.items():
         if not local_path.exists():
             print(f"  [SKIP] Local file not found: {local_path}")
             continue
