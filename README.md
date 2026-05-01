@@ -126,71 +126,71 @@ This tree reflects the current project files in the repository, excluding `.git/
 
 ```text
 .
-|-- .cursorrules
-|-- .env.example
-|-- .gitignore
-|-- activate.bat
-|-- activate.ps1
-|-- CHANGELOG.md
-|-- conversations.md
-|-- download_assets.py         # Pulls precomputed assets from Hugging Face
-|-- PLAN.md
-|-- README.md
-|-- REGRESSION_TUNING.md
-|-- algorithms/                 # Retrieval, recommendation, and similarity logic
+|-- .cursorrules                        # Editor rules and AI configuration
+|-- .env.example                        # Example environment variables
+|-- .gitignore                          # Git ignored files configuration
+|-- activate.bat                        # Windows batch script to activate environment
+|-- activate.ps1                        # Windows PowerShell script to activate environment
+|-- CHANGELOG.md                        # Project release history and changes
+|-- conversations.md                    # LLM conversation logs and context
+|-- download_assets.py                  # Pulls precomputed assets from Hugging Face
+|-- PLAN.md                             # Technical implementation plan and status
+|-- README.md                           # Main project documentation
+|-- REGRESSION_TUNING.md                # Documentation for MDN tuning and experiments
+|-- algorithms/                         # Retrieval, recommendation, and similarity logic
 |   |-- __init__.py
-|   |-- mdn_regression.py
-|   `-- retrieval.py
-|-- core/                       # Shared data loading, catalog assembly, and app logic
-|   |-- data_loader.py
-|   `-- logic.py
-|-- data/                       # Tracked source data plus ignored local artifacts
-|   |-- README.md
-|   |-- csv/
-|   |   |-- nyc_michelin_awards.xlsx
-|   |   |-- nyc_michelin_names_cleaned.csv
-|   |   |-- restaurant_profiles.csv
-|   |   |-- restaurant_lookup.csv
-|   |   |-- seeds_resolved.csv
-|   |   |-- social_images.csv
-|   |   `-- social_reviews.csv
-|   `-- extracted_bios/
-|       `-- restaurant_bios_joinable.json
-|-- frontend.py                 # Main Streamlit app entry point
-|-- pipelines/                  # Data collection, cleaning, embedding, and refresh scripts
+|   |-- mdn_regression.py               # Mixture Density Network model for rating regression
+|   `-- retrieval.py                    # Cosine similarity and semantic search functions
+|-- core/                               # Shared data loading, catalog assembly, and app logic
+|   |-- data_loader.py                  # Centralized, cache-aware data loading
+|   `-- logic.py                        # Core application logic and processing
+|-- data/                               # Tracked source data plus ignored local artifacts
+|   |-- README.md                       # Data directory documentation
+|   |-- csv/                            # Tabular data files
+|   |   |-- nyc_michelin_awards.xlsx    # Raw Michelin awards data
+|   |   |-- nyc_michelin_names_cleaned.csv # Cleaned Michelin names
+|   |   |-- restaurant_profiles.csv     # Core sentiment and profile metrics
+|   |   |-- restaurant_lookup.csv       # Master lookup table mapping IDs
+|   |   |-- seeds_resolved.csv          # Seed URLs and initial resolution data
+|   |   |-- social_images.csv           # Scraped image metadata
+|   |   `-- social_reviews.csv          # Scraped social review texts
+|   `-- extracted_bios/                 # Parsed biography texts
+|       `-- restaurant_bios_joinable.json # Processed restaurant bios
+|-- frontend.py                         # Main Streamlit app entry point
+|-- pipelines/                          # Data collection, cleaning, and refresh scripts
 |   |-- __init__.py
-|   |-- bio_crawler.py
-|   |-- build_restaurant_profiles.py
-|   |-- check_embedding_integrity.py
-|   |-- clean_social_images.py
-|   |-- embeddings_pipeline.py
-|   |-- fetch_and_embed_reviews.py
-|   |-- menu_crawler.py
-|   |-- maintenance.py
-|   |-- menu_pipeline.py
-|   |-- resolve_homepages.py
-|   |-- social_scraper.py
-|   `-- yelp/                   # Yelp sandbox preprocessing and embedding experiments
+|   |-- bio_crawler.py                  # Fetches and parses restaurant bios
+|   |-- build_restaurant_profiles.py    # Assembles aggregated CLIP profiles
+|   |-- check_embedding_integrity.py    # Validates embedding vector shapes and counts
+|   |-- clean_social_images.py          # Filters and cleans scraped images
+|   |-- embeddings_pipeline.py          # Generates CLIP embeddings for various modalities
+|   |-- fetch_and_embed_reviews.py      # Scrapes and embeds review texts
+|   |-- menu_crawler.py                 # Fetches raw menus from restaurant sites
+|   |-- maintenance.py                  # Utilities for mapping, cleaning, and maintenance
+|   |-- menu_pipeline.py                # Parses raw menus into structured JSON
+|   |-- resolve_homepages.py            # Discovers restaurant homepages from names
+|   |-- social_scraper.py               # Scrapes Yelp/Google for images and reviews
+|   `-- yelp/                           # Yelp sandbox preprocessing and embedding experiments
 |       |-- __init__.py
-|       |-- aggregate_restaurant_embeddings.py
-|       |-- download_yelp_dataset.py
-|       |-- evaluate_generalization.py
-|       |-- export_regression_train.py
-|       |-- generate_embeddings_yelp.py
-|       `-- preprocess_yelp.py
-|-- pyproject.toml              # Project metadata and pytest configuration
-|-- requirements.txt            # Runtime dependencies
-|-- upload_assets.py            # Upload helper for curated local assets
-|-- tests/                      # Automated tests
+|       |-- aggregate_restaurant_embeddings.py # Pools Yelp reviews into profiles
+|       |-- download_yelp_dataset.py    # Fetches raw Yelp dataset
+|       |-- evaluate_generalization.py  # Tests MDN on NYC zero-shot data
+|       |-- export_regression_train.py  # Prepares Yelp data for MDN training
+|       |-- generate_embeddings_yelp.py # Generates CLIP vectors for Yelp subsets
+|       `-- preprocess_yelp.py          # Cleans and filters raw Yelp JSONs
+|-- pyproject.toml                      # Project metadata and pytest configuration
+|-- requirements.txt                    # Runtime dependencies
+|-- upload_assets.py                    # Upload helper for curated local assets
+|-- tests/                              # Automated tests
 |   |-- __init__.py
-|   |-- test_algorithms.py
-|   `-- test_api.py
-`-- ui_components/              # Streamlit UI components and theme
+|   |-- test_algorithms.py              # Tests for retrieval and regression algorithms
+|   `-- test_api.py                     # Tests for API integrations and external calls
+`-- ui_components/                      # Streamlit UI components and theme
     |-- __init__.py
-    |-- cards.py
-    |-- image_grid.py
-    |-- overview.py
-    `-- theme.py
+    |-- cards.py                        # Reusable restaurant card components
+    |-- image_grid.py                   # Masonry-style image grid component
+    |-- overview.py                     # Main dashboard overview layouts
+    `-- theme.py                        # Streamlit CSS and styling definitions
 ```
 
 Large generated assets are intentionally ignored by Git. Keep local
