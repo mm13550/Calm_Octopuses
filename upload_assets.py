@@ -20,6 +20,8 @@ STATIC_FILES_TO_UPLOAD = {
     "embeddings/restaurant_profiles.jsonl": DATA_DIR / "embeddings" / "restaurant_profiles.jsonl",
     "embeddings/menu_embeddings.jsonl": DATA_DIR / "embeddings" / "menu_embeddings.jsonl",
     "embeddings/review_embeddings.jsonl": DATA_DIR / "embeddings" / "review_embeddings.jsonl",
+    "embeddings/image_embeddings_food.jsonl": DATA_DIR / "embeddings" / "image_embeddings_food.jsonl",
+    "embeddings/image_embeddings_interior.jsonl": DATA_DIR / "embeddings" / "image_embeddings_interior.jsonl",
     "embeddings/restaurant_metadata.json": DATA_DIR / "embeddings" / "restaurant_metadata.json",
     "yelp_sandbox/mdn_models/clip_v2/clip_v2_full.ckpt": DATA_DIR / "yelp_sandbox" / "mdn_models" / "clip_v2" / "clip_v2_full.ckpt",
 }
