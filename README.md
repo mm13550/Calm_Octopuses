@@ -68,14 +68,14 @@ recommendations instead of crashing.
 ## Team & Division of Labor
 
 - **Neil (Module A):** Data operations and scraping, including Google Places/Apify collection, Yelp dataset utilities, menu crawling, image collection, and source-data cleanup.
-- **Leo (Module B):** Embedding and retrieval work, including CLIP-based text/image search, JSONL embedding artifacts, similarity scoring, and experimental LanceDB retrieval prototypes under `quarry/`.
+- **Leo (Module B):** Embedding and retrieval work, including CLIP-based text/image search, JSONL embedding artifacts, similarity scoring, and embedding maintenance utilities.
 - **Craig (Module C):** Advanced ML algorithms, including MDN-based personalized rating recommendations, rating uncertainty outputs, Yelp sandbox evaluation, and embedding-based fallback recommendation logic.
 - **Merry (Module D):** Streamlit frontend development, including app navigation, multimodal search inputs, exact dish search, restaurant cards, browse/rating/recommendation flows, data overview panels, and dynamic Michelin/sentiment UI badges.
 - **Grace (Module E):** NLP and system integration, including ABSA-derived review sentiment fields, aspect score schema alignment, and synchronization of sentiment/profile data consumed by the frontend.
 
 ## Core Architecture & Directory Structure
 
-The project is organized around a Streamlit frontend, a shared data-loading layer, local source/embedding artifacts, repeatable data pipelines, active retrieval/recommendation algorithms, and experimental LanceDB-style retrieval prototypes. The current app path is local-file based: `frontend.py` calls `core/data_loader.py`, `algorithms/retrieval.py`, and `algorithms/mdn_regression.py`; those modules read tracked source data plus local generated artifacts under `data/`.
+The project is organized around a Streamlit frontend, a shared data-loading layer, local source/embedding artifacts, repeatable data pipelines, and active retrieval/recommendation algorithms. The current app path is local-file based: `frontend.py` calls `core/data_loader.py`, `algorithms/retrieval.py`, and `algorithms/mdn_regression.py`; those modules read tracked source data plus local generated artifacts under `data/`.
 
 ### 1. Application Layer (`frontend.py`, `ui_components/`)
 
@@ -98,11 +98,10 @@ The project is organized around a Streamlit frontend, a shared data-loading laye
 - **Embedding maintenance (Leo):** `check_embedding_integrity.py` and `maintenance.py` validate, deduplicate, audit, refresh, and realign generated artifacts when source records change.
 - **Yelp sandbox (`pipelines/yelp/`) (Neil + Craig):** `download_yelp_dataset.py`, `preprocess_yelp.py`, `generate_embeddings_yelp.py`, `aggregate_restaurant_embeddings.py`, `export_regression_train.py`, and `evaluate_generalization.py` support Yelp Open Dataset experiments, restaurant-level embedding aggregation, training exports, and generalization evaluation outside the main app path.
 
-### 4. Algorithms and Retrieval (`algorithms/`, `quarry/`)
+### 4. Algorithms and Retrieval (`algorithms/`)
 
 - **`algorithms/retrieval.py` (Leo):** Active frontend retrieval path. It embeds text/image queries with CLIP, loads local JSONL embedding artifacts, computes cosine similarity, blends text search with lexical overlap, and supports exact dish matching.
 - **`algorithms/mdn_regression.py` (Craig):** Personalized recommendation module. It uses trained MDN artifacts when available, produces rating predictions and uncertainty-style PDF outputs, and falls back to embedding-based scoring when model checkpoints are missing.
-- **`quarry/retrieval_engine*.py` (Leo):** Experimental LanceDB-style retrieval prototypes for menu, review, profile, and hybrid search. These are not the current Streamlit app path, but they document the vector database direction and metadata-rich retrieval API experiments.
 
 ### 5. Tests and Diagnostics (`tests/`)
 
@@ -166,12 +165,6 @@ This tree reflects the current project files in the repository, excluding `.git/
 |       |-- generate_embeddings_yelp.py
 |       `-- preprocess_yelp.py
 |-- pyproject.toml              # Project metadata and pytest configuration
-|-- quarry/                     # LanceDB-style retrieval prototypes
-|   |-- retrieval_engine.py
-|   |-- retrieval_engine_hybrid.py
-|   |-- retrieval_engine_profiles.py
-|   |-- retrieval_engine_reviews.py
-|   `-- retrieval_metadata.py
 |-- requirements.txt            # Runtime dependencies
 |-- tests/                      # Automated tests
 |   |-- __init__.py
