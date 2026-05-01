@@ -14,6 +14,7 @@ DATA_DIR = PROJECT_ROOT / "data"
 FILES_TO_DOWNLOAD = [
     "images.zip",
     "extracted_menus/final_parsed_menus.json",
+    "extracted_menus/parsed_menus.json",
     "embeddings/restaurant_profiles.jsonl",
     "embeddings/menu_embeddings.jsonl",
     "embeddings/review_embeddings.jsonl",

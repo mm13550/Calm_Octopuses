@@ -14,6 +14,7 @@ FILES_TO_UPLOAD = {
     # Destination path in HF repo -> Local absolute path
     "images.zip": DATA_DIR / "images.zip",
     "extracted_menus/final_parsed_menus.json": DATA_DIR / "extracted_menus" / "final_parsed_menus.json",
+    "extracted_menus/parsed_menus.json": DATA_DIR / "extracted_menus" / "parsed_menus.json",
     "embeddings/restaurant_profiles.jsonl": DATA_DIR / "embeddings" / "restaurant_profiles.jsonl",
     "embeddings/menu_embeddings.jsonl": DATA_DIR / "embeddings" / "menu_embeddings.jsonl",
     "embeddings/review_embeddings.jsonl": DATA_DIR / "embeddings" / "review_embeddings.jsonl",
