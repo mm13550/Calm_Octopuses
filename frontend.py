@@ -51,6 +51,26 @@ from ui_components.overview import _render_data_overview
 from ui_components.theme import apply_global_theme, render_app_hero, render_section_intro
 
 
+def _load_mdn_functions() -> tuple[object | None, object | None, str | None]:
+    """
+    Import optional MDN helpers without taking down the whole frontend.
+
+    Some local environments have the core Streamlit stack installed but are
+    missing heavier recommendation dependencies such as PyTorch Lightning.
+    The search and browse UX should still load in that case.
+    """
+    try:
+        from algorithms.mdn_regression import add_mdn_predictions, _score_mdn_recommendations
+        return add_mdn_predictions, _score_mdn_recommendations, None
+    except ModuleNotFoundError as exc:
+        if exc.name in {"pytorch_lightning", "lightning", "lightning_fabric", "torchmetrics"}:
+            return None, None, (
+                "Recommendation features are temporarily unavailable because "
+                f"`{exc.name}` is not installed in the current Python environment."
+            )
+        raise
+
+
 def _render_menu_browser(menu_rows: pd.DataFrame) -> None:
     """Render parsed menu items in a reader-friendly format."""
     if menu_rows.empty:
@@ -215,7 +235,6 @@ def main() -> None:
 
     with search_tab:
         from algorithms.retrieval import score_text_results, score_image_results
-        from algorithms.mdn_regression import add_mdn_predictions
         render_section_intro(
             "Discover",
             "Multimodal Search",
@@ -236,8 +255,12 @@ def main() -> None:
                     st.info("No matches found. Try a broader query.")
                 else:
                     if st.session_state.user_ratings:
-                        with st.spinner("Adding personalized predicted ratings..."):
-                            results_df = add_mdn_predictions(results_df, st.session_state.user_ratings)
+                        add_mdn_predictions, _, mdn_error = _load_mdn_functions()
+                        if add_mdn_predictions is not None:
+                            with st.spinner("Adding personalized predicted ratings..."):
+                                results_df = add_mdn_predictions(results_df, st.session_state.user_ratings)
+                        elif mdn_error:
+                            st.info(mdn_error)
                     
                     visible_results = results_df.head(top_k)
                     st.success(f"Showing top {len(visible_results)} of {len(results_df)} matching restaurants.")
@@ -257,8 +280,12 @@ def main() -> None:
                     st.info("No visually similar restaurants found.")
                 else:
                     if st.session_state.user_ratings:
-                        with st.spinner("Adding personalized predicted ratings..."):
-                            results_df = add_mdn_predictions(results_df, st.session_state.user_ratings)
+                        add_mdn_predictions, _, mdn_error = _load_mdn_functions()
+                        if add_mdn_predictions is not None:
+                            with st.spinner("Adding personalized predicted ratings..."):
+                                results_df = add_mdn_predictions(results_df, st.session_state.user_ratings)
+                        elif mdn_error:
+                            st.info(mdn_error)
                             
                     visible_results = results_df.head(top_k)
                     st.success(f"Showing top {len(visible_results)} of {len(results_df)} visually similar restaurants.")
@@ -267,7 +294,6 @@ def main() -> None:
 
     with dish_search_tab:
         from algorithms.retrieval import score_exact_dish_search
-        from algorithms.mdn_regression import add_mdn_predictions
         render_section_intro(
             "Precision",
             "Exact Dish Search",
@@ -285,12 +311,16 @@ def main() -> None:
             else:
                 user_ratings = st.session_state.get("user_ratings", {})
                 if user_ratings:
-                    with st.spinner("Ranking by predicted rating..."):
-                        scored_df = add_mdn_predictions(exact_results_df, user_ratings)
-                        if "predicted_rating" in scored_df.columns:
-                            scored_df = scored_df.sort_values(by="predicted_rating", ascending=False)
-                    if not scored_df.empty:
-                        exact_results_df = scored_df
+                    add_mdn_predictions, _, mdn_error = _load_mdn_functions()
+                    if add_mdn_predictions is not None:
+                        with st.spinner("Ranking by predicted rating..."):
+                            scored_df = add_mdn_predictions(exact_results_df, user_ratings)
+                            if "predicted_rating" in scored_df.columns:
+                                scored_df = scored_df.sort_values(by="predicted_rating", ascending=False)
+                        if not scored_df.empty:
+                            exact_results_df = scored_df
+                    elif mdn_error:
+                        st.info(mdn_error)
                 
                 sort_label = "Menu match"
                 max_visible_results = min(12, len(exact_results_df))
@@ -382,12 +412,19 @@ def main() -> None:
         if not st.session_state.user_ratings:
             st.info("Please rate some restaurants to get personalized recommendations!")
         else:
-            from algorithms.mdn_regression import _score_mdn_recommendations
+            _, score_mdn_recommendations, mdn_error = _load_mdn_functions()
             st.write(f"You have rated **{len(st.session_state.user_ratings)}** restaurants.")
-            with st.spinner("Generating MDN recommendations..."):
-                rec_df = _score_mdn_recommendations(catalog, st.session_state.user_ratings)
+            recommendations_unavailable = score_mdn_recommendations is None
+            if score_mdn_recommendations is None:
+                st.warning(mdn_error or "Recommendation features are temporarily unavailable.")
+                rec_df = pd.DataFrame()
+            else:
+                with st.spinner("Generating MDN recommendations..."):
+                    rec_df = score_mdn_recommendations(catalog, st.session_state.user_ratings)
             
-            if rec_df.empty:
+            if recommendations_unavailable:
+                pass
+            elif rec_df.empty:
                 st.warning("Could not generate recommendations.")
             else:
                 for idx, (_, result_row) in enumerate(rec_df.head(6).iterrows()):

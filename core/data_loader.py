@@ -163,7 +163,24 @@ def _read_awards_xlsx(path: Path) -> pd.DataFrame:
             }
         )
 
-    return pd.DataFrame(normalized_rows)
+    normalized_df = pd.DataFrame(normalized_rows)
+    if normalized_df.empty:
+        return normalized_df
+
+    normalized_df["rest_id"] = normalized_df["rest_id"].astype(str)
+    normalized_df = normalized_df[normalized_df["rest_id"].str.len() > 0].copy()
+    if normalized_df.empty:
+        return normalized_df
+
+    stars_numeric = pd.to_numeric(normalized_df["michelin_stars"], errors="coerce").fillna(0)
+    normalized_df = normalized_df.assign(_stars_sort=stars_numeric)
+    normalized_df = (
+        normalized_df.sort_values(["rest_id", "_stars_sort", "restaurant_name"], ascending=[True, False, True])
+        .drop_duplicates(subset=["rest_id"], keep="first")
+        .drop(columns=["_stars_sort"])
+        .reset_index(drop=True)
+    )
+    return normalized_df
 
 @st.cache_data(show_spinner=False)
 def load_lookup_df() -> pd.DataFrame:

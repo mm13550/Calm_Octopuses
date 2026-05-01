@@ -202,7 +202,7 @@ def _render_result_card(row: Dict[str, Any], score_label: str, render_key: str |
                     if current_rating:
                         # Align button slightly lower to match widget height
                         st.write("") 
-                        if st.button("Clear Rating", key=f"clear_btn_{render_key or 'default'}_{rest_id}", use_container_width=True):
+                        if st.button("Clear Rating", key=f"clear_btn_{render_key or 'default'}_{rest_id}", width="stretch"):
                             del st.session_state.user_ratings[rest_id]
                             if f_key in st.session_state:
                                 del st.session_state[f_key]
