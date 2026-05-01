@@ -43,6 +43,7 @@ from core.data_loader import (
     load_reviews_df,
     load_images_df,
     _clean_text,
+    _format_menu_price,
     _resolve_path,
 )
 from core.logic import get_restaurant_details, filter_my_restaurants
@@ -77,17 +78,17 @@ def _render_menu_browser(menu_rows: pd.DataFrame) -> None:
         st.info("No parsed menu items are available for this restaurant yet.")
         return
 
-    st.markdown("<p class='co-note'>Parsed dishes from the current menu data.</p>", unsafe_allow_html=True)
+    st.html("<p class='co-note'>Parsed dishes from the current menu data.</p>")
     for _, menu_row in menu_rows.head(18).fillna("").iterrows():
         dish_name = _clean_text(menu_row.get("dish_name")) or "Unnamed dish"
         ingredients = _clean_text(menu_row.get("ingredients")) or "No ingredient notes available."
-        price = _clean_text(menu_row.get("price"))
+        price = _format_menu_price(menu_row.get("price"))
         price_html = (
-            f"<span class='co-inline-badge co-inline-badge--accent'>${escape(price)}</span>"
+            f"<span class='co-inline-badge co-inline-badge--accent'>{escape(price)}</span>"
             if price
             else ""
         )
-        st.markdown(
+        st.html(
             f"""
             <div class="co-content-card">
                 <div class="co-content-head">
@@ -96,8 +97,7 @@ def _render_menu_browser(menu_rows: pd.DataFrame) -> None:
                 </div>
                 <p class="co-content-copy">{escape(ingredients)}</p>
             </div>
-            """,
-            unsafe_allow_html=True,
+            """
         )
 
     if len(menu_rows) > 18:
