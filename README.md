@@ -24,6 +24,7 @@ downloaded or copied into `data/`.
 
 ```bash
 # 1. Create and activate a virtual environment
+# On macOS/Linux, substitute python3 if the python command is not found
 python -m venv .venv
 source .venv/bin/activate  # macOS / Linux
 # or: .\.venv\Scripts\Activate.ps1  # Windows PowerShell
@@ -43,7 +44,7 @@ streamlit run frontend.py
 Large menus, embeddings, images, and model checkpoints are intentionally kept
 out of GitHub. Use one of these setup paths before grading or presenting:
 
-1. Run `python download_assets.py` to fetch the standard asset bundle from the
+1. Run `python download_assets.py` (inside the activated venv) to fetch the standard asset bundle from the
    shared Hugging Face dataset mirror.
 2. Copy the same files from the team's shared asset drive into the matching
    paths under `data/`.
@@ -144,7 +145,6 @@ This tree reflects the current project files in the repository, excluding `.git/
 |-- activate.bat                        # Windows batch script to activate environment
 |-- activate.ps1                        # Windows PowerShell script to activate environment
 |-- CHANGELOG.md                        # Project release history and changes
-|-- conversations.md                    # LLM conversation logs and context
 |-- download_assets.py                  # Pulls precomputed assets from Hugging Face
 |-- README.md                           # Main project documentation
 |-- REGRESSION_TUNING.md                # Documentation for MDN tuning and experiments
@@ -223,6 +223,7 @@ raw images/reviews/menus
 Create and activate a virtual environment:
 
 ```bash
+# On macOS/Linux, substitute python3 if the python command is not found
 python -m venv .venv
 source .venv/bin/activate  # macOS / Linux
 # or: .\.venv\Scripts\Activate.ps1  # Windows PowerShell

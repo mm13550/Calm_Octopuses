@@ -1,3 +1,3 @@
 @echo off
 echo Activating virtual environment...
-call venv\Scripts\activate.bat
+call .venv\Scripts\activate.bat

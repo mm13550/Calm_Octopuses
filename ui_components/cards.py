@@ -25,7 +25,7 @@ from PIL import Image, ImageChops
 from core.data_loader import _clean_text, _resolve_path, _truncate, load_sentiment_df
 
 
-DISTINCTION_ASSET_DIR = Path(__file__).resolve().parents[1] / "data" / "distiction"
+DISTINCTION_ASSET_DIR = Path(__file__).resolve().parents[1] / "data" / "distinction"
 
 
 def _menu_item_key(value: Any) -> str:
